@@ -3,7 +3,8 @@ Project Rainbow-Style Toy Simulator module.
 
 This module implements the toy simulation environment described in Section 6
 of Feeney (2025). It coordinates the RadialMembrane, Governor, BoundaryGeometry,
-and RuntimeCostVector to run dynamic multi-step simulations.
+and RuntimeCostVector to run dynamic multi-step simulations, fully integrated
+with the Pythagorean Projection layer (Feeney, 2026).
 """
 
 from __future__ import annotations
@@ -16,15 +17,22 @@ from radial_membrane_ai.governor import Governor, GovernorConfig
 from radial_membrane_ai.boundary import BoundaryGeometry
 from radial_membrane_ai.cost import RuntimeCostVector, reduce_avoidable_cost
 
+# Pythagorean layer imports
+from radial_membrane_ai.projection import closure_ratio, project_to_admissible, residual_deformation
+from radial_membrane_ai.admissibility import angular_decomposition, local_closure_test, KernelEvolution
+from radial_membrane_ai.coherence import closure_coherence
+from radial_membrane_ai.facet import FacetVector, TensionAutomaton, TensionState
+from radial_membrane_ai.holistic import compute_holistic_field
+
 
 class RainbowSimulation:
     """
-    Project Rainbow-Style Toy Simulator.
+    Project Rainbow-Style Toy Simulator with Pythagorean Projection.
 
-    Ref: Section 6 & 8 of Feeney (2025).
+    Ref: Section 6 & 8 of Feeney (2025) and Feeney (2026).
     Simulates the interaction between task demand (excitation), radial activation,
     V-channel routing (reasoning depth), governor regulation, boundary deformation,
-    and runtime costs over discrete time steps.
+    and runtime costs over discrete time steps, unified around the Pythagorean invariant.
     """
 
     def __init__(
@@ -55,12 +63,19 @@ class RainbowSimulation:
         self.r_growth_rate = r_growth_rate
         self.r_relaxation = r_relaxation
 
+        # Kernel evolution tracker
+        self.kernel_evo = KernelEvolution()
+
+        # Tension state automaton
+        self.automaton = TensionAutomaton()
+
         # History tracking
         self.activation_history: list[np.ndarray] = []
         self.radius_history: list[np.ndarray] = []
         self.boundary_snapshots: list[np.ndarray] = []  # List of radius sample arrays
         self.cost_history: list[RuntimeCostVector] = []
         self.observable_cost_history: list[float] = []
+        self.holistic_history: list[float] = []
 
         # Standard Cost Weights for scalar projection
         self.cost_weights = {
@@ -76,11 +91,6 @@ class RainbowSimulation:
 
         # Define Task Signatures
         # Each task type has an excitation vector (12 floats), a task value, and associated workloads.
-        # String Order:
-        # Analytical (1-4): depth, precision, technical_detail, structural_rigor
-        # Contextual (5-6): context_sensitivity, transparency
-        # Generative (7-9): initiative, exploration, creativity
-        # Interpersonal (10-12): tone, emotional_warmth, conciseness
         from typing import Any
         self.task_signatures: dict[str, dict[str, Any]] = {
             "technical_deep_analysis": {
@@ -103,8 +113,65 @@ class RainbowSimulation:
             }
         }
 
-        # Save initial state
+        # Save initial state and initialize facets
+        self._update_pythagorean_facets(task_value=0.5, excitation=np.ones(12, dtype=np.float64))
         self._record_state(samples=64)
+
+    def _update_pythagorean_facets(self, task_value: float, excitation: np.ndarray) -> tuple[list[FacetVector], np.ndarray]:
+        """
+        Performs the complete Pythagorean projection pipeline:
+        1. Decomposes membrane state into orthogonal legs (a, b).
+        2. Computes the closure ratio i(t, theta).
+        3. Projects (a, b) to admissible boundary.
+        4. Computes the residual deformation p(t, theta).
+        5. Updates tension states and constructs FacetVectors for all 12 strings.
+        6. Updates self.membrane strings.
+        7. Computes and returns the coherence matrix Q_matrix.
+        """
+        facets = []
+
+        # We will also compute the 12x12 Q_matrix of shared closure boundaries
+        Q_matrix = np.zeros((12, 12), dtype=np.float64)
+        for i in range(12):
+            for j in range(12):
+                Q_matrix[i, j] = closure_coherence(self.membrane, self.boundary, i + 1, j + 1, samples=8)
+
+        # Update each string with its new facet state
+        for idx, s in enumerate(self.membrane.strings):
+            # Extract orthogonal legs
+            a_orig, b_orig = angular_decomposition(self.membrane, s.theta, samples=64)
+            c = self.boundary.get_radius(s.theta)
+
+            # Local closure ratio
+            i_val = closure_ratio(a_orig, b_orig, c)
+
+            # Project to safety boundary
+            a_proj, b_proj = project_to_admissible(a_orig, b_orig, c, metric="euclidean")
+
+            # Residual vector and scalar magnitude
+            res_a, res_b = residual_deformation(a_orig, b_orig, a_proj, b_proj)
+            p_magnitude = math.sqrt(res_a**2 + res_b**2)
+
+            # Determine tension state via state machine
+            current_state = s.facet.state if s.facet is not None else TensionState.RELAXED
+            next_state = self.automaton.transition(current_state, i_val, p_magnitude)
+
+            # Policy priority maps directly to task excitation / value
+            policy_priority = float(excitation[idx]) * task_value
+
+            facet_vec = FacetVector(
+                facet_id=s.name,
+                state=next_state,
+                activation=s.activation,
+                capacity=c,
+                residual=p_magnitude,
+                policy_priority=policy_priority
+            )
+
+            s.facet = facet_vec
+            facets.append(facet_vec)
+
+        return facets, Q_matrix
 
     def _record_state(self, samples: int = 64) -> None:
         """
@@ -120,15 +187,17 @@ class RainbowSimulation:
 
     def run_step(self, task_type: str) -> None:
         """
-        Applies a single simulation cycle.
+        Applies a single simulation cycle, integrating the Pythagorean Projection layers.
 
         Steps:
         1. Parse task signature.
-        2. Apply governor update to membrane activations.
-        3. Compute V-channel routing and update reasoning radii.
-        4. Apply boundary deformation.
-        5. Evaluate runtime cost and perform quality-preserving cost reduction.
-        6. Append updated state to history.
+        2. Evolve kernels and update membrane activations via Governor.
+        3. Perform Pythagorean decomposition, projection, and facet state-transitions.
+        4. Compute V-channel routing (using state-aware routing weights) and update reasoning radii.
+        5. Apply boundary deformation (closure-ratio aware).
+        6. Compute holistic field H_hol(t).
+        7. Evaluate runtime cost and perform quality-preserving cost reduction.
+        8. Append updated state to history.
 
         Args:
             task_type: Key in self.task_signatures.
@@ -137,10 +206,15 @@ class RainbowSimulation:
             raise ValueError(f"Unknown task type '{task_type}'. Available: {list(self.task_signatures.keys())}")
 
         sig = self.task_signatures[task_type]
-        excitation = sig["excitation"]
+        excitation = np.array(sig["excitation"], dtype=np.float64)
         task_value = sig["task_value"]
         tool_loads = sig["tool_loads"]
         context_loads = sig["context_loads"]
+
+        # Step A: Kernel Leg Evolution
+        total_excite = float(np.sum(excitation))
+        v_activity = sum(s.activation * s.radius for s in self.membrane.strings)
+        self.kernel_evo.step(input_excitation=total_excite, v_channel_activity=v_activity)
 
         # 1. Update activations via Governor (this also updates string.cost inside the membrane)
         self.governor.update_membrane(
@@ -151,6 +225,9 @@ class RainbowSimulation:
             context_loads=context_loads
         )
 
+        # 1.5. Execute Pythagorean projection layer to update facet states before channel routing
+        facets, Q_matrix = self._update_pythagorean_facets(task_value, excitation)
+
         # 2. Update reasoning radii along V-channels
         # Create a copy of current radii to prevent order-of-evaluation bias during propagation
         old_radii = [s.radius for s in self.membrane.strings]
@@ -158,8 +235,10 @@ class RainbowSimulation:
         for t_idx in range(12):
             target = self.membrane.strings[t_idx]
 
-            # Internal growth from active attention
-            r_internal = target.activation * self.r_max * self.r_growth_rate
+            # Internal growth from active attention, scaled by the compute-aware effective kernel
+            cost_press = target.cost
+            k_eff = self.kernel_evo.get_effective_kernel(target.theta, cost_press)
+            r_internal = target.activation * self.r_max * self.r_growth_rate * k_eff
 
             # Propagated growth along V-channels
             r_propagated = 0.0
@@ -170,7 +249,7 @@ class RainbowSimulation:
                     orig_radius = source.radius
                     source.radius = old_radii[s_idx]
 
-                    # Compute propagated radius along channel
+                    # Compute propagated radius along channel (using updated state-aware routing weights inside channels.py)
                     r_prop = update_radius_along_channel(
                         source=source,
                         target=target,
@@ -188,31 +267,24 @@ class RainbowSimulation:
             # Temporal relaxation (smooth update)
             target.radius = (1.0 - self.r_relaxation) * target.radius + self.r_relaxation * target_radius_target
 
-        # 3. Update Boundary Geometry
+        # 3. Update Boundary Geometry (incorporating closure-ratio awareness)
         self.boundary.update_boundary(
             membrane=self.membrane,
             task_value=task_value
         )
 
+        # 3.5. Re-evaluate Pythagorean facets post-deformation and compute holistic field
+        facets, Q_matrix = self._update_pythagorean_facets(task_value, excitation)
+        h_hol = compute_holistic_field(self.membrane, self.boundary, facets, Q_matrix)
+        self.holistic_history.append(h_hol)
+
         # 4. Evaluate Cost Vector
         total_act = sum(s.activation for s in self.membrane.strings)
         total_rad = sum(s.radius for s in self.membrane.strings)
 
-        # Compute Quality Signal as average coherence of active behavioral strings
-        coherence_sum = 0.0
-        active_count = 0
-        for i in range(1, 13):
-            s = self.membrane.strings[i - 1]
-            if s.activation > 0.1:
-                # Compute coherence of this string with others
-                c_sum_j = 0.0
-                for j in range(1, 13):
-                    if i != j:
-                        c_sum_j += channel_coherence(self.membrane, i, j, samples=8)
-                coherence_sum += (c_sum_j / 11.0)
-                active_count += 1
+        # Compute Quality Signal based on average closure coherence Q_ij(t)
+        quality_signal = float(np.mean(Q_matrix)) if Q_matrix.size > 0 else 0.5
 
-        quality_signal = (coherence_sum / active_count) if active_count > 0 else 0.5
         # If the governor detects instability, decay the quality signal
         if not self.governor.is_stable():
             quality_signal *= 0.5
@@ -273,7 +345,6 @@ class RainbowSimulation:
         """
         Returns boundary radius snaps over time.
         """
-        # Re-sample if needed, but we already tracked snapshot values of length 64
         return self.boundary_snapshots
 
     def render_summary(self) -> None:
@@ -288,6 +359,8 @@ class RainbowSimulation:
         if self.governor.energy_history:
             print(f"Final Lyapunov Energy: {self.governor.energy_history[-1]:.4f}")
             print(f"Governor Stable: {self.governor.is_stable()}")
+        if self.holistic_history:
+            print(f"Final Holistic Governor Field H_hol: {self.holistic_history[-1]:.4f}")
 
         # Quadrant Activations at final step
         print("\nFinal Quadrant Activations:")

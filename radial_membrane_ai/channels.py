@@ -3,7 +3,7 @@ V-Channel Routing and Governed Flow module.
 
 This module implements the phase-aligned V-channel routing, cost-aware propagation,
 bounded depth updates, and channel coherence diagnostics described in Section 4
-of Feeney (2025).
+of Feeney (2025), updated with the state-aware routing rule described in Feeney (2026).
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from typing import Callable
 import numpy as np
 
 from radial_membrane_ai.membrane import BehavioralString, RadialMembrane
+from radial_membrane_ai.facet import route_signal, FacetVector, TensionState
 
 
 def phase_alignment(theta_s: float, theta_t: float) -> float:
@@ -97,6 +98,7 @@ def cost_aware_propagation(
 ) -> float:
     """
     Computes cost-aware propagation P_cost(s -> t) = P(s -> t) * W_t.
+    If facet vectors are configured on source and target, applies the state-aware routing rule.
 
     Args:
         source: Source BehavioralString.
@@ -109,7 +111,13 @@ def cost_aware_propagation(
     """
     p_base = base_propagation(source, target)
     w_t = inverse_cost_weight(target.cost, lambda_=lambda_, variant=cost_variant)
-    return p_base * w_t
+    p_cost = p_base * w_t
+
+    # Apply state-aware routing if both source and target have facet vectors
+    if source.facet is not None and target.facet is not None:
+        p_cost = route_signal(source.facet, target.facet, p_cost)
+
+    return p_cost
 
 
 def update_radius_along_channel(
