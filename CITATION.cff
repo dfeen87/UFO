@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it using the metadata below."
+title: "The UFO — Governed Deformable Radial Membrane"
+abstract: >
+  A governed, compute-aware AI personalization architecture that models behavior
+  as a deformable radial membrane. This repository contains the governed
+  simulation implementation, operator stack, mathematical definitions, and
+  validation traces referenced in the DOI-linked research artifact.
+authors:
+  - family-names: "Feeney Jr."
+    given-names: "Don Michael"
+    orcid: "https://orcid.org/0009-0003-1350-4160"
+doi: "10.5281/zenodo.21401979"
+version: "v3.0"
+date-released: "2026-07-18"
+url: "https://doi.org/10.5281/zenodo.21401979"
+license: "see artifact"
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Feeney"
+      given-names: "Don Michael Jr."
+      orcid: "https://orcid.org/0009-0003-1350-4160"
+  title: "A Governed Deformable Radial Membrane for Compute-Aware AI Personalization"
+  journal: "Dynamic Radial Membrane v2.6 research artifact"
+  doi: "10.5281/zenodo.21401979"
+  year: 2026
