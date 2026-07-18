@@ -3,20 +3,23 @@ Deformable Bidirectional Membrane Geometry module.
 
 This module implements the deformable boundary, boundary radius function,
 and approximate geometric diagnostics (curvature, asymmetry, tangent)
-described in Section 6 of Feeney (2025).
+described in Section 6 of Feeney (2025), updated with the cost-aware and
+closure-aware contraction and expansion described in Feeney (2026).
 """
 
 from __future__ import annotations
 import math
 from radial_membrane_ai.membrane import RadialMembrane, BehavioralString
 from radial_membrane_ai.channels import channel_coherence
+from radial_membrane_ai.admissibility import angular_decomposition
+from radial_membrane_ai.projection import closure_ratio
 
 
 class BoundaryGeometry:
     """
     Deformable Boundary Geometry model on a polar surface.
 
-    Ref: Section 6 of Feeney (2025).
+    Ref: Section 6 of Feeney (2025) & (2026).
     Defines the boundary radius R(theta, t) as a function of angle.
     Allows dynamic stretching under load and collapse under cost pressure.
     """
@@ -96,7 +99,8 @@ class BoundaryGeometry:
         coherence_samples: int = 16
     ) -> None:
         """
-        Updates the boundary deviations based on activation, depth (radius), cost and coherence.
+        Updates the boundary deviations based on activation, depth (radius), cost,
+        coherence, and local closure ratios.
 
         Stretch increases deviation where:
         - Activation and depth (string.radius) are high
@@ -106,6 +110,7 @@ class BoundaryGeometry:
         - Cost is high
         - Coherence is low
         - Governor suppression is strong (high cost, low task value)
+        - Local closure i(t, theta) > 1.0 (triggers closure-aware contraction)
 
         Args:
             membrane: The active RadialMembrane.
@@ -137,6 +142,14 @@ class BoundaryGeometry:
             # If cost exceeds task value under low task value, add extra collapse pressure
             if s.cost > task_value and task_value < 0.3:
                 collapse_pressure += (s.cost - task_value)
+
+            # Closure-ratio awareness: if local closure at the string's angle theta is violated (>1.0),
+            # trigger an additional immediate local boundary contraction/suppression proportional to the violation.
+            a_theta, b_theta = angular_decomposition(membrane, s.theta, samples=64)
+            c_theta = self.get_radius(s.theta)
+            i_ratio = closure_ratio(a_theta, b_theta, c_theta)
+            if i_ratio > 1.0:
+                collapse_pressure += 2.0 * (i_ratio - 1.0)
 
             delta_deviation = learning_rate * (stretch_pressure - collapse_pressure)
 

@@ -82,6 +82,9 @@ def test_membrane_activation_updates_and_field() -> None:
     assert membrane.strings[0].activation == 1.0
     assert membrane.strings[1].activation == 0.0
 
+    with pytest.raises(ValueError):
+        membrane.update_activation(np.zeros(10))
+
     # Test field value calculations using default Gaussian basis
     # Peak at theta_1 (index 1) should be relatively high
     theta_1 = (2.0 * math.pi * 1) / 12.0
@@ -131,6 +134,9 @@ def test_channels_propagation_and_coherence() -> None:
     assert p_cost_simple < p_base
     assert p_cost_exp < p_base
 
+    with pytest.raises(ValueError):
+        cost_aware_propagation(membrane.strings[0], membrane.strings[1], cost_variant="unknown")
+
     # Test bounded depth update
     # Source radius is 1.5
     membrane.strings[0].radius = 1.5
@@ -140,9 +146,21 @@ def test_channels_propagation_and_coherence() -> None:
     assert new_r <= 2.0
     assert new_r > 0.0
 
+    # Custom h_func
+    new_r_custom = update_radius_along_channel(
+        source=membrane.strings[0], target=membrane.strings[1], r_max=2.0, h_func=lambda p: p * 0.5
+    )
+    assert new_r_custom <= new_r
+
     # Test channel coherence calculation
     coher = channel_coherence(membrane, 1, 2, samples=10)
     assert 0.0 <= coher <= 1.0
+
+    coher_1sample = channel_coherence(membrane, 1, 2, samples=1)
+    assert 0.0 <= coher_1sample <= 1.0
+
+    with pytest.raises(ValueError):
+        channel_coherence(membrane, 0, 2)
 
     # Test max field activation helper
     max_act = max_field_activation(membrane, samples=30)
@@ -153,6 +171,9 @@ def test_channels_propagation_and_coherence() -> None:
     matrix = diag.compute_all_coherences(samples=8)
     assert matrix.shape == (12, 12)
     assert np.all(matrix >= 0.0)
+
+    hi_channels = diag.get_highest_coherence_channels()
+    assert len(hi_channels) >= 0
 
 
 def test_governor_costs_and_stability() -> None:
@@ -180,6 +201,12 @@ def test_governor_costs_and_stability() -> None:
     )
     p_gov = governed_propagation(s, s_target, config=config, tool_load=0.0, context_load=0.0)
     assert p_gov > 0.0
+
+    p_gov_simple = governed_propagation(s, s_target, config=config, cost_variant="simple")
+    assert p_gov_simple > 0.0
+
+    with pytest.raises(ValueError):
+        governed_propagation(s, s_target, config=config, cost_variant="invalid")
 
     # Governor membrane update and tracking Lyapunov energy
     membrane = RadialMembrane()
@@ -297,6 +324,12 @@ def test_rainbow_simulation() -> None:
 
     snaps = sim.get_boundary_snapshots()
     assert len(snaps) == 7
+
+    with pytest.raises(ValueError):
+        sim.run_step("unknown_task")
+
+    with pytest.raises(ValueError):
+        sim.run(2, [])
 
     # Render summary to test diagnostic output printing
     sim.render_summary()

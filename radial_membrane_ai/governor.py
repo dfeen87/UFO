@@ -1,8 +1,8 @@
 """
 Governor and Stability Control module.
 
-This module implements the governor layer and Lyapunov-style stability control
-described in Section 5 of Feeney (2025).
+This module implements the governor layer, stability checks,
+and Lyapunov-style stability control described in Feeney (2025) & (2026).
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ import numpy as np
 
 from radial_membrane_ai.membrane import BehavioralString, RadialMembrane
 from radial_membrane_ai.channels import channel_coherence
+from radial_membrane_ai.admissibility import apply_lyapunov_dissipation, phase_smoothing
 
 
 @dataclass
@@ -131,7 +132,7 @@ class Governor:
     Governor Layer and Stability Control.
 
     Ref: Sections 5.3 & 5.4 of Feeney (2025).
-    Controls the activation update of the membrane, suppress excessive cost,
+    Controls the activation update of the membrane, suppresses excessive cost,
     and computes Lyapunov-style stability energy.
     """
 
@@ -234,8 +235,15 @@ class Governor:
         # 4. Apply delta to membrane
         membrane.update_activation(delta)
 
+        # 4.5. Phase smoothing circular filter to prevent high-frequency oscillations
+        phase_smoothing(membrane, window_size=3)
+
         # 5. Track Lyapunov energy
         self.track_energy(membrane)
+
+        # 5.5. Apply energy dissipation step if unstable
+        if not self.is_stable():
+            apply_lyapunov_dissipation(membrane, self, target_energy=None, dissipation_rate=0.08)
 
     def compute_lyapunov_energy(self, membrane: RadialMembrane) -> float:
         """

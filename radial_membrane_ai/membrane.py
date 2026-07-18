@@ -10,6 +10,10 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 import numpy as np
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from radial_membrane_ai.facet import FacetVector
 
 
 @dataclass
@@ -28,6 +32,7 @@ class BehavioralString:
         cost: Local cost c_i(t).
         tension: Dynamic tension tau_i(t).
         stiffness: Dynamic stiffness K_i(t).
+        facet: The corresponding FacetVector representing the pythagorean state.
     """
     name: str
     index: int
@@ -37,6 +42,7 @@ class BehavioralString:
     cost: float
     tension: float
     stiffness: float
+    facet: FacetVector | None = None
 
 
 class RadialMembrane:
@@ -81,7 +87,8 @@ class RadialMembrane:
                 radius=0.0,
                 cost=c_baseline,
                 tension=0.0,
-                stiffness=0.0
+                stiffness=0.0,
+                facet=None
             )
             self.strings.append(string)
 
