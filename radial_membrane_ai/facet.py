@@ -19,6 +19,11 @@ class TensionState(Enum):
     STRETCHED = auto()
     CRITICAL = auto()
     BOUNDARY_COLLAPSE = auto()
+    IDLE = auto()
+    RESONANT = auto()
+    ACTIVE = auto()
+    SATURATED = auto()
+    INHIBITED = auto()
 
 
 @dataclass
@@ -35,6 +40,10 @@ class FacetVector:
     - capacity: Current admissible capacity at this facet's angle.
     - residual: Current residual deformation magnitude.
     - policy_priority: Relative policy priority weight.
+    - coherence_contribution: Contribution of this facet to overall coherence.
+    - persistence_trace: Trace for historical persistence tracking.
+    - capacity_pressure: Pressure index for capacity boundary.
+    - typed_v_channel: Channel type associated with this facet.
     """
     facet_id: str
     state: TensionState
@@ -42,6 +51,10 @@ class FacetVector:
     capacity: float
     residual: float
     policy_priority: float
+    coherence_contribution: float = 0.0
+    persistence_trace: float = 0.0
+    capacity_pressure: float = 0.0
+    typed_v_channel: str = "Type-W"
 
 
 class TensionAutomaton:
