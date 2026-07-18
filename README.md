@@ -1,2 +1,239 @@
-# UFO
-A governed deformable radial membrane for compute‑aware AI personalization. Models behavioral strings, V‑channel routing, cost‑aware governance, and stability signals on a dynamic polar surface. Includes membrane geometry, governor logic, and simulation tools.
+# 🛸 The U.F.O. — Governed Deformable Radial Membrane
+
+**A compute-aware AI personalization architecture that treats behavior as a living, saucer-shaped control surface — not a static personality preset.**
+
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21401979-blue)](https://doi.org/10.5281/zenodo.21401979)
+[![ORCID](https://img.shields.io/badge/ORCID-0009--0003--1350--4160-a6ce39)](https://orcid.org/0009-0003-1350-4160)
+[![Status](https://img.shields.io/badge/status-MIT%20research%20grade%20%2B%20governed%20simulation-blue)](#status--validation)
+
+
+> *Full paper: "A Governed Deformable Radial Membrane for Compute-Aware AI Personalization" — Don Michael Feeney Jr.*
+> Condensed publication version of the **Dynamic Radial Membrane v2.6** research artifact.
+
+The U.F.O. is a governed, compute‑aware AI architecture that models behavior as a deformable radial membrane — a living control surface whose activation pattern is the personality and whose deformation is the compute signal. Instead of treating personalization as a thin stylistic layer and compute limits as an external constraint, the U.F.O. binds them into one geometric state space: a saucer‑shaped membrane that stretches, contracts, and rebalances as the system reasons, retrieves, plans, and responds.
+
+Twelve behavioral “strings” sit around the membrane’s circumference, each carrying both expressive meaning and compute cost. Activation flows through phase‑aligned V‑Channels, cost pressure shapes the membrane’s curvature, and a multi‑layer Governor supervises stability, coherence, and policy constraints. The result is an AI whose behavior is not a preset — it is a governed geometric field that adapts to the task, preserves residual evidence, and remains stable under load.
+
+This repository implements the full operator stack: membrane geometry, V‑Channel routing, the Bounded Compute Envelope, the Symmetric Ascension Operator (SAO), the Holistic Governor Layer, and a governed multi‑layer simulation environment. The U.F.O. is not a metaphor for science fiction — it is a research‑grade control architecture for compute‑aware, policy‑aligned, dynamically governed AI behavior.
+
+---
+
+## Why "the U.F.O."?
+
+The name U.F.O. **(User‑Formed Optimization)** originates from the architecture’s core principle: durable behavioral adaptation should emerge only from coherent, admissible patterns formed by the user. The geometric representation came later as a natural way to visualize this principle.
+
+To make the system’s internal dynamics inspectable, the architecture models behavior and compute pressure as activation across a deformable radial membrane. When viewed from above, this membrane resembles a circular disc with twelve behavioral strings arranged around its circumference. As activation changes, the membrane expands, contracts, and redistributes tension — a visual abstraction that makes stability, cost, routing, and expressivity easier to interpret.
+
+The saucer‑like appearance is therefore not the origin of the name, nor a reference to science fiction. It is simply the most effective geometric metaphor for a governed control surface whose shape reveals how the system balances expressivity, compute, and stability at every moment. The acronym U.F.O. remains the architecture’s true identity; the geometry is the lens through which its behavior can be understood.
+
+---
+
+## Table of Contents
+
+- [The Core Idea](#the-core-idea)
+- [Architecture at a Glance](#architecture-at-a-glance)
+- [1. The Hull — Radial Identity Membrane](#1-the-hull--radial-identity-membrane)
+- [2. The Wiring — V-Channel Routing](#2-the-wiring--v-channel-routing)
+- [3. The Cockpit — Governor & Stability Control](#3-the-cockpit--governor--stability-control)
+- [4. The Skin — Deformable Bidirectional Boundary](#4-the-skin--deformable-bidirectional-boundary)
+- [5. The Fuel Gauge — Cost Taxonomy](#5-the-fuel-gauge--cost-taxonomy)
+- [Variable Reference](#variable-reference)
+- [Project Rainbow (Toy Simulation)](#project-rainbow-toy-simulation)
+- [Status & Validation](#status--validation)
+- [Citing This Work](#citing-this-work)
+
+---
+
+## The Core Idea
+
+Most AI systems treat personalization and compute control as two unrelated layers — one adjusts tone or style, the other enforces token limits, retrieval budgets, or latency caps. The U.F.O. architecture rejects that separation. Every behavioral choice an AI makes carries a compute cost, and every compute constraint shapes the behavior that can be expressed. They are not two problems; they are one coupled system.
+
+The U.F.O. models this coupling inside a shared geometric state space: a deformable radial membrane whose activation pattern expresses the AI’s behavioral posture, and whose deformation reveals the compute pressure required to sustain it. Twelve behavioral strings define the membrane’s expressive dimensions, V‑Channels route activation through coherent corridors, and a multi‑layer Governor supervises stability, admissibility, and cost. Behavior and compute are therefore not bolted together — they are governed together, as one dynamic field that stretches, contracts, and rebalances in response to the task.
+
+---
+
+## Architecture at a Glance
+
+```mermaid
+flowchart TB
+    subgraph Hull["Radial Identity Membrane — 12 Behavioral Strings"]
+        direction LR
+        A1["Depth"] --- A2["Precision"] --- A3["Technical Detail"] --- A4["Structural Rigor"]
+        B1["Context Sensitivity"] --- B2["Transparency"]
+        C1["Initiative"] --- C2["Exploration"] --- C3["Creativity"]
+        D1["Tone"] --- D2["Emotional Warmth"] --- D3["Conciseness"]
+    end
+
+    Hull -- "activation aᵢ(t)" --> VChan["⚡ V-Channel Routing<br/>coherent, phase-aligned corridors"]
+    VChan -- "inverse-cost propagation" --> Gov["🧠 Governor<br/>cost · coherence · policy · stability"]
+    Gov -- "bounded depth, suppression" --> Skin["🫧 Deformable Boundary<br/>ΔR · curvature · asymmetry"]
+    Skin -- "geometry feedback" --> Gov
+    Gov -- "weighted cost vector" --> Cost["⛽ Multidimensional Cost Taxonomy"]
+    Cost -- "quality-preserving reduction" --> Gov
+    Gov -- "runtime controls" --> Out["Response: depth, tokens, tools, tone"]
+```
+
+The membrane has four architectural layers, plus a fuel gauge. Each is detailed below.
+
+---
+
+## 1. The Hull — Radial Identity Membrane
+
+The U.F.O.'s hull is a circular field of **twelve phase-positioned behavioral strings**, each occupying a fixed angular slot:
+
+$$\theta_i = \frac{2\pi i}{12}, \quad i = 1, \dots, 12$$
+
+Each string is both a *behavioral dimension* and a *compute-bearing channel*:
+
+| String | Function | Compute Signature |
+|---|---|---|
+| Depth | Multi-step reasoning, inference chains | High reasoning-depth cost |
+| Precision | Correctness, verification | Verification / claim-checking cost |
+| Context Sensitivity | Memory, documents, situational cues | Context-window / retrieval cost |
+| Initiative | Proactive planning, tool/action suggestions | Agentic-planning cost |
+| Exploration | Branching ideation, alternatives | Branching / token cost |
+| Creativity | Novel synthesis, metaphor | Generative variation cost |
+| Tone | Formality, warmth, confidence | Low expressive cost |
+| Transparency | Visible structure, rationale | Output / explanation cost |
+| Technical Detail | Domain terms, dense structure | Detail / formatting cost |
+| Structural Rigor | Organization, hierarchy | Planning / stabilization cost |
+| Emotional Warmth | Encouragement, empathy | Low expressive cost |
+| Conciseness | Compression, brevity | Cost-reducing contraction |
+
+Activation over the hull is a superposition of angular basis functions:
+
+$$\Phi(\theta, t) = \sum_{i=1}^{12} \varphi_i(\theta)\, a_i(t)$$
+
+meaning behavior **blends** rather than switches — a response can be deep *and* precise, or warm *and* concise, simultaneously. The membrane starts neutral (`aᵢ(0) = 0`), so the U.F.O. carries structure but no pre-loaded personality until a task gives it something to respond to.
+
+Zoomed out, the twelve strings group into four quadrants: **Analytical**, **Contextual**, **Generative**, and **Interpersonal** — a diagnostic lens for reading which region of the hull lit up.
+
+---
+
+## 2. The Wiring — V-Channel Routing
+
+Strings don't activate in isolation — they route through **V-channels**, low-resistance corridors formed between phase-aligned strings. A technical answer flows through *Depth → Precision → Technical Detail → Structural Rigor*; a supportive reply flows through *Tone → Emotional Warmth → Conciseness*.
+
+Propagation pressure from a source string `s` to a target `t` combines target activation, phase alignment, and **inverse cost**:
+
+$$P(s \to t) = \text{sigmoid}(a_t) \cdot \frac{1 + \cos(\theta_s - \theta_t)}{2} \cdot w_t, \qquad w_t = \frac{1}{1 + c_t}$$
+
+Expensive targets are discounted by default — activation must be *earned* through task relevance, not just semantic proximity. Reasoning depth propagates along the same channels, bounded by the compute envelope:
+
+$$r_t' = \min\left(r_{\max},\ r_s \cdot h(P(s \to t))\right)$$
+
+This keeps deep reasoning from leaking into unrelated strings (e.g. a technical deep-dive shouldn't silently spill into unbounded Creativity or Initiative).
+
+---
+
+## 3. The Cockpit — Governor & Stability Control
+
+The governor is where the U.F.O. gets its discipline. It doesn't touch model weights — it's an **inference-time orchestration layer** that reads each string's state,
+
+$$S_i(t) = \big(a_i(t),\ \theta_i,\ r_i(t),\ \tau_i(t),\ \kappa_i(t)\big)$$
+
+converts it into a local cost footprint, and decides how far activation is allowed to expand:
+
+$$c_i = w_d r_i^2 + w_a a_i + w_l l_i + w_c \log(1+\text{context}_i) + w_\tau \tau_i + w_\kappa \kappa_i$$
+
+Its guiding discipline is a **Lyapunov-style stability signal**:
+
+$$V = C_{\text{total}} + \alpha\sum_i(r_i - \bar r)^2 + \beta\sum_i \tau_i + \gamma\sum_i \kappa_i$$
+
+Under ordinary conditions the governor pushes `ΔV ≤ 0` — the system trends back toward low energy. Under justified task pressure, energy can rise temporarily, but the U.F.O. is expected to **dissipate it and recover**, not stay permanently expanded. Suppression pulls back low-value, high-cost, or incoherent regions first — before ever touching safety, correctness, or user-requested depth.
+
+---
+
+## 4. The Skin — Deformable Bidirectional Boundary
+
+This is the part that makes the saucer *look* like a saucer. The hull's outer edge isn't a fixed circle — it's a **live polar curve**:
+
+$$R(\theta, t) = R_0 + \sum_i \varphi_i(\theta)\, a_i(t)$$
+
+Sustained activation on a string **stretches the boundary outward** in that sector; cost pressure or governor suppression **collapses it inward**. Three readable signals fall out of this geometry:
+
+| Signal | Formula | Meaning |
+|---|---|---|
+| Radius deviation | `ΔR(θ,t) = R(θ,t) − R₀` | Outward stretch (+) vs. inward collapse (−) |
+| Tangent / slope | `T(θ,t) = ∂R/∂θ` | Sharpness of a behavioral transition |
+| Curvature | `K(θ,t) = ∂²R/∂θ²` | Ridges, folds — concentrated intensity or active suppression |
+
+An **asymmetry index** `A(t) = 1 − R_min/R_max` summarizes how distorted the saucer has become overall — `A = 0` is a perfect circle, higher values mean the U.F.O. is visibly leaning into (or away from) a behavioral posture. Crucially, **inward collapse isn't a failure state** — it's the governor stabilizing the craft, the same way a saucer might retract its edges rather than tumble.
+
+---
+
+## 5. The Fuel Gauge — Cost Taxonomy
+
+Cost isn't just token count. It's a **multidimensional runtime vector**:
+
+```
+c_i(t) = [ c_tok, c_depth, c_ctx, c_retr, c_tool, c_lat, c_corr, c_stab ]
+```
+
+| Category | Example Signal |
+|---|---|
+| Token / output | Response length |
+| Reasoning-depth | Planning passes, step depth |
+| Context-window | Context tokens, document span |
+| Retrieval | Search calls, source count |
+| Tool / agentic | Tool calls, API invocations |
+| Latency / system-load | Response time, queue time |
+| Correction / regeneration | Edit rate, follow-up corrections |
+| Instability-recovery | Suppression events, route resets |
+
+The governor's objective is never blind minimization — it's:
+
+$$\min C_{\text{avoidable}} \quad \text{subject to task success, safety, correctness, accessibility, trust, and requested depth}$$
+
+Verbosity and redundant context get cut first; safety, correctness, and explicitly requested depth are protected last.
+
+---
+
+## Variable Reference
+
+| Variable | Meaning |
+|---|---|
+| `aᵢ(t)` | Activation coefficient of string `i` |
+| `θᵢ` | Home phase position of string `i` |
+| `rᵢ(t)` | Reasoning radius / cognitive reach |
+| `cᵢ(t)` | Local compute cost |
+| `τᵢ(t), κᵢ(t)` | Dynamic tension and stiffness |
+| `R(θ,t)` | Deformable boundary radius |
+| `ΔR(θ,t)` | Radius deviation (stretch / collapse) |
+| `K(θ,t)` | Local boundary curvature |
+| `E_tan(θ,t)` | Tangent expressivity |
+| `V(t)` | Lyapunov-style stability energy |
+
+---
+
+## Project Rainbow (Toy Simulation)
+
+Project Rainbow is the reference simulation included in the DOI‑linked research artifact. It provides a minimal, inspectable implementation of the twelve‑string membrane, curvature‑weighted routing, governor updates, and stability traces under simplified workloads. Its purpose in the paper is methodological: to demonstrate that the variables, operators, and geometric control rules of the U.F.O. architecture can be parameterized, visualized, and validated in isolation.
+
+Rainbow is intentionally lightweight. It is not a production benchmark, nor does it represent the full governed operator stack implemented in this repository. Instead, it serves as the baseline conceptual model documented in the DOI artifact — a pedagogical simulation that illustrates the membrane’s behavior, the cost geometry, and the stability dynamics before the introduction of SAO, the Bounded Compute Envelope, federated shard governance, or multi‑layer routing.
+
+This repository supersedes Rainbow with a research‑grade governed simulation, but Rainbow remains part of the formal publication record and provides the canonical minimal example referenced in the paper.
+
+---
+
+## Status & Validation
+
+The U.F.O. has progressed far beyond a conceptual sketch. This repository now implements a research‑grade governed simulation of the full architecture: the radial membrane, V‑Channel routing, the Bounded Compute Envelope, the Symmetric Ascension Operator (SAO), the Holistic Governor Layer, and federated shard‑governance primitives. All components operate inside a unified multi‑layer execution loop that performs admissibility testing, projection, residual preservation, kernel‑regime modulation, stability scoring, and policy‑bounded routing.
+
+The system is validated through controlled workloads, curvature‑weighted routing traces, kernel‑regime sweeps, SAO ascension tests, shard‑state transitions, and falsification‑preserving ledger updates. Comprehensive unit and integration tests (currently at 98% coverage) confirm that the operator stack behaves consistently across edge cases, including suppression events, stability‑band transitions, shard quarantine, and residual‑only SAO outcomes.
+
+While still a research artifact rather than a deployed production system, the U.F.O. has moved decisively into the governed‑simulation phase of its validation roadmap. Future work includes broader parameter sweeps, richer workload families, multi‑agent membrane coupling, federated mesh coherence studies, and ablations against static personalization, response‑length‑only control, no‑curvature routing, and no‑governor baselines. Treat this repository as a reproducible, inspectable, and falsifiable implementation of the architecture — a platform for critique, experimentation, and continued refinement.
+
+---
+
+## Citing This Work
+
+```
+Feeney, D. M. Jr. (2026). A Governed Deformable Radial Membrane for
+Compute-Aware AI Personalization. Dynamic Radial Membrane v2.6 research
+artifact. https://doi.org/10.5281/zenodo.21401979
+```
+
+ORCID: [0009-0003-1350-4160](https://orcid.org/0009-0003-1350-4160)
+
+Full research artifact & version history: [Zenodo DOI](https://doi.org/10.5281/zenodo.21401979)
