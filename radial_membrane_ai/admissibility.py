@@ -202,3 +202,83 @@ def boundary_loop_trace(boundary: BoundaryGeometry, samples: int = 256) -> float
         total_length += math.sqrt(r**2 + dr_dtheta**2) * dtheta
 
     return total_length
+
+
+def radial_depth_contribution(membrane: RadialMembrane, theta: float) -> float:
+    """
+    Computes the radial depth contribution at a given angle theta by interpolating
+    the radii (depths) of the behavioral strings using Gaussian basis functions.
+    """
+    total = 0.0
+    total_weight = 0.0
+    for s in membrane.strings:
+        dist = membrane.angular_distance(theta, s.theta)
+        phi = math.exp(-(dist ** 2) / (2.0 * (membrane.basis_sigma ** 2)))
+        total += phi * s.radius
+        total_weight += phi
+    return total / total_weight if total_weight > 0.0 else 0.0
+
+
+def dynamic_capacity_boundary(boundary: BoundaryGeometry, theta: float) -> float:
+    """
+    Returns the dynamic capacity boundary c(t, theta) induced by boundary deformation.
+    """
+    return boundary.get_radius(theta)
+
+
+def angular_projections(
+    membrane: RadialMembrane,
+    theta: float,
+    samples: int = 128
+) -> tuple[float, float]:
+    """
+    Extracts the orthogonal contributions a(t, theta) and b(t, theta) from the membrane field.
+    An alias/wrapper for angular_decomposition to match the Pythagorean projection grammar.
+    """
+    return angular_decomposition(membrane, theta, samples)
+
+
+def local_closure_test_at_angle(
+    membrane: RadialMembrane,
+    boundary: BoundaryGeometry,
+    theta: float,
+    samples: int = 128
+) -> bool:
+    """
+    Performs a complete local closure test at angle theta.
+    Decomposes field to extract a and b, computes dynamic capacity boundary c,
+    and checks if the admissibility condition holds: i(t, theta) <= 1.0
+    """
+    a, b = angular_projections(membrane, theta, samples)
+    c = dynamic_capacity_boundary(boundary, theta)
+    return local_closure_test(a, b, c)
+
+
+def global_closure_aggregation(
+    membrane: RadialMembrane,
+    boundary: BoundaryGeometry,
+    samples: int = 32
+) -> dict[str, float | bool]:
+    """
+    Aggregates closure ratios across the entire membrane.
+    Samples angles uniformly and computes the average ratio, max ratio,
+    and a global admissibility flag (True if all sampled points are admissible).
+    """
+    ratios = []
+    dtheta = (2.0 * math.pi) / samples
+    all_admissible = True
+
+    for k in range(samples):
+        theta = k * dtheta
+        a, b = angular_projections(membrane, theta, samples=64)
+        c = dynamic_capacity_boundary(boundary, theta)
+        i_ratio = closure_ratio(a, b, c)
+        ratios.append(i_ratio)
+        if i_ratio > 1.0 + 1e-9:
+            all_admissible = False
+
+    return {
+        "average_ratio": float(np.mean(ratios)),
+        "max_ratio": float(np.max(ratios)),
+        "is_admissible": all_admissible
+    }

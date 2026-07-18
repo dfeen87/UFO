@@ -22,7 +22,10 @@ from radial_membrane_ai.projection import closure_ratio, project_to_admissible, 
 from radial_membrane_ai.admissibility import angular_decomposition, local_closure_test, KernelEvolution
 from radial_membrane_ai.coherence import closure_coherence
 from radial_membrane_ai.facet import FacetVector, TensionAutomaton, TensionState
-from radial_membrane_ai.holistic import compute_holistic_field
+from radial_membrane_ai.holistic import compute_holistic_field, HolisticGovernorField
+from radial_membrane_ai.envelope import BrimEnvelope
+from radial_membrane_ai.saopromotion import SAOPromotor
+from radial_membrane_ai.mesh import FederatedShardMesh, FederatedShard, ShardState
 
 
 class RainbowSimulation:
@@ -69,6 +72,25 @@ class RainbowSimulation:
         # Tension state automaton
         self.automaton = TensionAutomaton()
 
+        # Layer Stack integrations
+        self.brim_envelope = BrimEnvelope(energy_threshold=1.5)
+        self.sao_promotor = SAOPromotor(promotion_threshold=0.4)
+        self.shard_mesh = FederatedShardMesh()
+        self.holistic_gov = HolisticGovernorField()
+
+        # Populate a default set of federated shards to simulate mesh operations
+        for i in range(3):
+            self.shard_mesh.add_shard(
+                FederatedShard(
+                    shard_id=f"shard_node_{i}",
+                    state=ShardState.IDLE,
+                    capacity=1.5,
+                    trust_score=0.9,
+                    cost_factor=1.0,
+                    latency=15.0
+                )
+            )
+
         # History tracking
         self.activation_history: list[np.ndarray] = []
         self.radius_history: list[np.ndarray] = []
@@ -76,6 +98,9 @@ class RainbowSimulation:
         self.cost_history: list[RuntimeCostVector] = []
         self.observable_cost_history: list[float] = []
         self.holistic_history: list[float] = []
+        self.mesh_coherence_history: list[float] = []
+        self.brim_verdicts: list[str] = []
+        self.sao_verdicts: list[str] = []
 
         # Standard Cost Weights for scalar projection
         self.cost_weights = {
@@ -277,6 +302,37 @@ class RainbowSimulation:
         facets, Q_matrix = self._update_pythagorean_facets(task_value, excitation)
         h_hol = compute_holistic_field(self.membrane, self.boundary, facets, Q_matrix)
         self.holistic_history.append(h_hol)
+
+        # Step B: Brim Compute Envelope evaluation (Multi-layer Fallback & Admission)
+        brim_verdict, brim_meta = self.brim_envelope.evaluate_envelope(self.membrane, self.boundary)
+        self.brim_verdicts.append(brim_verdict)
+
+        if brim_verdict == "block":
+            # Force activation containment / fallback recovery
+            for s in self.membrane.strings:
+                s.activation *= 0.5
+        elif brim_verdict == "constrain":
+            for s in self.membrane.strings:
+                s.activation *= 0.8
+        elif brim_verdict == "re-project":
+            # Trigger re-projection recovery
+            facets, Q_matrix = self._update_pythagorean_facets(task_value, excitation)
+
+        # Step C: SAO Promotion Step
+        sao_verdict, p_sao, sao_meta = self.sao_promotor.promote(self.membrane, self.boundary, "Holistic Governor")
+        self.sao_verdicts.append(sao_verdict)
+
+        # Step D: Federated Mesh Workload Routing & Governance execution
+        workload = {
+            "capacity": float(np.mean([s.radius for s in self.membrane.strings])),
+            "privacy": 0.5,
+            "latency": 50.0,
+            "cost": 2.0
+        }
+        self.shard_mesh.route_and_execute(workload)
+        self.shard_mesh.run_mesh_governance()
+        mesh_coh = self.shard_mesh.compute_mesh_coherence()
+        self.mesh_coherence_history.append(mesh_coh)
 
         # 4. Evaluate Cost Vector
         total_act = sum(s.activation for s in self.membrane.strings)

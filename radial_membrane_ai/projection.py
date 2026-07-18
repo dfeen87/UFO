@@ -70,10 +70,6 @@ def project_to_admissible(
         return a, b
 
     norm = math.sqrt(a**2 + b**2)
-    if norm <= 1e-9:
-        # If the vector is zero but capacity is small and we somehow violated, return 0
-        return 0.0, 0.0
-
     metric_lower = metric.lower()
 
     if metric_lower == "euclidean" or metric_lower == "radial" or metric_lower == "angular":
@@ -100,7 +96,7 @@ def project_to_admissible(
         low = -min_w + 1e-9
 
         # Estimate high bound
-        high = max(1.0, math.sqrt(w_a**2 * a**2 + w_b**2 * b**2) / c)
+        high = 1.0
 
         def f(lam: float) -> float:
             return (w_a * a / (w_a + lam))**2 + (w_b * b / (w_b + lam))**2 - c**2

@@ -181,3 +181,10 @@ class RadialMembrane:
             return 0.0
 
         return sum(s.activation for s in target_strings) / len(target_strings)
+
+    def get_membrane_field(self, theta: float, r: float, t: float = 0.0) -> float:
+        """
+        Returns the membrane field representation M(theta, r, t) as L^2([0, 2*pi]):
+        M(theta, r, t) = field_value(theta) * exp(-r)
+        """
+        return self.field_value(theta) * math.exp(-r)

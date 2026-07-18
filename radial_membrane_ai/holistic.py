@@ -62,3 +62,91 @@ def compute_holistic_field(
     coherence_avg = float(np.mean(Q_matrix)) if Q_matrix.size > 0 else 0.0
 
     return w_G * geom_avg + w_C * coherence_avg
+
+
+class HolisticGovernorField:
+    """
+    Tracks and manages the holistic governor field, stability bands, policy tensions,
+    kernel modulation, and global reconfiguration triggers.
+    """
+
+    def __init__(
+        self,
+        w_p: float = 0.4,
+        w_o: float = 0.2,
+        w_c: float = 0.1,
+        w_T: float = 0.15,
+        w_K: float = 0.15
+    ) -> None:
+        self.w_p = w_p
+        self.w_o = w_o
+        self.w_c = w_c
+        self.w_T = w_T
+        self.w_K = w_K
+        self.drift_history: list[float] = []
+
+    def compute_H_field(
+        self,
+        p_avg: float,
+        o_avg: float,
+        c_avg: float,
+        T_avg: float,
+        K_avg: float
+    ) -> float:
+        """
+        Decomposes and computes the supervisory field:
+        H(t) = w_p * p - w_o * o - w_c * c - w_T * T + w_K * K
+        """
+        return self.w_p * p_avg - self.w_o * o_avg - self.w_c * c_avg - self.w_T * T_avg + self.w_K * K_avg
+
+    def get_coherence_score(self, H_val: float) -> float:
+        """
+        Calculates a normalized coherence score C(t) in [0, 1].
+        """
+        # Sigmoid mapping of H_val to represent coherence
+        return 1.0 / (1.0 + np.exp(-H_val))
+
+    def evaluate_stability_band(self, score: float) -> str:
+        """
+        Returns the stability band (green / yellow / red).
+        """
+        if score >= 0.7:
+            return "green"
+        elif score >= 0.4:
+            return "yellow"
+        else:
+            return "red"
+
+    def detect_drift(self, score: float, window: int = 5, threshold: float = 0.15) -> bool:
+        """
+        Detects significant downward drift in coherence.
+        """
+        self.drift_history.append(score)
+        if len(self.drift_history) < window:
+            return False
+        recent = self.drift_history[-window:]
+        return bool(recent[0] - recent[-1] > threshold)
+
+    def detect_overload(self, T_avg: float, max_threshold: float = 0.8) -> bool:
+        """
+        Detects average tension overload.
+        """
+        return T_avg > max_threshold
+
+    def detect_policy_tension(self, p_avg: float, pi_avg: float, threshold: float = 0.5) -> bool:
+        """
+        Detects tension/conflict between residual deformation and policy priority.
+        """
+        return (p_avg * pi_avg) > threshold
+
+    def modulate_kernel(self, score: float) -> float:
+        """
+        Computes a kernel modulation scale factor based on coherence.
+        """
+        return max(0.1, min(1.0, score * 1.2))
+
+    def check_reconfiguration_trigger(self, score: float, drift: bool, overload: bool) -> bool:
+        """
+        Triggers global reconfiguration if stability falls into red or critical conditions occur.
+        """
+        return score < 0.3 or (drift and overload)
