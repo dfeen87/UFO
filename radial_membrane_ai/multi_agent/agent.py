@@ -4,6 +4,10 @@ UFOAgent class representing a governed multi-agent facet.
 
 from __future__ import annotations
 import numpy as np
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from radial_membrane_ai.semantic_memory.core import AgentSemanticMemory
 
 from radial_membrane_ai.membrane import RadialMembrane
 from radial_membrane_ai.boundary import BoundaryGeometry
@@ -18,6 +22,8 @@ class UFOAgent:
     Represents an individual governed agent with its own membrane, strings,
     V-channel graph, bounded compute envelope, and local coherence score.
     """
+
+    semantic_memory: AgentSemanticMemory
 
     def __init__(
         self,

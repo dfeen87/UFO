@@ -39,7 +39,15 @@ class MeshGovernor:
         Audits shard, quarantining it if failures exceed policy limits.
         """
         failures = ledger.get_failures_by_shard(shard.shard_id)
-        critical_failures = [f for f in failures if f.severity.lower() in ("high", "critical")]
+        critical_failures = []
+        for f in failures:
+            sev = f.severity
+            if isinstance(sev, str):
+                if sev.lower() in ("high", "critical"):
+                    critical_failures.append(f)
+            else:
+                if any(s.lower() in ("high", "critical") for s in sev):
+                    critical_failures.append(f)
 
         if len(critical_failures) >= 2 or len(failures) >= 5:
             shard.state = ShardState.QUARANTINED

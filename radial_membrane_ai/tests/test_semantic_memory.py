@@ -134,6 +134,7 @@ def test_core_apis_agent_memory() -> None:
     res_over = write_memory(agent_mem, "k1", "value1_updated", {"tagA", "tagB"}, policy, context, global_ledger=ledger)
     assert res_over.success is True
     assert len(agent_mem.residuals) == 1
+    assert isinstance(agent_mem.residuals[0].details, dict)
     assert agent_mem.residuals[0].details["overwritten_value"] == "value1"
     assert len(ledger.records) == 1
     assert ledger.records[0].error_type == "memory_overwrite_residual"
@@ -287,9 +288,10 @@ def test_integration_on_sao_promotion_hook() -> None:
 
     # Trigger a successful SAO promotion tick to verify auto promotion
     # Let's mock the execution of promotion to return "ascend"
-    engine_multi.mesh_governance.execute_sao_promotion = (
-        lambda a, b, **kwargs: ("ascend", 0.0, np.zeros(12))  # type: ignore
-    )
+    def mock_sao_promo(a, b, **kwargs):  # type: ignore
+        return ("ascend", 0.0, np.zeros(12))
+
+    engine_multi.mesh_governance.execute_sao_promotion = mock_sao_promo  # type: ignore[method-assign, assignment]
 
     # Run tick
     engine_multi.tick(task_value=0.5, excitation=np.ones(12) * 0.1)
@@ -307,8 +309,21 @@ def test_integration_on_sao_promotion_hook() -> None:
 
 def test_on_sao_promotion_edge_cases() -> None:
     # Test on_sao_promotion with missing mesh_memory, missing agent, etc.
+
+    class DummyAgent:
+        semantic_memory: AgentSemanticMemory | None
+
+        def __init__(self, agent_id: str) -> None:
+            self.agent_id = agent_id
+            self.semantic_memory = None
+
     class DummyEngine:
-        pass
+        agents: list[DummyAgent]
+        mesh_memory: MeshSemanticMemory | None
+
+        def __init__(self) -> None:
+            self.agents = []
+            self.mesh_memory = None
 
     engine = DummyEngine()
     assert on_sao_promotion("agent_1", "key", engine) is False
@@ -319,10 +334,6 @@ def test_on_sao_promotion_edge_cases() -> None:
 
     # Test integration.py: 103, 114-115, 122 coverage
     # Add dummy target agent with no semantic_memory
-    class DummyAgent:
-        def __init__(self, agent_id: str) -> None:
-            self.agent_id = agent_id
-
     engine.agents = [DummyAgent("agent_1")]  # DummyAgent has no semantic_memory, covers 103
     assert on_sao_promotion("agent_1", "key", engine) is False
 

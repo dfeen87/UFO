@@ -5,7 +5,10 @@ Multi-Agent Governed Simulation Engine for the U.F.O. architecture.
 from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass, field
-from typing import Dict, Any, List
+from typing import Dict, Any, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from radial_membrane_ai.semantic_memory.core import MeshSemanticMemory
 
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.multi_agent.coupling import InterAgentVChannel, GlobalHolisticGovernor
@@ -34,6 +37,9 @@ class MultiAgentEngine:
     Coordinates N agents, typed inter-agent channels, Holistic Governor fields,
     mesh coherence, shard isolation/reintegration, and paired-state SAO promotions.
     """
+
+    run_result: dict[str, Any] | MultiAgentRunResult | None = None
+    mesh_memory: MeshSemanticMemory
 
     def __init__(
         self,
