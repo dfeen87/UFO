@@ -3,8 +3,7 @@ Cross-Cluster V-Channels and Policy Envelopes for multi-cluster UFO communicatio
 """
 
 from __future__ import annotations
-import numpy as np
-from typing import List, Set, Dict, Any, Optional
+from typing import List, Set, Optional
 
 from radial_membrane_ai.multi_agent.cluster import UFOCluster
 from radial_membrane_ai.shard import ShardState

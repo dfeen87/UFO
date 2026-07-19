@@ -5,7 +5,7 @@ Hierarchical Governance and Hierarchical Symmetric Ascension Operator (SAO) prom
 from __future__ import annotations
 import time
 import numpy as np
-from typing import List, Dict, Any, Optional, Tuple, Set
+from typing import List, Optional
 
 from radial_membrane_ai.multi_agent.cluster import UFOCluster
 from radial_membrane_ai.multi_agent.agent import UFOAgent
@@ -179,25 +179,39 @@ class HierarchicalSAOPromotion:
 
         # Admissibility Check: Reject if cluster compliance or trust is too low
         if avg_compliance < 0.4 or avg_trust < 0.4:
+            rec_id = f"cluster_promote_rejected_{cluster.cluster_id}_{int(time.time() * 1000)}"
             self.ledger.log_failure(
-                record_id=f"cluster_promote_rejected_{cluster.cluster_id}_{int(time.time() * 1000)}",
+                record_id=rec_id,
                 error_type="cluster_promotion_rejected",
                 shard_id=cluster.cluster_id,
                 severity="high",
-                details={"key": key, "coherence": cluster_coherence, "compliance": avg_compliance}
+                details={
+                    "key": key,
+                    "coherence": cluster_coherence,
+                    "compliance": avg_compliance
+                }
             )
-            return PromotionResult(success=False, record=None, error_message="Cluster metrics violate global admissibility.")
+            return PromotionResult(
+                success=False,
+                record=None,
+                error_message="Cluster metrics violate global admissibility."
+            )
 
         # Shared global store overwrite prevention
         prev_residual: Optional[ResidualRecord] = None
         if key in global_mesh_memory.global_store:
             prev_shared = global_mesh_memory.global_store[key]
+            res_id = f"residual_global_mesh_{cluster.cluster_id}_{key}_{int(time.time() * 1000)}"
             prev_residual = ResidualRecord(
-                record_id=f"residual_global_mesh_{cluster.cluster_id}_{key}_{int(time.time() * 1000)}",
+                record_id=res_id,
                 error_type="global_mesh_memory_overwrite_residual",
                 shard_id=cluster.cluster_id,
                 severity="medium",
-                details={"key": key, "overwritten_value": prev_shared.value, "origin_cluster": prev_shared.origin_agent_id},
+                details={
+                    "key": key,
+                    "overwritten_value": prev_shared.value,
+                    "origin_cluster": prev_shared.origin_agent_id
+                },
                 timestamp=time.time(),
                 escalation_tier="none"
             )
@@ -214,11 +228,16 @@ class HierarchicalSAOPromotion:
         # Compute Ascension Residual p_SAO^cluster
         p_sao = max(0.0, 1.0 - cluster_coherence)
 
+        created_at_val = (
+            global_mesh_memory.global_store[key].created_at
+            if key in global_mesh_memory.global_store
+            else time.time()
+        )
         promoted_rec = MemoryRecord(
             key=key,
             value=cluster_rec.value,
             tags=cluster_rec.tags,
-            created_at=global_mesh_memory.global_store[key].created_at if key in global_mesh_memory.global_store else time.time(),
+            created_at=created_at_val,
             updated_at=time.time(),
             origin_agent_id=cluster.cluster_id,
             policy_envelope=cluster_rec.policy_envelope,

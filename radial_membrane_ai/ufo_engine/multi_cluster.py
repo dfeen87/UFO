@@ -194,7 +194,10 @@ class MultiClusterEngine:
         self.h_global_history.append(h_global)
 
         # Compute global mesh coherence C_global(t)
-        c_global = float(np.mean([c.compute_cluster_coherence() for c in self.clusters.values()])) if self.clusters else 1.0
+        if self.clusters:
+            c_global = float(np.mean([c.compute_cluster_coherence() for c in self.clusters.values()]))
+        else:
+            c_global = 1.0
         self.c_global_history.append(c_global)
 
         # 7. Global stability band classification and interventions

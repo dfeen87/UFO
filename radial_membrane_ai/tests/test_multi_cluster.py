@@ -15,12 +15,11 @@ from radial_membrane_ai.multi_agent.hierarchical_governance import (
 )
 from radial_membrane_ai.ufo_engine.multi_cluster import MultiClusterEngine
 from radial_membrane_ai.semantic_memory.core import (
-    AgentSemanticMemory,
     MeshSemanticMemory,
     MemoryRecord,
     write_memory
 )
-from radial_membrane_ai.semantic_memory.policy import MemoryPolicy, AdmissibilityContext, PolicyContext
+from radial_membrane_ai.semantic_memory.policy import MemoryPolicy, AdmissibilityContext
 from radial_membrane_ai.shard import ShardState
 
 
@@ -258,8 +257,8 @@ def test_multi_cluster_engine_simulation_and_stability_bands() -> None:
     engine = MultiClusterEngine()
 
     # Create clusters
-    c_analytical = engine.create_cluster(cluster_id="c_analytical", role="analytical")
-    c_creative = engine.create_cluster(cluster_id="c_creative", role="creative")
+    _ = engine.create_cluster(cluster_id="c_analytical", role="analytical")
+    _ = engine.create_cluster(cluster_id="c_creative", role="creative")
 
     # Create agents and assign them
     a1 = UFOAgent("a1")
@@ -385,8 +384,6 @@ def test_coverage_gap_filler() -> None:
     sao = HierarchicalSAOPromotion()
     assert len(cluster_empty.agents) == 0
     # Add dummy record to cluster_empty.semantic_memory.global_store
-    from radial_membrane_ai.semantic_memory.core import MemoryRecord
-    from radial_membrane_ai.semantic_memory.policy import MemoryPolicy
     import time
     rec = MemoryRecord(
         key="key", value="val", tags=set(), created_at=time.time(),
@@ -410,12 +407,12 @@ def test_coverage_gap_filler() -> None:
 
     # Engine tick with quarantined agent
     engine_q = MultiClusterEngine()
-    c_q = engine_q.create_cluster("c_q")
+    _ = engine_q.create_cluster("c_q")
     a_q = UFOAgent("a_q")
     a_q.shard.state = ShardState.QUARANTINED
     engine_q.assign_agent_to_cluster(a_q, "c_q")
     engine_q.global_mesh_memory.curvature_state.tension = 2.0
-    band_q = engine_q.tick(0.8, excite)
+    _ = engine_q.tick(0.8, excite)
     # Re-verification that high global tension warning is logged
     tension_logs = [log for log in engine_q.interventions if "Global Shared Memory Tension Warning" in log]
     assert len(tension_logs) > 0
