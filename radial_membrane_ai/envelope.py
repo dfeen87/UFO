@@ -15,13 +15,11 @@ Implements the Brim outer control architecture including:
 from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Dict, Any, List, Tuple
-import numpy as np
-
 if TYPE_CHECKING:
     from radial_membrane_ai.membrane import RadialMembrane
     from radial_membrane_ai.boundary import BoundaryGeometry
 
-from radial_membrane_ai.projection import closure_ratio, project_to_admissible, residual_deformation
+from radial_membrane_ai.projection import project_to_admissible, residual_deformation
 from radial_membrane_ai.admissibility import angular_projections, dynamic_capacity_boundary
 
 

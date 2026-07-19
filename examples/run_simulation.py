@@ -51,7 +51,7 @@ def main() -> None:
         np.ones(12) * 3.5,  # Extreme excitation (Red)
         np.ones(12) * 5.0,  # Extreme excitation (Red)
         np.ones(12) * 0.1,  # Dissipation / Recovery phase
-        np.ones(12) * 0.05, # Dissipation
+        np.ones(12) * 0.05,  # Dissipation
         np.ones(12) * 0.01  # Fully dissipated / Recovered
     ]
 
@@ -94,12 +94,12 @@ def main() -> None:
     # Let's run steps with escalating compliance degradation and cost load
     multi_task_values = [0.9, 0.9, 0.9, 0.8, 0.8, 0.5]
     multi_excitations = [
-        np.ones(12) * 0.5, # Nominal (Green)
-        np.ones(12) * 0.5, # Nominal (Green)
-        np.ones(12) * 1.5, # Mid excitation (Yellow)
-        np.ones(12) * 3.0, # High tension (Red)
-        np.ones(12) * 4.5, # High tension (Red)
-        np.ones(12) * 0.1, # Safe mode recovery
+        np.ones(12) * 0.5,  # Nominal (Green)
+        np.ones(12) * 0.5,  # Nominal (Green)
+        np.ones(12) * 1.5,  # Mid excitation (Yellow)
+        np.ones(12) * 3.0,  # High tension (Red)
+        np.ones(12) * 4.5,  # High tension (Red)
+        np.ones(12) * 0.1,  # Safe mode recovery
     ]
 
     # Dynamically inject bad policy/compliance & high latencies on step 3 to trigger red band and quarantine

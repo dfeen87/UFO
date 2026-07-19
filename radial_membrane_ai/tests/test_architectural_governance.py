@@ -5,19 +5,16 @@ and typed V-Channel exception paths.
 """
 
 from __future__ import annotations
-import math
 import pytest
 import numpy as np
 
 from radial_membrane_ai.shard import FederatedShard, ShardState
-from radial_membrane_ai.residuals import ResidualLedger, ResidualRecord
-from radial_membrane_ai.routing import FederatedRoutingChannel
-from radial_membrane_ai.mesh import FederatedShardMesh, MeshGovernor
+from radial_membrane_ai.residuals import ResidualLedger
+from radial_membrane_ai.mesh import FederatedShardMesh
 from radial_membrane_ai.holistic import HolisticGovernorField
 from radial_membrane_ai.saopromotion import SAOPromotor
 from radial_membrane_ai.membrane import RadialMembrane
 from radial_membrane_ai.boundary import BoundaryGeometry
-from radial_membrane_ai.envelope import BrimEnvelope
 
 
 def test_quarantined_shard_execution() -> None:
@@ -113,7 +110,8 @@ def test_ledger_update_correctness() -> None:
     """
     Test 3: Ledger update correctness
     Trigger failure modes: stale attestation, invalid output, policy conflict, shard churn, SAO residual mismatch.
-    Assert ledger entry created, correct failure type, correct timestamp, correct residual payload, and correct governor escalation.
+    Assert ledger entry created, correct failure type, correct timestamp,
+    correct residual payload, and correct governor escalation.
     """
     ledger = ResidualLedger()
 

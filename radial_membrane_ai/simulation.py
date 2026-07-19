@@ -11,15 +11,15 @@ from __future__ import annotations
 import math
 import numpy as np
 
-from radial_membrane_ai.membrane import RadialMembrane, BehavioralString
-from radial_membrane_ai.channels import update_radius_along_channel, channel_coherence
-from radial_membrane_ai.governor import Governor, GovernorConfig
+from radial_membrane_ai.membrane import RadialMembrane
+from radial_membrane_ai.channels import update_radius_along_channel
+from radial_membrane_ai.governor import Governor
 from radial_membrane_ai.boundary import BoundaryGeometry
 from radial_membrane_ai.cost import RuntimeCostVector, reduce_avoidable_cost
 
 # Pythagorean layer imports
 from radial_membrane_ai.projection import closure_ratio, project_to_admissible, residual_deformation
-from radial_membrane_ai.admissibility import angular_decomposition, local_closure_test, KernelEvolution
+from radial_membrane_ai.admissibility import angular_decomposition, KernelEvolution
 from radial_membrane_ai.coherence import closure_coherence
 from radial_membrane_ai.facet import FacetVector, TensionAutomaton, TensionState
 from radial_membrane_ai.holistic import compute_holistic_field, HolisticGovernorField
@@ -142,7 +142,11 @@ class RainbowSimulation:
         self._update_pythagorean_facets(task_value=0.5, excitation=np.ones(12, dtype=np.float64))
         self._record_state(samples=64)
 
-    def _update_pythagorean_facets(self, task_value: float, excitation: np.ndarray) -> tuple[list[FacetVector], np.ndarray]:
+    def _update_pythagorean_facets(
+        self,
+        task_value: float,
+        excitation: np.ndarray
+    ) -> tuple[list[FacetVector], np.ndarray]:
         """
         Performs the complete Pythagorean projection pipeline:
         1. Decomposes membrane state into orthogonal legs (a, b).
@@ -274,7 +278,8 @@ class RainbowSimulation:
                     orig_radius = source.radius
                     source.radius = old_radii[s_idx]
 
-                    # Compute propagated radius along channel (using updated state-aware routing weights inside channels.py)
+                    # Compute propagated radius along channel
+                    # (using updated state-aware routing weights inside channels.py)
                     r_prop = update_radius_along_channel(
                         source=source,
                         target=target,

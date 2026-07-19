@@ -30,6 +30,7 @@ from radial_membrane_ai.admissibility import angular_projections, dynamic_capaci
 
 import numpy as np
 
+
 class SAOPromotor:
     """
     Symmetric Ascension Operator (SAO) executing layer promotions.

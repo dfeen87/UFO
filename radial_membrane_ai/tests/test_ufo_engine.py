@@ -4,11 +4,8 @@ Achieving 100% line coverage.
 """
 
 from __future__ import annotations
-import os
 import numpy as np
-import pytest
 
-from radial_membrane_ai.membrane import RadialMembrane
 from radial_membrane_ai.ufo_engine import (
     CostWeights,
     StabilityBandConfig,
@@ -156,7 +153,7 @@ def test_multi_agent_quarantine_and_fallback() -> None:
     )
 
     # 1. Force red band and quarantine agent_2
-    agent_2.shard.trust_score = 0.1 # trigger quarantine in run_mesh_audit
+    agent_2.shard.trust_score = 0.1  # trigger quarantine in run_mesh_audit
     agent_2.residual_history.append(5.0)
 
     # Mock red band coherence

@@ -3,16 +3,14 @@ Multi-Agent Governed Simulation Engine for the U.F.O. architecture.
 """
 
 from __future__ import annotations
-import math
 import numpy as np
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Literal, Tuple
+from typing import Dict, Any, List
 
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.multi_agent.coupling import InterAgentVChannel, GlobalHolisticGovernor
 from radial_membrane_ai.multi_agent.governance import MultiAgentMeshGovernance
 from radial_membrane_ai.shard import ShardState
-from radial_membrane_ai.residuals import ResidualLedger
 from radial_membrane_ai.ufo_engine.config import CostWeights, StabilityBandConfig
 
 
@@ -86,6 +84,12 @@ class MultiAgentEngine:
         self.sao_events: List[Dict[str, Any]] = []
         self.residual_history: List[float] = []
 
+        # Bind Policy-Bound Semantic Memory Layer
+        from radial_membrane_ai.semantic_memory.integration import bind_to_mesh, bind_to_agent
+        bind_to_mesh(self)
+        for agent in self.agents:
+            bind_to_agent(agent)
+
     def _init_coupling_channels(self) -> None:
         """
         Sets up type-W (workload), type-T (tension) and type-R (residuals) channels between agents.
@@ -120,6 +124,10 @@ class MultiAgentEngine:
         # Ensure correct array format
         excitation = np.array(excitation, dtype=np.float64)
 
+        # Call Semantic Memory on_tick_start hook
+        from radial_membrane_ai.semantic_memory.integration import on_tick_start, on_tick_end, on_sao_promotion
+        on_tick_start(self)
+
         # 1. Update individual agents locally (skipping quarantined)
         for agent in self.agents:
             if agent.shard.state == ShardState.QUARANTINED:
@@ -151,7 +159,10 @@ class MultiAgentEngine:
             self.interventions.append("Green Band (Nominal): Stable multi-agent routing operating optimally.")
         elif c_mesh >= self.band_config.c_red:
             band = "yellow"
-            self.interventions.append(f"Yellow Band (Soft Intervention): Coherence={c_mesh:.4f}. Damping activations and rebalancing routes.")
+            self.interventions.append(
+                f"Yellow Band (Soft Intervention): Coherence={c_mesh:.4f}. "
+                "Damping activations and rebalancing routes."
+            )
             # Soft interventions: damp active strings slightly on all non-quarantined agents
             for agent in self.agents:
                 if agent.shard.state != ShardState.QUARANTINED:
@@ -160,7 +171,10 @@ class MultiAgentEngine:
                         s.radius *= 0.95
         else:
             band = "red"
-            self.interventions.append(f"Red Band (Hard Intervention): Coherence={c_mesh:.4f}. Throttling, shard quarantine, and fallback checks.")
+            self.interventions.append(
+                f"Red Band (Hard Intervention): Coherence={c_mesh:.4f}. "
+                "Throttling, shard quarantine, and fallback checks."
+            )
             # Hard interventions: throttle activations heavily
             for agent in self.agents:
                 if agent.shard.state != ShardState.QUARANTINED:
@@ -202,8 +216,20 @@ class MultiAgentEngine:
                     p_sao_sum += p_sao
                     promo_count += 1
 
+                    # Call on_sao_promotion when successful promotion occurs
+                    if verdict == "ascend":
+                        if hasattr(agent_l, "semantic_memory") and agent_l.semantic_memory is not None:
+                            for key in list(agent_l.semantic_memory.local_store.keys()):
+                                on_sao_promotion(agent_l.agent_id, key, self)
+                        if hasattr(agent_r, "semantic_memory") and agent_r.semantic_memory is not None:
+                            for key in list(agent_r.semantic_memory.local_store.keys()):
+                                on_sao_promotion(agent_r.agent_id, key, self)
+
         avg_p_sao = (p_sao_sum / promo_count) if promo_count > 0 else 0.0
         self.residual_history.append(avg_p_sao)
+
+        # Call Semantic Memory on_tick_end hook
+        on_tick_end(self)
 
         return band
 

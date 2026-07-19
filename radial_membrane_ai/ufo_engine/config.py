@@ -3,8 +3,8 @@ Configuration, presets, and weights for the U.F.O. Simulation Engine.
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import Dict, Any, Literal
+from dataclasses import dataclass
+from typing import Dict, Literal
 
 
 @dataclass(frozen=True)

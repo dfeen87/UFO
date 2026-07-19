@@ -5,7 +5,7 @@ Adds serialization and file export capability to the ResidualLedger.
 from __future__ import annotations
 import os
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 from radial_membrane_ai.residuals import ResidualLedger
 

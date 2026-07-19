@@ -6,11 +6,11 @@ from __future__ import annotations
 import math
 import numpy as np
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Literal
+from typing import Dict, Any, List
 
 from radial_membrane_ai.membrane import RadialMembrane
 from radial_membrane_ai.boundary import BoundaryGeometry
-from radial_membrane_ai.governor import Governor, GovernorConfig
+from radial_membrane_ai.governor import Governor
 from radial_membrane_ai.envelope import BrimEnvelope
 from radial_membrane_ai.saopromotion import SAOPromotor
 from radial_membrane_ai.cost import RuntimeCostVector, reduce_avoidable_cost
@@ -90,6 +90,12 @@ class SingleAgentEngine:
         self.activation_history: List[np.ndarray] = []
         self.radius_history: List[np.ndarray] = []
         self.residual_history: List[float] = []
+
+        # Bind Policy-Bound Semantic Memory Layer
+        from radial_membrane_ai.semantic_memory.integration import bind_to_mesh
+        from radial_membrane_ai.semantic_memory.core import AgentSemanticMemory
+        bind_to_mesh(self)
+        self.semantic_memory = AgentSemanticMemory(agent_id="single_agent")
 
         # Record initial state
         self._record_state()
@@ -177,6 +183,10 @@ class SingleAgentEngine:
         # Ensure correct array format
         excitation = np.array(excitation, dtype=np.float64)
 
+        # Call Semantic Memory on_tick_start hook
+        from radial_membrane_ai.semantic_memory.integration import on_tick_start, on_tick_end
+        on_tick_start(self)
+
         # 1. Update activations via Governor
         self.governor.update_membrane(
             membrane=self.membrane,
@@ -237,14 +247,19 @@ class SingleAgentEngine:
         if band == "green":
             self.interventions.append("Green Band (Nominal): No intervention required.")
         elif band == "yellow":
-            self.interventions.append("Yellow Band (Soft Intervention): Damping high-cost strings and tightening envelope.")
+            self.interventions.append(
+                "Yellow Band (Soft Intervention): Damping high-cost strings and tightening envelope."
+            )
             # Damp activations on high-cost strings (> task_value)
             for s in self.membrane.strings:
                 if s.cost > task_value:
                     s.activation *= 0.85
                     s.radius *= 0.95
-        else: # "red"
-            self.interventions.append("Red Band (Hard Intervention): Throttling activations, aggressive suppression of non-essentials.")
+        else:  # "red"
+            self.interventions.append(
+                "Red Band (Hard Intervention): Throttling activations, "
+                "aggressive suppression of non-essentials."
+            )
             # Aggressive suppression of all strings, especially non-analytical/non-contextual ones
             for s in self.membrane.strings:
                 s.activation *= 0.5
@@ -312,6 +327,9 @@ class SingleAgentEngine:
         # 10. Coh & State tracking
         self.coherence_history.append(self.compute_local_coherence())
         self._record_state()
+
+        # Call Semantic Memory on_tick_end hook
+        on_tick_end(self)
 
         return band
 

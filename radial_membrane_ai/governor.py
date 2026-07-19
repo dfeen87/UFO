@@ -7,7 +7,7 @@ and Lyapunov-style stability control described in Feeney (2025) & (2026).
 
 from __future__ import annotations
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import numpy as np
 
 from radial_membrane_ai.membrane import BehavioralString, RadialMembrane

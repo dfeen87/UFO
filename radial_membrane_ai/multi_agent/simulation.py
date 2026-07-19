@@ -4,7 +4,7 @@ Multi-Agent Simulation environment exploring coupled membranes and mesh governan
 
 from __future__ import annotations
 import numpy as np
-from typing import Dict, Any, List
+from typing import Dict, List
 
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.multi_agent.coupling import InterAgentVChannel, GlobalHolisticGovernor
@@ -140,7 +140,10 @@ class MultiAgentSimulation:
                     s.activation *= 0.85
         else:
             # Red band: Hard interventions (heavy throttling, quarantine, fallback)
-            self.intervention_log.append(f"Hard Intervention (Red Band): C_mesh={c_mesh:.4f}. Throttling, Quarantining, and Fallback.")
+            self.intervention_log.append(
+                f"Hard Intervention (Red Band): C_mesh={c_mesh:.4f}. "
+                "Throttling, Quarantining, and Fallback."
+            )
             # Throttle activations heavily
             for agent in self.agents:
                 for s in agent.membrane.strings:
@@ -163,7 +166,9 @@ class MultiAgentSimulation:
                 if agent_l.shard.state != ShardState.QUARANTINED and agent_r.shard.state != ShardState.QUARANTINED:
                     # Shared capacity limit is dynamically modulated by mesh coherence
                     limit = max(0.02, 0.5 * c_mesh)
-                    verdict, p_sao, _ = self.mesh_governance.execute_sao_promotion(agent_l, agent_r, shared_capacity_limit=limit)
+                    verdict, p_sao, _ = self.mesh_governance.execute_sao_promotion(
+                        agent_l, agent_r, shared_capacity_limit=limit
+                    )
                     if verdict == "block":
                         self.intervention_log.append(
                             f"SAO Promotion Blocked between {agent_l.agent_id} and {agent_r.agent_id}. "
