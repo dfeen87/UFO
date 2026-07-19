@@ -42,6 +42,9 @@ The saucer‑like appearance is therefore not the origin of the name, nor a refe
 - [Project Rainbow (Toy Simulation)](#project-rainbow-toy-simulation)
 - [Status & Validation](#status--validation)
 - [Citing This Work](#citing-this-work)
+- [A Note of Gratitude](#a-note-of-gratitude)
+- [Acknowledgments](#acknowledgments)
+- [Closing Blessing](#closing-blessing)
 
 ---
 
@@ -238,3 +241,32 @@ artifact. https://doi.org/10.5281/zenodo.21401979
 ORCID: [0009-0003-1350-4160](https://orcid.org/0009-0003-1350-4160)
 
 Full research artifact & version history: [Zenodo DOI](https://doi.org/10.5281/zenodo.21401979)
+
+---
+
+## A Note of Gratitude
+
+I want to express my sincere appreciation for the Microsoft Senior Research Application review process. The U.F.O. (User‑Formed Optimization) architecture began as my research program submitted for consideration, and the thoughtful evaluation, patience, and rigor shown throughout that process meant a great deal to me.
+
+This repository represents the full evolution of that work — a governed cognitive‑simulation stack built from first principles, shaped by months of architectural refinement, stability analysis, and multi‑agent design. I’m deeply thankful for the opportunity to have shared this direction with Microsoft’s research culture, and for the inspiration it provided as U.F.O. grew into a complete open‑source system.
+
+Thank you to everyone who supported this journey and encouraged the development of this architecture.
+
+--- 
+
+## Acknowledgments
+
+I would like to express my sincere appreciation to the teams behind **Microsoft Copilot** and **Google Jules**. Both systems provided meaningful assistance throughout the development and refinement of this repository. Their tooling helped accelerate drafting, structuring, linting, and iterative improvement of the U.F.O. architecture, enabling clearer organization, stronger modularity, and more reliable integration across the governed simulation stack. Thank you, sincerely.
+
+All architectural decisions, scientific interpretations, and final implementations remain my own. The support from these AI systems was used strictly for productivity, clarity, and refinement, and I am grateful for the role they played in helping shape this project into a polished, open‑source research artifact.
+
+--- 
+
+## Closing Blessing
+
+**Philippians 4:13**  
+*I can do all things through Christ who strengthens me.*
+
+May this work serve as a reminder that every breakthrough, every insight, and every step forward is possible through His strength and guidance.
+
+> In God We Trust.
