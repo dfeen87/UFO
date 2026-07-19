@@ -325,11 +325,9 @@ All architectural decisions, scientific interpretations, and final implementatio
 
 ## Closing Blessing
 
-**Philippians 4:13**  
-*I can do all things through Christ who strengthens me.*
+**Philippians 4:13**: I can do all things through Christ who strengthens me.
 
-**Luke 1:37**  
-For with God nothing shall be impossible.
+**Luke 1:37**: For with God nothing shall be impossible.
 
 May this work serve as a reminder that every breakthrough, every insight, and every step forward is possible through His strength and guidance.
 
