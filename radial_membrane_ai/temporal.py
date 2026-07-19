@@ -7,13 +7,9 @@ and drift/decay/recovery dynamics.
 """
 
 from __future__ import annotations
-import math
 from collections import deque
-from typing import Dict, Any, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, List, Tuple
 import numpy as np
-
-if TYPE_CHECKING:
-    from radial_membrane_ai.membrane import RadialMembrane
 
 
 class TemporalMembraneState:

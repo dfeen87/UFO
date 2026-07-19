@@ -341,13 +341,14 @@ class SingleAgentEngine:
         if t_state is not None:
             # Gather metrics
             max_curv = float(max([self.boundary.curvature(s.theta) for s in self.membrane.strings]))
-            max_tens = float(max([s.tension for s in self.membrane.strings])) if any(s.tension > 0 for s in self.membrane.strings) else 0.0
+            has_tens = any(s.tension > 0 for s in self.membrane.strings)
+            max_tens = float(max([s.tension for s in self.membrane.strings])) if has_tens else 0.0
 
             # Compute max closure ratio
             closure_ratios = []
             for s in self.membrane.strings:
                 a_theta, b_theta = angular_decomposition(self.membrane, s.theta, samples=32)
-                # Use temporal dynamic capacity boundary (with geometric hysteresis + time-weighted tension)
+                # Use temporal capacity (geometric hysteresis + time-weighted tension)
                 from radial_membrane_ai.admissibility import dynamic_capacity_boundary_temporal
                 c_theta = dynamic_capacity_boundary_temporal(self.boundary, s.theta, self.membrane)
                 closure_ratios.append(closure_ratio(a_theta, b_theta, c_theta))
@@ -377,7 +378,7 @@ class SingleAgentEngine:
 
             # Integrate accumulated tension back into Lyapunov stability bands via Effective Energy correction
             # E_eff = E_Lyapunov + lambda * T_acc (lambda = 0.5)
-            # Adjust the recorded energy value in v_history (only after short horizon of 5 ticks to avoid startup cold start alerts)
+            # Adjust energy in v_history (only after >= 5 ticks to avoid startup cold start alerts)
             if len(t_state.tension_history) >= 5:
                 eff_energy = energy + 0.5 * t_state.accumulated_tension
                 self.v_history[-1] = eff_energy

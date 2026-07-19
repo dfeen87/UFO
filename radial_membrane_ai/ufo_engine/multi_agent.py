@@ -147,7 +147,7 @@ class MultiAgentEngine:
 
             agent.step(task_value, excitation)
 
-            # Apply Hysteresis Inertial Damping on resulting activations: A_new = (1 - alpha) * A_instant + alpha * A_prev
+            # Apply Hysteresis Inertial Damping on resulting activations: A_new = (1-alpha)*A_instant + alpha*A_prev
             if t_state is not None and len(agent.activation_history) > 0:
                 prior_act = agent.activation_history[-1]
                 # Previous tension acts as damping on activation updates
@@ -158,7 +158,8 @@ class MultiAgentEngine:
             # Update Agent-level Temporal Membrane State
             if t_state is not None:
                 max_curv = float(max([agent.boundary.curvature(s.theta) for s in agent.membrane.strings]))
-                max_tens = float(max([s.tension for s in agent.membrane.strings])) if any(s.tension > 0 for s in agent.membrane.strings) else 0.0
+                has_tension = any(s.tension > 0 for s in agent.membrane.strings)
+                max_tens = float(max([s.tension for s in agent.membrane.strings])) if has_tension else 0.0
 
                 closure_ratios = []
                 for s in agent.membrane.strings:
@@ -211,19 +212,27 @@ class MultiAgentEngine:
 
         # Update global temporal state of the engine
         if self.temporal_state is not None and active_agents:
-            agent_t_states = [a.membrane.temporal_state for a in active_agents if getattr(a.membrane, "temporal_state", None) is not None]
+            agent_t_states = [
+                a.membrane.temporal_state for a in active_agents
+                if getattr(a.membrane, "temporal_state", None) is not None
+            ]
             if agent_t_states:
                 mean_tension = float(np.mean([ts.accumulated_tension for ts in agent_t_states]))
                 max_tension = float(np.max([ts.accumulated_tension for ts in agent_t_states]))
                 mean_curv = float(np.mean([ts.prior_curvature for ts in agent_t_states]))
-                mean_cl = float(np.mean([ts.admissibility_history[-1] for ts in agent_t_states if ts.admissibility_history]))
+                mean_cl = float(np.mean([
+                    ts.admissibility_history[-1] for ts in agent_t_states
+                    if ts.admissibility_history
+                ]))
 
                 # Global mesh/cluster temporal updates
                 self.temporal_state.update_tick_history(mean_curv, mean_tension, mean_cl)
                 self.temporal_state.accumulated_tension = mean_tension
 
                 if max_tension > 2.0:
-                    self.interventions.append(f"Global Temporal Tension Warning: max={max_tension:.2f}, mean={mean_tension:.2f}")
+                    self.interventions.append(
+                        f"Global Temporal Tension Warning: max={max_tension:.2f}, mean={mean_tension:.2f}"
+                    )
 
                 # Scale dynamic coherence based on global temporal tension
                 c_mesh_eff = max(0.0, min(1.0, c_mesh - 0.25 * self.temporal_state.accumulated_tension))

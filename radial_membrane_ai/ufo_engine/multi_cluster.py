@@ -185,7 +185,7 @@ class MultiClusterEngine:
 
                 agent.step(task_value, excitation)
 
-                # Apply Hysteresis Inertial Damping on resulting activations: A_new = (1 - alpha) * A_instant + alpha * A_prev
+                # Apply Hysteresis Inertial Damping on resulting activations: A_new = (1-alpha)*A_instant + alpha*A_prev
                 if t_state is not None and len(agent.activation_history) > 0:
                     prior_act = agent.activation_history[-1]
                     # Previous tension acts as damping on activation updates
@@ -196,7 +196,8 @@ class MultiClusterEngine:
                 # Update Agent-level Temporal Membrane State
                 if t_state is not None:
                     max_curv = float(max([agent.boundary.curvature(s.theta) for s in agent.membrane.strings]))
-                    max_tens = float(max([s.tension for s in agent.membrane.strings])) if any(s.tension > 0 for s in agent.membrane.strings) else 0.0
+                    has_tension = any(s.tension > 0 for s in agent.membrane.strings)
+                    max_tens = float(max([s.tension for s in agent.membrane.strings])) if has_tension else 0.0
 
                     closure_ratios = []
                     for s in agent.membrane.strings:
@@ -242,7 +243,10 @@ class MultiClusterEngine:
             if c_t_state is not None:
                 active_agents = [a for a in cluster.agents if a.shard.state != ShardState.QUARANTINED]
                 if active_agents:
-                    agent_t_states = [a.membrane.temporal_state for a in active_agents if getattr(a.membrane, "temporal_state", None) is not None]
+                    agent_t_states = [
+                        a.membrane.temporal_state for a in active_agents
+                        if getattr(a.membrane, "temporal_state", None) is not None
+                    ]
                     if agent_t_states:
                         # Cluster tension = mean of agent tensions + max as a warning signal
                         mean_t = float(np.mean([ts.accumulated_tension for ts in agent_t_states]))
@@ -250,7 +254,9 @@ class MultiClusterEngine:
                         cluster_tension = mean_t + 0.1 * max_t
 
                         # Cluster curvature drift = mean of agent curvature deviations
-                        cluster_curv_drift = float(np.mean([cluster.boundary.curvature(s.theta) for s in cluster.membrane.strings]))
+                        cluster_curv_drift = float(np.mean([
+                            cluster.boundary.curvature(s.theta) for s in cluster.membrane.strings
+                        ]))
 
                         # Cluster average activation as approximation of closure indication
                         cluster_cl = float(np.mean([s.activation for s in cluster.membrane.strings]))
@@ -286,17 +292,21 @@ class MultiClusterEngine:
 
             global_tension = float(np.mean(cluster_tensions)) if cluster_tensions else 0.0
             global_warning = float(np.max(cluster_tensions)) if cluster_tensions else 0.0
-            global_curv = float(np.mean([
+
+            valid_curvs = [
                 c.membrane.temporal_state.prior_curvature
                 for c in self.clusters.values()
                 if getattr(c.membrane, "temporal_state", None) is not None
-            ])) if self.clusters else 0.0
+            ]
+            global_curv = float(np.mean(valid_curvs)) if valid_curvs else 0.0
 
             self.temporal_state.update_tick_history(global_curv, global_tension, 0.0)
             self.temporal_state.accumulated_tension = global_tension
 
             if global_warning > 2.0:
-                self.interventions.append(f"Global Mesh Temporal Warning: max cluster tension={global_warning:.2f}")
+                self.interventions.append(
+                    f"Global Mesh Temporal Warning: max cluster tension={global_warning:.2f}"
+                )
 
             # Incorporate global temporal tension directly to escalate stability band checks
             avg_tension = avg_tension + 0.5 * self.temporal_state.accumulated_tension

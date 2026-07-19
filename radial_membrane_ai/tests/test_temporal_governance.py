@@ -7,7 +7,6 @@ time-weighted admissibility, drift/decay/recovery, and multi-cluster temporal co
 from __future__ import annotations
 import math
 import numpy as np
-import pytest
 
 from radial_membrane_ai.membrane import RadialMembrane
 from radial_membrane_ai.boundary import BoundaryGeometry
@@ -220,7 +219,7 @@ def test_multi_cluster_engine_coherence_aggregation() -> None:
     engine = MultiClusterEngine()
 
     c1 = engine.create_cluster("cluster_1", role="analytical")
-    c2 = engine.create_cluster("cluster_2", role="creative")
+    engine.create_cluster("cluster_2", role="creative")
 
     from radial_membrane_ai.multi_agent.agent import UFOAgent
     a1 = UFOAgent("agent_1_1")
