@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "radial_membrane_ai"
+version = "0.1.0"
+description = "A governed deformable radial membrane model for compute-aware AI personalization"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.12",
+    "sympy>=1.12",
+    "networkx>=3.2",
+    "pydantic>=2.7",
+    "typing_extensions>=4.12",
+    "matplotlib"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["radial_membrane_ai*"]

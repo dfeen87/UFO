@@ -137,12 +137,12 @@ def test_final_coverage_gaps() -> None:
     # Workload that maps to it
     workload = {"capacity": 0.1, "privacy": 0.1, "latency": 100.0, "cost": 5.0}
     # Force Type-W channel to select it
-    mesh_test.channels["Type-W"].route_workload = lambda w, s: shard_q
+    mesh_test.channels["Type-W"].route_workload = lambda w, s: shard_q  # type: ignore[method-assign, assignment]
     assert mesh_test.route_and_execute(workload) is False
 
     # Low trust shard execution rejection
     shard_lt = FederatedShard(shard_id="node_lt", state=ShardState.ACTIVE, trust_score=0.2)
-    mesh_test.channels["Type-W"].route_workload = lambda w, s: shard_lt
+    mesh_test.channels["Type-W"].route_workload = lambda w, s: shard_lt  # type: ignore[method-assign, assignment]
     assert mesh_test.route_and_execute(workload) is False
 
     # 8. routing.py invalid channel type
@@ -214,12 +214,20 @@ def test_final_coverage_gaps() -> None:
 
     # Excite to constrain
     sim_c = RainbowSimulation()
-    sim_c.brim_envelope.evaluate_envelope = lambda m, b: ("constrain", {"brim_energy": 0.02})
+
+    def mock_eval_constrain(m, b):  # type: ignore
+        return ("constrain", {"brim_energy": 0.02})
+
+    sim_c.brim_envelope.evaluate_envelope = mock_eval_constrain  # type: ignore[method-assign, assignment]
     sim_c.run_step("planning")
     assert "constrain" in sim_c.brim_verdicts
 
     # Excite to re-project
     sim_rep = RainbowSimulation()
-    sim_rep.brim_envelope.evaluate_envelope = lambda m, b: ("re-project", {"brim_energy": 0.02})
+
+    def mock_eval_reproject(m, b):  # type: ignore
+        return ("re-project", {"brim_energy": 0.02})
+
+    sim_rep.brim_envelope.evaluate_envelope = mock_eval_reproject  # type: ignore[method-assign, assignment]
     sim_rep.run_step("planning")
     assert "re-project" in sim_rep.brim_verdicts

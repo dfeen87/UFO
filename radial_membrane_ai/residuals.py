@@ -7,16 +7,16 @@ invalid outputs, policy conflicts, shard churn, and aggregation failures.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union, Collection
 
 
 @dataclass
 class ResidualRecord:
-    record_id: str
-    error_type: str
+    record_id: Union[str, Collection[str]]
+    error_type: Union[str, Collection[str]]
     shard_id: str
-    severity: str
-    details: Dict[str, Any] = field(default_factory=dict)
+    severity: Union[str, Collection[str]]
+    details: Union[Dict[str, Any], object] = field(default_factory=dict)
     timestamp: float = 0.0
     escalation_tier: str = "none"
 
@@ -31,11 +31,11 @@ class ResidualLedger:
 
     def log_failure(
         self,
-        record_id: str,
-        error_type: str,
+        record_id: Union[str, Collection[str]],
+        error_type: Union[str, Collection[str]],
         shard_id: str,
-        severity: str,
-        details: Dict[str, Any],
+        severity: Union[str, Collection[str]],
+        details: Union[Dict[str, Any], object],
         timestamp: float = 0.0,
         escalation_tier: str = "none"
     ) -> None:
@@ -62,4 +62,12 @@ class ResidualLedger:
         Calculates an overall index of residual issues.
         """
         severity_weights = {"low": 1.0, "medium": 3.0, "high": 5.0, "critical": 10.0}
-        return sum(severity_weights.get(r.severity.lower(), 1.0) for r in self.records)
+        total = 0.0
+        for r in self.records:
+            sev = r.severity
+            if isinstance(sev, str):
+                total += severity_weights.get(sev.lower(), 1.0)
+            else:
+                for s in sev:
+                    total += severity_weights.get(s.lower(), 1.0)
+        return total
