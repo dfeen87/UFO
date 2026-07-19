@@ -31,7 +31,7 @@ The saucer‑like appearance is therefore not the origin of the name, nor a refe
 ## Table of Contents
 
 - [The Core Idea](#the-core-idea)
-- [Why Clone the Repository](why-clone-the-repository)
+- [Why Clone the Repository](#why-clone-the-repository)
 - [How to Implement the U.F.O. Architecture](#how-to-implement-the-u.f.o.-architecture)
 - [Architecture at a Glance](#architecture-at-a-glance)
 - [1. The Hull — Radial Identity Membrane](#1-the-hull--radial-identity-membrane)
