@@ -1,0 +1,6 @@
+numpy>=1.26
+scipy>=1.12
+sympy>=1.12
+networkx>=3.2
+pydantic>=2.7
+typing_extensions>=4.12
