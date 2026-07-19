@@ -18,7 +18,7 @@ This repository implements the full operator stack: membrane geometry, V‑Chann
 
 ---
 
-## Why "the U.F.O."?
+## Why "The U.F.O."?
 
 The name U.F.O. **(User‑Formed Optimization)** originates from the architecture’s core principle: durable behavioral adaptation should emerge only from coherent, admissible patterns formed by the user. The geometric representation came later as a natural way to visualize this principle.
 
