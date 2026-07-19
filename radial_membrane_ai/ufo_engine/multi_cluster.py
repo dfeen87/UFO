@@ -45,6 +45,9 @@ class MultiClusterEngine:
         self.global_band_history: List[str] = []
         self.interventions: List[str] = []
 
+        from radial_membrane_ai.temporal import TemporalMembraneState
+        self.temporal_state = TemporalMembraneState()
+
     def create_cluster(
         self,
         cluster_id: str,
@@ -169,12 +172,62 @@ class MultiClusterEngine:
                 if hasattr(agent, "semantic_memory") and agent.semantic_memory is not None:
                     agent.semantic_memory.curvature_state.decay(rate=0.05)
 
-        # 2. Local agent step execution
+        from radial_membrane_ai.admissibility import angular_decomposition, dynamic_capacity_boundary_temporal
+        from radial_membrane_ai.projection import closure_ratio
+
+        # 2. Local agent step execution with temporal dynamics
         for cluster in self.clusters.values():
             for agent in cluster.agents:
                 if agent.shard.state == ShardState.QUARANTINED:
                     continue
+
+                t_state = getattr(agent.membrane, "temporal_state", None)
+
                 agent.step(task_value, excitation)
+
+                # Apply Hysteresis Inertial Damping on resulting activations: A_new = (1-alpha)*A_instant + alpha*A_prev
+                if t_state is not None and len(agent.activation_history) > 0:
+                    prior_act = agent.activation_history[-1]
+                    # Previous tension acts as damping on activation updates
+                    alpha = 0.3 * t_state.get_normalized_tension_history()
+                    for idx, s in enumerate(agent.membrane.strings):
+                        s.activation = (1.0 - alpha) * s.activation + alpha * float(prior_act[idx])
+
+                # Update Agent-level Temporal Membrane State
+                if t_state is not None:
+                    max_curv = float(max([agent.boundary.curvature(s.theta) for s in agent.membrane.strings]))
+                    has_tension = any(s.tension > 0 for s in agent.membrane.strings)
+                    max_tens = float(max([s.tension for s in agent.membrane.strings])) if has_tension else 0.0
+
+                    closure_ratios = []
+                    for s in agent.membrane.strings:
+                        a_theta, b_theta = angular_decomposition(agent.membrane, s.theta, samples=32)
+                        c_theta = dynamic_capacity_boundary_temporal(agent.boundary, s.theta, agent.membrane)
+                        closure_ratios.append(closure_ratio(a_theta, b_theta, c_theta))
+                    max_cl = float(max(closure_ratios)) if closure_ratios else 0.0
+
+                    t_state.update_tick_history(max_curv, max_tens, max_cl)
+
+                    # Temporal Tension Accumulation
+                    v_load = float(sum(s.radius for s in agent.membrane.strings))
+                    c_tax = float(agent.shard.cost_factor * sum(s.cost for s in agent.membrane.strings))
+                    sao_intensity = 0.0  # Filled dynamically during promotion
+                    mem_writes = float(len(agent.semantic_memory.history)) if hasattr(agent, "semantic_memory") else 0.0
+                    t_state.update_tension_accumulation(
+                        v_channel_load=v_load,
+                        cost_taxonomy_contrib=c_tax,
+                        sao_promotions_intensity=sao_intensity,
+                        mem_writes_norm=min(1.0, mem_writes / 10.0)
+                    )
+
+                    # Drift, Decay, and Recovery Dynamics
+                    low_load = (v_load < 2.0)
+                    t_state.decay_tension(low_load=low_load)
+
+                    # Agent recovery rule: gradual relaxation based on local stability
+                    is_stable = (agent.shard.quality_score >= 0.7)
+                    recovery_mu = t_state.update_recovery_dynamics(is_green=is_stable, mu=0.1)
+                    t_state.apply_curvature_drift(agent.boundary, mu=recovery_mu)
 
         # 3. Local agent intra-cluster V-channel coupling
         for cluster_id, channels in self.cluster_coupling_channels.items():
@@ -184,6 +237,32 @@ class MultiClusterEngine:
         # 4. Cluster-level updates (aggregate membranes & update stability bands)
         for cluster in self.clusters.values():
             cluster.update_cluster_membrane()
+
+            # Update Cluster-level Temporal State
+            c_t_state = getattr(cluster.membrane, "temporal_state", None)
+            if c_t_state is not None:
+                active_agents = [a for a in cluster.agents if a.shard.state != ShardState.QUARANTINED]
+                if active_agents:
+                    agent_t_states = [
+                        a.membrane.temporal_state for a in active_agents
+                        if getattr(a.membrane, "temporal_state", None) is not None
+                    ]
+                    if agent_t_states:
+                        # Cluster tension = mean of agent tensions + max as a warning signal
+                        mean_t = float(np.mean([ts.accumulated_tension for ts in agent_t_states]))
+                        max_t = float(np.max([ts.accumulated_tension for ts in agent_t_states]))
+                        cluster_tension = mean_t + 0.1 * max_t
+
+                        # Cluster curvature drift = mean of agent curvature deviations
+                        cluster_curv_drift = float(np.mean([
+                            cluster.boundary.curvature(s.theta) for s in cluster.membrane.strings
+                        ]))
+
+                        # Cluster average activation as approximation of closure indication
+                        cluster_cl = float(np.mean([s.activation for s in cluster.membrane.strings]))
+
+                        c_t_state.update_tick_history(cluster_curv_drift, cluster_tension, cluster_cl)
+                        c_t_state.accumulated_tension = cluster_tension
 
         # 5. Cross-cluster V-channel propagation (signals crossing cluster boundaries)
         for cc_channel in self.cross_channels:
@@ -202,6 +281,35 @@ class MultiClusterEngine:
 
         # 7. Global stability band classification and interventions
         avg_tension = float(np.mean([c.tension_metric for c in self.clusters.values()])) if self.clusters else 0.0
+
+        # Update engine-level global temporal state
+        if self.temporal_state is not None and self.clusters:
+            cluster_tensions = []
+            for c in self.clusters.values():
+                ct_state = getattr(c.membrane, "temporal_state", None)
+                if ct_state is not None:
+                    cluster_tensions.append(ct_state.accumulated_tension)
+
+            global_tension = float(np.mean(cluster_tensions)) if cluster_tensions else 0.0
+            global_warning = float(np.max(cluster_tensions)) if cluster_tensions else 0.0
+
+            valid_curvs = [
+                c.membrane.temporal_state.prior_curvature
+                for c in self.clusters.values()
+                if getattr(c.membrane, "temporal_state", None) is not None
+            ]
+            global_curv = float(np.mean(valid_curvs)) if valid_curvs else 0.0
+
+            self.temporal_state.update_tick_history(global_curv, global_tension, 0.0)
+            self.temporal_state.accumulated_tension = global_tension
+
+            if global_warning > 2.0:
+                self.interventions.append(
+                    f"Global Mesh Temporal Warning: max cluster tension={global_warning:.2f}"
+                )
+
+            # Incorporate global temporal tension directly to escalate stability band checks
+            avg_tension = avg_tension + 0.5 * self.temporal_state.accumulated_tension
 
         # Enforce global stability band transitions
         if c_global >= 0.7 and avg_tension < 1.0:

@@ -226,6 +226,37 @@ def dynamic_capacity_boundary(boundary: BoundaryGeometry, theta: float) -> float
     return boundary.get_radius(theta)
 
 
+def dynamic_capacity_boundary_temporal(
+    boundary: BoundaryGeometry,
+    theta: float,
+    membrane: RadialMembrane,
+    delta_scaling: float = 0.3,
+    beta_scaling: float = 0.25
+) -> float:
+    """
+    Returns the dynamic capacity boundary c_dyn(t, theta) under temporal effects,
+    incorporating geometric hysteresis and time-weighted admissibility.
+
+    Formula:
+        c_dyn = c_base * (1 - beta * H_T) * (1 - delta * avg_T)
+
+    Where:
+        - H_T is the normalized tension history (0-1).
+        - avg_T is the exponentially decaying average of tension.
+    """
+    c_base = boundary.get_radius(theta)
+    t_state = getattr(membrane, "temporal_state", None)
+    if t_state is None:
+        return c_base
+
+    h_t = t_state.get_normalized_tension_history()
+    _, avg_t = t_state.compute_exponential_decay_averages(eta=0.7)
+
+    # Scale the boundary by both geometric hysteresis and time-weighted tension
+    c_dyn = c_base * (1.0 - beta_scaling * h_t) * (1.0 - delta_scaling * avg_t)
+    return max(c_base * 0.1, c_dyn)  # Maintain a safety floor of 10% base radius
+
+
 def angular_projections(
     membrane: RadialMembrane,
     theta: float,

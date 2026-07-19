@@ -196,6 +196,15 @@ class SingleAgentEngine:
             context_loads=context_loads
         )
 
+        # Apply Hysteresis Inertial Damping on resulting activations: A_new = (1 - alpha) * A_instant + alpha * A_prev
+        t_state = getattr(self.membrane, "temporal_state", None)
+        if t_state is not None and len(self.activation_history) > 0:
+            prior_act = self.activation_history[-1]
+            # Previous tension acts as damping on activation updates
+            alpha = 0.3 * t_state.get_normalized_tension_history()
+            for idx, s in enumerate(self.membrane.strings):
+                s.activation = (1.0 - alpha) * s.activation + alpha * float(prior_act[idx])
+
         # 2. V-Channel Routing (Radius Propagation)
         old_radii = [s.radius for s in self.membrane.strings]
         for t_idx in range(12):
@@ -327,6 +336,63 @@ class SingleAgentEngine:
         # 10. Coh & State tracking
         self.coherence_history.append(self.compute_local_coherence())
         self._record_state()
+
+        # 11. Update Temporal Membrane State
+        if t_state is not None:
+            # Gather metrics
+            max_curv = float(max([self.boundary.curvature(s.theta) for s in self.membrane.strings]))
+            has_tens = any(s.tension > 0 for s in self.membrane.strings)
+            max_tens = float(max([s.tension for s in self.membrane.strings])) if has_tens else 0.0
+
+            # Compute max closure ratio
+            closure_ratios = []
+            for s in self.membrane.strings:
+                a_theta, b_theta = angular_decomposition(self.membrane, s.theta, samples=32)
+                # Use temporal capacity (geometric hysteresis + time-weighted tension)
+                from radial_membrane_ai.admissibility import dynamic_capacity_boundary_temporal
+                c_theta = dynamic_capacity_boundary_temporal(self.boundary, s.theta, self.membrane)
+                closure_ratios.append(closure_ratio(a_theta, b_theta, c_theta))
+            max_cl = float(max(closure_ratios)) if closure_ratios else 0.0
+
+            t_state.update_tick_history(max_curv, max_tens, max_cl)
+
+            # Temporal Tension Accumulation
+            v_load = float(sum(s.radius for s in self.membrane.strings))
+            c_tax = float(obs_cost)
+            sao_intensity = p_sao
+            mem_writes = float(len(self.semantic_memory.history)) if hasattr(self, "semantic_memory") else 0.0
+            t_state.update_tension_accumulation(
+                v_channel_load=v_load,
+                cost_taxonomy_contrib=c_tax,
+                sao_promotions_intensity=sao_intensity,
+                mem_writes_norm=min(1.0, mem_writes / 10.0)
+            )
+
+            # Drift, Decay, and Recovery Dynamics
+            low_load = (v_load < 2.0)
+            t_state.decay_tension(low_load=low_load)
+
+            is_green = (band == "green")
+            recovery_mu = t_state.update_recovery_dynamics(is_green=is_green, mu=0.1)
+            t_state.apply_curvature_drift(self.boundary, mu=recovery_mu)
+
+            # Integrate accumulated tension back into Lyapunov stability bands via Effective Energy correction
+            # E_eff = E_Lyapunov + lambda * T_acc (lambda = 0.5)
+            # Adjust energy in v_history (only after >= 5 ticks to avoid startup cold start alerts)
+            if len(t_state.tension_history) >= 5:
+                eff_energy = energy + 0.5 * t_state.accumulated_tension
+                self.v_history[-1] = eff_energy
+
+                # Re-evaluate stability band with effective energy
+                if eff_energy <= self.band_config.v_green:
+                    updated_band = "green"
+                elif eff_energy <= self.band_config.v_red:
+                    updated_band = "yellow"
+                else:
+                    updated_band = "red"
+
+                self.band_history[-1] = updated_band
+                band = updated_band
 
         # Call Semantic Memory on_tick_end hook
         on_tick_end(self)

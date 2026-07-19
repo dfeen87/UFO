@@ -100,6 +100,10 @@ class RadialMembrane:
             "interpersonal": {"tone", "emotional_warmth", "conciseness"}
         }
 
+        # Temporal State Ownership
+        from radial_membrane_ai.temporal import TemporalMembraneState
+        self.temporal_state = TemporalMembraneState()
+
     def get_activation_vector(self) -> np.ndarray:
         """
         Returns the coefficient vector a(t) = [a_1(t), ..., a_12(t)] as a numpy array.

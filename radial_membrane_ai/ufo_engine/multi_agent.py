@@ -96,6 +96,9 @@ class MultiAgentEngine:
         for agent in self.agents:
             bind_to_agent(agent)
 
+        from radial_membrane_ai.temporal import TemporalMembraneState
+        self.temporal_state = TemporalMembraneState()
+
     def _init_coupling_channels(self) -> None:
         """
         Sets up type-W (workload), type-T (tension) and type-R (residuals) channels between agents.
@@ -134,11 +137,59 @@ class MultiAgentEngine:
         from radial_membrane_ai.semantic_memory.integration import on_tick_start, on_tick_end, on_sao_promotion
         on_tick_start(self)
 
-        # 1. Update individual agents locally (skipping quarantined)
-        for agent in self.agents:
-            if agent.shard.state == ShardState.QUARANTINED:
-                continue
+        from radial_membrane_ai.admissibility import angular_decomposition, dynamic_capacity_boundary_temporal
+        from radial_membrane_ai.projection import closure_ratio
+
+        # 1. Update individual agents locally (skipping quarantined) with temporal dynamics
+        active_agents = [a for a in self.agents if a.shard.state != ShardState.QUARANTINED]
+        for agent in active_agents:
+            t_state = getattr(agent.membrane, "temporal_state", None)
+
             agent.step(task_value, excitation)
+
+            # Apply Hysteresis Inertial Damping on resulting activations: A_new = (1-alpha)*A_instant + alpha*A_prev
+            if t_state is not None and len(agent.activation_history) > 0:
+                prior_act = agent.activation_history[-1]
+                # Previous tension acts as damping on activation updates
+                alpha = 0.3 * t_state.get_normalized_tension_history()
+                for idx, s in enumerate(agent.membrane.strings):
+                    s.activation = (1.0 - alpha) * s.activation + alpha * float(prior_act[idx])
+
+            # Update Agent-level Temporal Membrane State
+            if t_state is not None:
+                max_curv = float(max([agent.boundary.curvature(s.theta) for s in agent.membrane.strings]))
+                has_tension = any(s.tension > 0 for s in agent.membrane.strings)
+                max_tens = float(max([s.tension for s in agent.membrane.strings])) if has_tension else 0.0
+
+                closure_ratios = []
+                for s in agent.membrane.strings:
+                    a_theta, b_theta = angular_decomposition(agent.membrane, s.theta, samples=32)
+                    c_theta = dynamic_capacity_boundary_temporal(agent.boundary, s.theta, agent.membrane)
+                    closure_ratios.append(closure_ratio(a_theta, b_theta, c_theta))
+                max_cl = float(max(closure_ratios)) if closure_ratios else 0.0
+
+                t_state.update_tick_history(max_curv, max_tens, max_cl)
+
+                # Temporal Tension Accumulation
+                v_load = float(sum(s.radius for s in agent.membrane.strings))
+                c_tax = float(agent.shard.cost_factor * sum(s.cost for s in agent.membrane.strings))
+                sao_intensity = 0.0  # Filled dynamically during promotion
+                mem_writes = float(len(agent.semantic_memory.history)) if hasattr(agent, "semantic_memory") else 0.0
+                t_state.update_tension_accumulation(
+                    v_channel_load=v_load,
+                    cost_taxonomy_contrib=c_tax,
+                    sao_promotions_intensity=sao_intensity,
+                    mem_writes_norm=min(1.0, mem_writes / 10.0)
+                )
+
+                # Drift, Decay, and Recovery Dynamics
+                low_load = (v_load < 2.0)
+                t_state.decay_tension(low_load=low_load)
+
+                # Agent recovery rule: gradual relaxation based on local stability
+                is_stable = (agent.shard.quality_score >= 0.7)
+                recovery_mu = t_state.update_recovery_dynamics(is_green=is_stable, mu=0.1)
+                t_state.apply_curvature_drift(agent.boundary, mu=recovery_mu)
 
         # 2. Propagate inter-agent coupling V-channels
         for channel in self.channels:
@@ -159,14 +210,45 @@ class MultiAgentEngine:
         for agent in self.agents:
             self.agent_coherences[agent.agent_id].append(agent.shard.quality_score)
 
-        # 5. Stability Band Check & Interventions
-        if c_mesh >= self.band_config.c_green:
+        # Update global temporal state of the engine
+        if self.temporal_state is not None and active_agents:
+            agent_t_states = [
+                a.membrane.temporal_state for a in active_agents
+                if getattr(a.membrane, "temporal_state", None) is not None
+            ]
+            if agent_t_states:
+                mean_tension = float(np.mean([ts.accumulated_tension for ts in agent_t_states]))
+                max_tension = float(np.max([ts.accumulated_tension for ts in agent_t_states]))
+                mean_curv = float(np.mean([ts.prior_curvature for ts in agent_t_states]))
+                mean_cl = float(np.mean([
+                    ts.admissibility_history[-1] for ts in agent_t_states
+                    if ts.admissibility_history
+                ]))
+
+                # Global mesh/cluster temporal updates
+                self.temporal_state.update_tick_history(mean_curv, mean_tension, mean_cl)
+                self.temporal_state.accumulated_tension = mean_tension
+
+                if max_tension > 2.0:
+                    self.interventions.append(
+                        f"Global Temporal Tension Warning: max={max_tension:.2f}, mean={mean_tension:.2f}"
+                    )
+
+                # Scale dynamic coherence based on global temporal tension
+                c_mesh_eff = max(0.0, min(1.0, c_mesh - 0.25 * self.temporal_state.accumulated_tension))
+            else:
+                c_mesh_eff = c_mesh
+        else:
+            c_mesh_eff = c_mesh
+
+        # 5. Stability Band Check & Interventions (evaluated on effective coherence)
+        if c_mesh_eff >= self.band_config.c_green:
             band = "green"
             self.interventions.append("Green Band (Nominal): Stable multi-agent routing operating optimally.")
-        elif c_mesh >= self.band_config.c_red:
+        elif c_mesh_eff >= self.band_config.c_red:
             band = "yellow"
             self.interventions.append(
-                f"Yellow Band (Soft Intervention): Coherence={c_mesh:.4f}. "
+                f"Yellow Band (Soft Intervention): Coherence={c_mesh_eff:.4f}. "
                 "Damping activations and rebalancing routes."
             )
             # Soft interventions: damp active strings slightly on all non-quarantined agents
@@ -178,7 +260,7 @@ class MultiAgentEngine:
         else:
             band = "red"
             self.interventions.append(
-                f"Red Band (Hard Intervention): Coherence={c_mesh:.4f}. "
+                f"Red Band (Hard Intervention): Coherence={c_mesh_eff:.4f}. "
                 "Throttling, shard quarantine, and fallback checks."
             )
             # Hard interventions: throttle activations heavily

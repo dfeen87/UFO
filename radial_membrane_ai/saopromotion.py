@@ -141,8 +141,42 @@ class SAOPromotor:
         else:
             verdict = "admit"
 
+        # Temporal Promotion Gates Evaluation (Enforced when history is populated, e.g., >= 5 ticks)
+        t_state = getattr(membrane, "temporal_state", None)
+        temporal_gate_verdict = "ascend"
+        if t_state is not None and len(t_state.admissibility_history) >= 5:
+            # Short-range gate: >=5 ticks admissible, tension below yellow threshold (e.g. < 2.0)
+            # Mid-range gate: >=20 ticks admissible, tension mostly in green (< 1.0)
+            # Long-range gate: >=50 ticks admissible, tension predominantly green, no red
+            consec = t_state.consecutive_admissible_ticks
+            avg_i, avg_t = t_state.compute_exponential_decay_averages(eta=0.7)
+
+            if target_layer == "semantic memory":
+                # Requires mid-range gate: N2 = 20 ticks
+                if consec >= 20 and avg_t < 1.0:
+                    temporal_gate_verdict = "ascend"
+                else:
+                    temporal_gate_verdict = "constrain"
+            elif target_layer in ("identity core", "policy layer", "agent orchestration"):
+                # Requires long-range gate: N3 = 50 ticks
+                if consec >= 50 and avg_t < 1.0:
+                    temporal_gate_verdict = "ascend"
+                else:
+                    temporal_gate_verdict = "block"
+            else:
+                # Requires short-range gate: N1 = 5 ticks (e.g. Holistic Governor, execution layer)
+                if consec >= 5 and avg_t < 2.0:
+                    temporal_gate_verdict = "ascend"
+                else:
+                    temporal_gate_verdict = "admit"
+
+        # Blend original and temporal verdicts
+        if verdict == "ascend" and temporal_gate_verdict != "ascend":
+            verdict = temporal_gate_verdict
+
         return verdict, p_sao, {
             "collapse_activation": collapse_activation,
             "max_closure_ratio": max_i,
-            "beta": beta
+            "beta": beta,
+            "temporal_gate_verdict": temporal_gate_verdict
         }
