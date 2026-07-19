@@ -8,14 +8,13 @@ import time
 import pytest
 import numpy as np
 
-from radial_membrane_ai.residuals import ResidualLedger, ResidualRecord
+from radial_membrane_ai.residuals import ResidualLedger
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.ufo_engine import SingleAgentEngine, MultiAgentEngine
 from radial_membrane_ai.semantic_memory.policy import MemoryPolicy, AdmissibilityContext, PolicyContext
 from radial_membrane_ai.semantic_memory.curvature import MemoryCurvatureState
 from radial_membrane_ai.semantic_memory.core import (
     MemoryRecord,
-    MemoryEvent,
     AgentViewConfig,
     AgentSemanticMemory,
     MeshSemanticMemory,
@@ -29,8 +28,6 @@ from radial_membrane_ai.semantic_memory.core import (
 from radial_membrane_ai.semantic_memory.integration import (
     bind_to_agent,
     bind_to_mesh,
-    on_tick_start,
-    on_tick_end,
     on_sao_promotion
 )
 
@@ -166,7 +163,7 @@ def test_core_apis_agent_memory() -> None:
     # Local read rejected to cover core.py:228-230
     # Try to read k2 from AgentSemanticMemory using agent_id matching mismatches
     agent_mem_other = AgentSemanticMemory(agent_id="other_agent")
-    agent_mem_other.local_store["k2"] = agent_mem.local_store["k2"] # origin is a1, querying is other_agent
+    agent_mem_other.local_store["k2"] = agent_mem.local_store["k2"]  # origin is a1, querying is other_agent
     assert read_memory(agent_mem_other, "k2", p_context) is None
 
     # 6. List Memory with filters
@@ -326,12 +323,12 @@ def test_on_sao_promotion_edge_cases() -> None:
         def __init__(self, agent_id: str) -> None:
             self.agent_id = agent_id
 
-    engine.agents = [DummyAgent("agent_1")] # DummyAgent has no semantic_memory, covers 103
+    engine.agents = [DummyAgent("agent_1")]  # DummyAgent has no semantic_memory, covers 103
     assert on_sao_promotion("agent_1", "key", engine) is False
 
     # Add semantic_memory to DummyAgent
     agent_1 = DummyAgent("agent_1")
-    agent_1.semantic_memory = None # covers 106
+    agent_1.semantic_memory = None  # covers 106
     engine.agents = [agent_1]
     assert on_sao_promotion("agent_1", "key", engine) is False
 
