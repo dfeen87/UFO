@@ -3,11 +3,9 @@ Unit and integration tests for Federated Shard Mesh, routing, and residuals.
 """
 
 from __future__ import annotations
-import pytest
 from radial_membrane_ai.shard import FederatedShard, ShardState
-from radial_membrane_ai.residuals import ResidualLedger
 from radial_membrane_ai.routing import FederatedRoutingChannel
-from radial_membrane_ai.mesh import FederatedShardMesh, MeshGovernor
+from radial_membrane_ai.mesh import FederatedShardMesh
 
 
 def test_federated_mesh_and_routing() -> None:

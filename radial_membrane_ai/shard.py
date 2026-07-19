@@ -7,8 +7,8 @@ Quarantined, Revoked, Expired.
 
 from __future__ import annotations
 from enum import Enum, auto
-from dataclasses import dataclass, field
-from typing import Dict, Any, List
+from dataclasses import dataclass
+from typing import Dict, Any
 
 
 class ShardState(Enum):

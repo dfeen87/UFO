@@ -12,7 +12,6 @@ from radial_membrane_ai.channels import (
     phase_alignment,
     activation_weight,
     base_propagation,
-    inverse_cost_weight,
     cost_aware_propagation,
     update_radius_along_channel,
     channel_coherence,

@@ -4,7 +4,6 @@ Extra test module to ensure 100% test coverage across all lines.
 
 from __future__ import annotations
 import math
-import numpy as np
 import pytest
 from unittest.mock import patch
 
@@ -13,8 +12,7 @@ from radial_membrane_ai.boundary import BoundaryGeometry
 from radial_membrane_ai.projection import project_to_admissible
 from radial_membrane_ai.governor import Governor
 from radial_membrane_ai.admissibility import (
-    global_closure_aggregation,
-    local_closure_test_at_angle
+    global_closure_aggregation
 )
 from radial_membrane_ai.envelope import BrimEnvelope, ClaimStateLedger, FalsificationStack
 from radial_membrane_ai.mesh import FederatedShardMesh, MeshGovernor, ShardState, FederatedShard
@@ -152,7 +150,7 @@ def test_final_coverage_gaps() -> None:
         FederatedRoutingChannel("c1", "InvalidType")
 
     # 9. saopromotion.py invalid target layer & admit verdict
-    promotor = SAOPromotor(promotion_threshold=10.0) # threshold extremely high so we hit "admit"
+    promotor = SAOPromotor(promotion_threshold=10.0)  # threshold extremely high so we hit "admit"
     membrane_sao = RadialMembrane()
     # Ensure activations are asymmetric to have non-zero field but tiny so we don't violate capacity
     membrane_sao.strings[0].activation = 0.01

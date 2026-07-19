@@ -4,7 +4,6 @@ Comprehensive tests for multi-agent membrane coupling and mesh governance.
 
 from __future__ import annotations
 import numpy as np
-import pytest
 
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.multi_agent.coupling import InterAgentVChannel, GlobalHolisticGovernor

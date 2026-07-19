@@ -7,7 +7,6 @@ and data-plane V-Channels: Type-W, Type-R, Type-T, Type-A, Type-E.
 
 from __future__ import annotations
 from typing import Dict, Any, List, Optional
-import math
 from radial_membrane_ai.shard import FederatedShard, ShardState
 
 

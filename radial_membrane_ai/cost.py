@@ -6,8 +6,7 @@ reduction described in Section 7 of Feeney (2025).
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, replace
-import math
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)

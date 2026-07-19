@@ -142,7 +142,7 @@ class MultiAgentMeshGovernance:
 
         # 3. Admissibility test against shared capacity
         # Find maximum activation in the aligned state
-        max_act = float(np.max(x_sym))
+        _ = float(np.max(x_sym))
 
         # 4. Projection P(x_sym)
         # Projects to admissible space: clamp to shared_capacity_limit

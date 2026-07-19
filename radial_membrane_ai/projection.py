@@ -7,7 +7,7 @@ to the admissible capacity boundary as described in Feeney (2026).
 
 from __future__ import annotations
 import math
-from typing import Any
+
 
 def closure_ratio(a: float, b: float, c: float) -> float:
     """

@@ -12,7 +12,7 @@ from typing import Callable
 import numpy as np
 
 from radial_membrane_ai.membrane import BehavioralString, RadialMembrane
-from radial_membrane_ai.facet import route_signal, FacetVector, TensionState
+from radial_membrane_ai.facet import route_signal
 
 
 def phase_alignment(theta_s: float, theta_t: float) -> float:

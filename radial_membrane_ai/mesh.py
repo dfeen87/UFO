@@ -8,12 +8,15 @@ Implements Shard Mesh and Governors:
 - Holistic Mesh Governor
 
 And calculates the global mesh coherence score:
-C_mesh(t) = normalize(w_q * Q_route + w_t * T_trust + w_e * E_economic - w_r * R_residual - w_p * P_policy - w_l * L_latency - w_f * F_failure)
+C_mesh(t) = normalize(
+    w_q * Q_route + w_t * T_trust + w_e * E_economic -
+    w_r * R_residual - w_p * P_policy - w_l * L_latency - w_f * F_failure
+)
 """
 
 from __future__ import annotations
 import numpy as np
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from radial_membrane_ai.shard import FederatedShard, ShardState
 from radial_membrane_ai.residuals import ResidualLedger
 from radial_membrane_ai.routing import FederatedRoutingChannel
@@ -134,7 +137,10 @@ class FederatedShardMesh:
     ) -> float:
         """
         Computes the global mesh coherence score:
-        C_mesh(t) = normalize(w_q * Q_route + w_t * T_trust + w_e * E_economic - w_r * R_residual - w_p * P_policy - w_l * L_latency - w_f * F_failure)
+        C_mesh(t) = normalize(
+            w_q * Q_route + w_t * T_trust + w_e * E_economic -
+            w_r * R_residual - w_p * P_policy - w_l * L_latency - w_f * F_failure
+        )
         """
         if not self.shards:
             return 1.0

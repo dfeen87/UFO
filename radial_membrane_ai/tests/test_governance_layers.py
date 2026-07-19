@@ -4,8 +4,6 @@ Unit tests for extended governance layers and kernels.
 
 from __future__ import annotations
 import math
-import numpy as np
-import pytest
 
 from radial_membrane_ai.membrane import RadialMembrane
 from radial_membrane_ai.boundary import BoundaryGeometry

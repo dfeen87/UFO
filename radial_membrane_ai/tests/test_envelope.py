@@ -3,8 +3,6 @@ Unit and integration tests for Bounded Compute Envelope (Brim).
 """
 
 from __future__ import annotations
-import math
-import pytest
 from radial_membrane_ai.membrane import RadialMembrane
 from radial_membrane_ai.boundary import BoundaryGeometry
 from radial_membrane_ai.envelope import BrimEnvelope, FalsificationStack, ClaimStateLedger

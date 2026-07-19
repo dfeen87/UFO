@@ -9,7 +9,7 @@ closure-aware contraction and expansion described in Feeney (2026).
 
 from __future__ import annotations
 import math
-from radial_membrane_ai.membrane import RadialMembrane, BehavioralString
+from radial_membrane_ai.membrane import RadialMembrane
 from radial_membrane_ai.channels import channel_coherence
 from radial_membrane_ai.admissibility import angular_decomposition
 from radial_membrane_ai.projection import closure_ratio
