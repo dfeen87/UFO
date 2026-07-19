@@ -1,0 +1,62 @@
+[
+    {
+        "record_id": "sao_fail_0",
+        "error_type": "sao_ascension_rejection",
+        "shard_id": "agent_1_and_agent_2",
+        "severity": "high",
+        "details": {
+            "p_sao": 0.5277249303654379,
+            "verdict": "block"
+        },
+        "timestamp": 0.0,
+        "escalation_tier": "none"
+    },
+    {
+        "record_id": "sao_fail_1",
+        "error_type": "sao_ascension_rejection",
+        "shard_id": "agent_2_and_agent_3",
+        "severity": "high",
+        "details": {
+            "p_sao": 0.4863940229045431,
+            "verdict": "block"
+        },
+        "timestamp": 0.0,
+        "escalation_tier": "none"
+    },
+    {
+        "record_id": "audit_quarantine_agent_2_2",
+        "error_type": "governance_quarantine",
+        "shard_id": "agent_2",
+        "severity": "critical",
+        "details": {
+            "residual": 0.0,
+            "trust": 0.9
+        },
+        "timestamp": 0.0,
+        "escalation_tier": "none"
+    },
+    {
+        "record_id": "audit_quarantine_agent_2_3",
+        "error_type": "governance_quarantine",
+        "shard_id": "agent_2",
+        "severity": "critical",
+        "details": {
+            "residual": 0.0,
+            "trust": 0.9
+        },
+        "timestamp": 0.0,
+        "escalation_tier": "none"
+    },
+    {
+        "record_id": "audit_quarantine_agent_2_4",
+        "error_type": "governance_quarantine",
+        "shard_id": "agent_2",
+        "severity": "critical",
+        "details": {
+            "residual": 0.0,
+            "trust": 0.9
+        },
+        "timestamp": 0.0,
+        "escalation_tier": "none"
+    }
+]
