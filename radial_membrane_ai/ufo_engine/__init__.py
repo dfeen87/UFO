@@ -13,6 +13,7 @@ from __future__ import annotations
 from radial_membrane_ai.ufo_engine.config import CostWeights, StabilityBandConfig
 from radial_membrane_ai.ufo_engine.single_agent import SingleAgentEngine, SingleAgentRunResult
 from radial_membrane_ai.ufo_engine.multi_agent import MultiAgentEngine, MultiAgentRunResult
+from radial_membrane_ai.ufo_engine.multi_cluster import MultiClusterEngine
 
 __all__ = [
     "CostWeights",
@@ -21,4 +22,5 @@ __all__ = [
     "SingleAgentRunResult",
     "MultiAgentEngine",
     "MultiAgentRunResult",
+    "MultiClusterEngine",
 ]
