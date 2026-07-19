@@ -31,6 +31,8 @@ The saucer‑like appearance is therefore not the origin of the name, nor a refe
 ## Table of Contents
 
 - [The Core Idea](#the-core-idea)
+- [Why Clone the Repository](why-clone-the-repository)
+- [How to Implement the U.F.O. Architecture](#how-to-implement-the-u.f.o.-architecture)
 - [Architecture at a Glance](#architecture-at-a-glance)
 - [1. The Hull — Radial Identity Membrane](#1-the-hull--radial-identity-membrane)
 - [2. The Wiring — V-Channel Routing](#2-the-wiring--v-channel-routing)
@@ -52,6 +54,66 @@ The saucer‑like appearance is therefore not the origin of the name, nor a refe
 Most AI systems treat personalization and compute control as two unrelated layers — one adjusts tone or style, the other enforces token limits, retrieval budgets, or latency caps. The U.F.O. architecture rejects that separation. Every behavioral choice an AI makes carries a compute cost, and every compute constraint shapes the behavior that can be expressed. They are not two problems; they are one coupled system.
 
 The U.F.O. models this coupling inside a shared geometric state space: a deformable radial membrane whose activation pattern expresses the AI’s behavioral posture, and whose deformation reveals the compute pressure required to sustain it. Twelve behavioral strings define the membrane’s expressive dimensions, V‑Channels route activation through coherent corridors, and a multi‑layer Governor supervises stability, admissibility, and cost. Behavior and compute are therefore not bolted together — they are governed together, as one dynamic field that stretches, contracts, and rebalances in response to the task.
+
+---
+
+## Why Clone the Repository
+
+Cloning this repository gives you direct access to the full U.F.O. (User‑Formed Optimization) architecture — a governed cognitive‑simulation stack designed for research, experimentation, and advanced AI systems engineering. The codebase includes the radial membrane model, behavioral string geometry, V‑Channel routing, multi‑agent engines, semantic memory scaffolding, stability governance, and residual‑preservation logic.  
+
+Whether you are exploring identity‑based AI behavior, governed reasoning, multi‑agent coordination, or stability‑physics‑driven simulation, this repository provides a complete, modular foundation for building and studying controlled intelligence systems. It is intended for researchers, engineers, and practitioners who want to experiment with structured cognitive architectures, policy‑bounded memory, and emergent agent dynamics.
+
+---
+
+## How to Implement the U.F.O. Architecture
+
+### **1. Clone the Repository**
+Use Git to pull the full codebase locally:
+```bash
+git clone https://github.com/dfeen87/ufo.git
+cd ufo
+```
+
+### **2. Install Dependencies**
+Install the required Python packages:
+```bash
+pip install -r requirements.txt
+```
+
+### **3. Explore the Core Modules**
+The architecture is organized into clear modules:
+- **radial_membrane_ai/core/** — membrane geometry, behavioral strings, V‑Channels  
+- **radial_membrane_ai/governance/** — admissibility gates, stability bands, cost‑taxonomy pressure  
+- **radial_membrane_ai/agents/** — single‑agent and multi‑agent engines  
+- **radial_membrane_ai/memory/** — semantic memory scaffolding and mesh‑level coordination  
+- **radial_membrane_ai/kernels/** — projection operators, routing logic, shard isolation  
+
+Each module is documented and designed for extension.
+
+### **4. Run the Example Simulation**
+A starter simulation is included:
+```bash
+python examples/run_simulation.py
+```
+This demonstrates membrane activation, agent interaction, and basic governed reasoning flow.
+
+### **5. Build Your Own Agents or Membrane Configurations**
+You can extend:
+- **UFOAgent** for custom behaviors  
+- **MultiAgentEngine** for multi‑agent environments  
+- **RadialMembrane** for new geometric or behavioral configurations  
+
+The architecture is intentionally modular so you can plug in new logic without rewriting the core.
+
+### **6. Integrate Into Your Own Systems**
+U.F.O. can be embedded into:
+- research prototypes  
+- simulation environments  
+- AI reasoning engines  
+- multi‑agent orchestration systems  
+- identity‑based behavioral models  
+
+The governed‑simulation stack ensures stability, coherence, and bounded compute behavior across all integrations.
 
 ---
 
