@@ -8,8 +8,7 @@
 [![CI](https://github.com/dfeen87/UFO/actions/workflows/ci.yml/badge.svg)](https://github.com/dfeen87/UFO/actions/workflows/ci.yml)
 
 
-> *Full paper: "A Governed Deformable Radial Membrane for Compute-Aware AI Personalization" — Don Michael Feeney Jr.*
-> Condensed publication version of the **Dynamic Radial Membrane v2.6** research artifact.
+> *Based upon the Reseach Program: "A Governed Deformable Radial Membrane for Compute-Aware AI Personalization" — Don Michael Feeney Jr.*
 
 The U.F.O. is a governed, compute‑aware AI architecture that models behavior as a deformable radial membrane — a living control surface whose activation pattern is the personality and whose deformation is the compute signal. Instead of treating personalization as a thin stylistic layer and compute limits as an external constraint, the U.F.O. binds them into one geometric state space: a saucer‑shaped membrane that stretches, contracts, and rebalances as the system reasons, retrieves, plans, and responds.
 
