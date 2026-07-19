@@ -1,0 +1,106 @@
+{
+    "h_hol_history": [
+        0.35784818677920854,
+        0.4000880525235803,
+        0.5180289203669286,
+        0.47185951465517406,
+        0.46543334800080743,
+        0.35666065234094263
+    ],
+    "c_mesh_history": [
+        0.663594316450745,
+        0.6635865397164901,
+        0.6635542567316013,
+        0.4940791942694723,
+        0.48280476283573787,
+        0.48253936662912045
+    ],
+    "band_history": [
+        "green",
+        "green",
+        "green",
+        "red",
+        "red",
+        "red"
+    ],
+    "agent_coherences": {
+        "agent_1": [
+            0.8087840129340922,
+            0.8101605373885173,
+            0.8100802705514609,
+            0.9260616296329189,
+            0.9999999926043911,
+            0.9946991709973697
+        ],
+        "agent_2": [
+            0.8149254627655486,
+            0.8246539095694903,
+            0.8260504540943893,
+            0.9299602747690069,
+            0.9299602747690069,
+            0.9299602747690069
+        ],
+        "agent_3": [
+            0.9999999082868885,
+            0.9886336667160444,
+            0.9862328286337924,
+            0.9824062266677287,
+            0.9999999926043911,
+            0.99998650731507
+        ]
+    },
+    "interventions": [
+        "Green Band (Nominal): Stable multi-agent routing operating optimally.",
+        "Green Band (Nominal): Stable multi-agent routing operating optimally.",
+        "Green Band (Nominal): Stable multi-agent routing operating optimally.",
+        "Red Band (Hard Intervention): Coherence=0.4941. Throttling, shard quarantine, and fallback checks.",
+        "Red Band (Hard Intervention): Coherence=0.4828. Throttling, shard quarantine, and fallback checks.",
+        "Red Band (Hard Intervention): Coherence=0.4825. Throttling, shard quarantine, and fallback checks."
+    ],
+    "sao_events": [
+        {
+            "agent_l": "agent_1",
+            "agent_r": "agent_2",
+            "verdict": "ascend",
+            "p_sao": 0.0
+        },
+        {
+            "agent_l": "agent_2",
+            "agent_r": "agent_3",
+            "verdict": "ascend",
+            "p_sao": 0.0
+        },
+        {
+            "agent_l": "agent_1",
+            "agent_r": "agent_2",
+            "verdict": "ascend",
+            "p_sao": 0.0
+        },
+        {
+            "agent_l": "agent_2",
+            "agent_r": "agent_3",
+            "verdict": "ascend",
+            "p_sao": 0.0
+        },
+        {
+            "agent_l": "agent_1",
+            "agent_r": "agent_2",
+            "verdict": "block",
+            "p_sao": 0.5277249303654379
+        },
+        {
+            "agent_l": "agent_2",
+            "agent_r": "agent_3",
+            "verdict": "block",
+            "p_sao": 0.4863940229045431
+        }
+    ],
+    "residual_history": [
+        0.0,
+        0.0,
+        0.5070594766349905,
+        0.0,
+        0.0,
+        0.0
+    ]
+}
