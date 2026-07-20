@@ -1,0 +1,110 @@
+*** SEARCHING: boundary participation ***
+Matches: 1
+Match 1:
+w_c = 1. o F_l = n_l / max_j n_j, the normalized frequency component. o S_l = (max P_l - min P_l) / (N - 1), the normalized spread component. o B_l = boundary participation, increased when the letter appears near word starts, word ends, sentence start, or sentence end. o R_l = repetition pressure, increased by short-gap recurrence or clustering. o C_l = channel contribution, the average coherence of l with neighboring or repeated partner strings.
+
+ 11
+For a simple demonstration, choose equal weights w_f = w_s = w_b = w_r = w_c = 0.20. These weights are not ﬁnal. They make the example transparent and can later be tuned for compression, authorship analysis, or interpretability. To make the sample arithmetic concrete, assign illustrative component values for the remaining three terms. These values can be computed more rigorously later, but they let the example show the full depth equation in action: B_e = 0.70, R_e = 0.55, C_e = 0.80; B
+--------------------------------------------------
+*** SEARCHING: repetition pressure ***
+Matches: 3
+Match 1:
+ad component. o B_l = boundary participation, increased when the letter appears near word starts, word ends, sentence start, or sentence end. o R_l = repetition pressure, increased by short-gap recurrence or clustering. o C_l = channel contribution, the average coherence of l with neighboring or repeated partner strings.
+
+ 11
+For a simple demonstration, choose equal weights w_f = w_s = w_b = w_r = w_c = 0.20. These weights are not ﬁnal. They make the example transparent and can later be tuned for compression, authorship analysis, or interpretability. To make the sample arithmetic concrete, assign illustrative component values for the remaining three terms. These values can be computed more rigorously later, but they let the example show the full depth equation in action: B_e = 0.70, R_e = 0.55, C_e = 0.80; B_g = 0.65, R_g = 0.85, C_g = 0.60; B_o = 0.55, R_o = 0.60, C_o = 0.75; B_t = 0.70, R_t = 0.65, C_t = 0.70. Letter F_l S_l B_l R_
+--------------------------------------------------
+Match 2:
+full left-to-right arc. For the letter g, F_g = 4/10 = 0.40 and S_g = (61 - 28)/(80 - 1) = 0.4177. Its frequency and spread are lower than e, but its repetition pressure can be higher because it clusters around semantically important words: ﬂag, beginnings, grounding. This illustrates why L.D.E. depth should not collapse into frequency alone. With the illustrative values above, d_e = 0.20(1.0000 + 0.9747 + 0.70 + 0.55 + 0.80) = 0.8049. For g, d_g = 0.20(0.4000 + 0.4177 + 0.65 + 0.85 + 0.60) = 0.5835. The result is important: e remains the deepest string, but g is not shallow. Its cluster around ﬂag, beginnings, and grounding raises its repetition and boundary roles enough to keep it structurally meaningful.
+10.5 V-Channel Coherence
+For two letter strings i and j, deﬁne adjacency pressure A_ij as the number of times i is immediately followed by j in the normalized stream. Deﬁne a normalized adjacency coherence Q_ij = A_ij / max(1, n_i)
+--------------------------------------------------
+Match 3:
+imates adjacency pressure A_ij, phase alignment alpha_ij, coherence Q_ij, and cost-aware channel pressure P_i_to_j.
+
+ 17
+o structural importance o repetition pressure o boundary roles o semantic clustering o routing corridors This is the analysis engine of L.D.E. — the textual equivalent of the U.F.O. V-Channel reasoning layer.
+A.3 Governor Layers: Constraint, Cost, and
+Reconstructability
+The Governor Layer enforces rules, limits, and reconstruction guarantees. It determines what must be preserved, what may be compressed, what is optional, and what is diagnostic. 1. Essential Layer: symbol identities, positions, and ordering. 2. Structural Layer: spacing, punctuation, casing, and word boundaries. 3. Geometric Layer: depth, spread, tension, stiffness, and coherence. 4. Diagnostic Layer: curvature, asymmetry, expressivity, and cost. The Governor ensures T_raw = R(S, P, B) whenever full-reconstruction mode is required. This is the te
+--------------------------------------------------
+*** SEARCHING: local tension ***
+Matches: 2
+Match 1:
+terpretive pressure. o activation or frequency, a_l o phase position, theta_l o position set, P_l o spread or distribution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet, a simple initialization is theta_l = 2*pi*i/26, where i indexes the letter. Other alphabets, phonetic systems, punctuation marks, or learned symbol sets can be assigned their own phase maps. The paragraph ﬁeld can then be ap
+--------------------------------------------------
+Match 2:
+s little local pressure. A basic depth rule can be written as d_l = f(a_l, s_l, tau_l, Q_l, role_l), where a_l is activation, s_l is spread, tau_l is local tension, Q_l is neighborhood coherence, and role_l captures structural contribution such as beginning, ending, repetition, or cluster membership. Depth can be decomposed into several interpretable components: frequency-weighted depth, positional-variance depth, boundary depth, repetition depth, and semantic-pressure depth. This decomposition keeps the model inspectable instead of hiding all meaning inside a single scalar.
+
+ 4
+In the U.F.O. analogy, radius represents reasoning reach. In L.D.E., radius becomes textual reach: how far a symbol extends across the paragraph’s structure, how many positions it links, and how strongly it helps reconstruct the paragraph’s identity.
+5. V-Channel Routing Between Letter Strings
+The U.F.O. model uses V-channels to route activation through co
+--------------------------------------------------
+*** SEARCHING: stiffness ***
+Matches: 6
+Match 1:
+s from the U.F.O. Facet Layer. In that architecture, a facet or string is not a passive label. It is a governed unit with activation, depth, tension, stiffness, routing behavior, and cost. L.D.E. translates that idea into language. Each letter becomes a governed String: it has a location in the text, a phase position in the symbolic membrane, an activation strength based on recurrence, a depth value based on structural importance, and a tension value based on clustering, repetition, or interpretive pressure. L.D.E. can also be understood as operating inside a lightweight I.D.E. for governed symbolic systems. In this view, letters and strings are authored as symbolic units, V-Channels are interpreted as routing constraints, and the textual membrane is executed as a reconstructable geometric state. The I.D.E. idea does not replace the L.D.E. model; it names the environment in which governed symbolic text becomes programmable, inspectable,
+--------------------------------------------------
+Match 2:
+on or frequency, a_l o phase position, theta_l o position set, P_l o spread or distribution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet, a simple initialization is theta_l = 2*pi*i/26, where i indexes the letter. Other alphabets, phonetic systems, punctuation marks, or learned symbol sets can be assigned their own phase maps. The paragraph ﬁeld can then be approximated as a superposition o
+--------------------------------------------------
+Match 3:
+mbol identities and positions
+
+ 5
+o structural layer: word boundaries, punctuation, casing, and spacing o geometric layer: depth, spread, tension, stiffness, and coherence o diagnostic layer: curvature, asymmetry, expressivity, and cost The reconstruction operator can be stated as Text = R(S, P, B), where S is the set of letter strings, P is the complete position map, and B is the boundary and formatting structure needed to restore spacing, punctuation, casing, and paragraph order. L.D.E. is fully reconstructable only when symbol identities, positions, ordering, spacing, punctuation, and casing are preserved. Depth and geometry enrich the encoding, but they do not by themselves guarantee reconstruction. This clariﬁcation strengthens the claim: L.D.E. can support full reconstruction as a complete encoding, and it can also support compressed variants when exact reconstruction is not required.
+7. Deformable Boundary Geometry for Parag
+--------------------------------------------------
+*** SEARCHING: reconstruction cost ***
+Matches: 1
+Match 1:
+bution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet, a simple initialization is theta_l = 2*pi*i/26, where i indexes the letter. Other alphabets, phonetic systems, punctuation marks, or learned symbol sets can be assigned their own phase maps. The paragraph ﬁeld can then be approximated as a superposition of letter-string basis functions: T(theta,t) = sum_l a_l(t) phi_l(theta). Here phi_l(t
+--------------------------------------------------
+*** SEARCHING: adjacency pressure ***
+Matches: 2
+Match 1:
+ raises its repetition and boundary roles enough to keep it structurally meaningful.
+10.5 V-Channel Coherence
+For two letter strings i and j, deﬁne adjacency pressure A_ij as the number of times i is immediately followed by j in the normalized stream. Deﬁne a normalized adjacency coherence Q_ij = A_ij / max(1, n_i). This gives a directional channel from i to j.
+
+ 12
+For example, the pair t to o occurs in left-to-right language through “to” and related directional structure. If A_t,o = 2 and n_t = 6, then Q_t,o = 2/6 = 0.3333. The pair h to e occurs in “the” twice, so if A_h,e = 2 and n_h = 4, then Q_h,e = 2/4 = 0.5000. The pair i to n appears in beginnings and grounding; if A_i,n = 3 and n_i = 5, then Q_i,n = 3/5 = 0.6000. Channel A_ij n_i Q_ij Interpretation t to o 2 6 0.3333 directional corridor through “to” structure h to e 2 4 0.5000 article corridor through repeated “the” i to n 3 5 0.6000 cluster corridor through beginnings a
+--------------------------------------------------
+Match 2:
+spread s_l, tension tau_l, stiffness k_l, depth d_l, position set P_l, and phase position theta_l. For each ordered pair i to j, the system estimates adjacency pressure A_ij, phase alignment alpha_ij, coherence Q_ij, and cost-aware channel pressure P_i_to_j.
+
+ 17
+o structural importance o repetition pressure o boundary roles o semantic clustering o routing corridors This is the analysis engine of L.D.E. — the textual equivalent of the U.F.O. V-Channel reasoning layer.
+A.3 Governor Layers: Constraint, Cost, and
+Reconstructability
+The Governor Layer enforces rules, limits, and reconstruction guarantees. It determines what must be preserved, what may be compressed, what is optional, and what is diagnostic. 1. Essential Layer: symbol identities, positions, and ordering. 2. Structural Layer: spacing, punctuation, casing, and word boundaries. 3. Geometric Layer: depth, spread, tension, stiffness, and coherence. 4. Diagnostic Layer: curv
+--------------------------------------------------
+*** SEARCHING: coherence ***
+Matches: 28
+Match 1:
+, and semantic pressure. At the sentence scale, those V-Channels form a membrane ﬁeld: a continuous symbolic surface whose activation, curvature, and coherence can be measured. At the paragraph scale, multiple sentence ﬁelds integrate into a larger identity state that reﬂects topic, style, rhythm, authorship, and reconstructable structure. The central claim is therefore stronger than ordinary character analysis. L.D.E. does not merely count letters. It assigns letters roles inside a governed ﬁeld. A frequent letter may have low depth if it is evenly distributed and structurally neutral; a rare letter may have high depth if it anchors a meaningful cluster, marks a boundary, or participates in a high-coherence V-Channel. This lets the model distinguish between presence, importance, and recoverability. In this framing, a document is not only a sequence of tokens. It is a symbolic membrane whose smallest units carry measurable identity. Let
+--------------------------------------------------
+Match 2:
+stributed and structurally neutral; a rare letter may have high depth if it anchors a meaningful cluster, marks a boundary, or participates in a high-coherence V-Channel. This lets the model distinguish between presence, importance, and recoverability. In this framing, a document is not only a sequence of tokens. It is a symbolic membrane whose smallest units carry measurable identity. Letter activation shows what symbols are present. Letter-depth shows which symbols matter structurally. V-Channel coherence shows how strings route into words and motifs. Boundary deformation shows how the sentence or paragraph takes shape under textual pressure. Reconstruction metadata preserves exact recoverability when full-reconstruction mode is required. The purpose of this note is to deﬁne that architecture clearly enough for implementation. The following sections move from the basic letter-string model to phase geometry, depth functions, V-Channel
+--------------------------------------------------
+Match 3:
+st units carry measurable identity. Letter activation shows what symbols are present. Letter-depth shows which symbols matter structurally. V-Channel coherence shows how strings route into words and motifs. Boundary deformation shows how the sentence or paragraph takes shape under textual pressure. Reconstruction metadata preserves exact recoverability when full-reconstruction mode is required. The purpose of this note is to deﬁne that architecture clearly enough for implementation. The following sections move from the basic letter-string model to phase geometry, depth functions, V-Channel routing, textual governance, deformable paragraph boundaries, an algorithmic pipeline, and a worked example. The model should be read as a research architecture for symbolic text geometry rather than as a replacement for existing NLP methods.
+2. Letter Strings: The Core Representational Unit
+In the revised model, each letter is represented as a tex
+--------------------------------------------------

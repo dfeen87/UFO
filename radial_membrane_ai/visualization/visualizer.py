@@ -252,6 +252,7 @@ class MeshVisualizer:
             except KeyError:
                 regime = KernelRegimeType.BALANCED
 
+            lde_state = getattr(wf, 'lde_state', None)
             frame = VisualizationFrame(
                 membrane_geometry=geom_snapshot,
                 vchannels=vch_snapshot,
@@ -260,8 +261,13 @@ class MeshVisualizer:
                 sao_events=wf.sao_events,
                 stability_band=band,
                 coherence=metrics.coherence,
-                regime=regime
+                regime=regime,
+                lde_boundary=lde_state.boundary if lde_state else None,
+                lde_channels=lde_state.channels if lde_state else None,
+                lde_strings=lde_state.strings if lde_state else None
             )
+            if lde_state:
+                setattr(frame, "lde_state", lde_state)
             viz_frames.append(frame)
 
         # Compute summary
@@ -303,6 +309,12 @@ class MeshVisualizer:
         )
 
         # Render unified timeline dashboard
-        fig = draw_unified_dashboard(viz_frames, report)
-        report.rendered = convert_figure_to_image(fig)
+        if viz_frames and getattr(viz_frames[0], "lde_state", None) is not None:
+            from radial_membrane_ai.lde.visualizer import LDEVisualizer
+            lde_vis = LDEVisualizer()
+            fig = lde_vis.render_lde_dashboard(viz_frames[0].lde_state)
+            report.rendered = convert_figure_to_image(fig)
+        else:
+            fig = draw_unified_dashboard(viz_frames, report)
+            report.rendered = convert_figure_to_image(fig)
         return report

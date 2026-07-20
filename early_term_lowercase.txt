@@ -1,0 +1,51 @@
+Let's check for formulas in pages 4-7...
+*** Term: local tension ***
+Matches: 2
+terpretive pressure. o activation or frequency, a_l o phase position, theta_l o position set, P_l o spread or distribution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet, a simple initialization is theta_l = 2*pi*i/26, where i indexes the letter. Other alphabets, phonetic systems, punctuation marks, or learned symbol sets can be assigned their own phase maps. The paragraph ﬁeld can then be approximated as a superposition of letter-string basis functions: T(theta,t) = sum_l a_l(t) phi_l(theta). Here phi_l(theta) is the angular basis function centered on the letter’s phase position. This gi
+==================================================
+s little local pressure. A basic depth rule can be written as d_l = f(a_l, s_l, tau_l, Q_l, role_l), where a_l is activation, s_l is spread, tau_l is local tension, Q_l is neighborhood coherence, and role_l captures structural contribution such as beginning, ending, repetition, or cluster membership. Depth can be decomposed into several interpretable components: frequency-weighted depth, positional-variance depth, boundary depth, repetition depth, and semantic-pressure depth. This decomposition keeps the model inspectable instead of hiding all meaning inside a single scalar.
+
+ 4
+In the U.F.O. analogy, radius represents reasoning reach. In L.D.E., radius becomes textual reach: how far a symbol extends across the paragraph’s structure, how many positions it links, and how strongly it helps reconstruct the paragraph’s identity.
+5. V-Channel Routing Between Letter Strings
+The U.F.O. model uses V-channels to route activation through coherent behavioral strings. L.D.E. can use the same idea to describe how letters form meaningful corridors through a text. A V-channel between two letter strings captures repeated pairings, adjacency,
+==================================================
+*** Term: stiffness ***
+Matches: 6
+s from the U.F.O. Facet Layer. In that architecture, a facet or string is not a passive label. It is a governed unit with activation, depth, tension, stiffness, routing behavior, and cost. L.D.E. translates that idea into language. Each letter becomes a governed String: it has a location in the text, a phase position in the symbolic membrane, an activation strength based on recurrence, a depth value based on structural importance, and a tension value based on clustering, repetition, or interpretive pressure. L.D.E. can also be understood as operating inside a lightweight I.D.E. for governed symbolic systems. In this view, letters and strings are authored as symbolic units, V-Channels are interpreted as routing constraints, and the textual membrane is executed as a reconstructable geometric state. The I.D.E. idea does not replace the L.D.E. model; it names the environment in which governed symbolic text becomes programmable, inspectable, and cost-aware.
+
+ 2
+This creates a layered linguistic geometry. At the smallest scale, letters are Strings. At the next scale, words are V-Channels: bounded corridors where letter strings route th
+==================================================
+on or frequency, a_l o phase position, theta_l o position set, P_l o spread or distribution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet, a simple initialization is theta_l = 2*pi*i/26, where i indexes the letter. Other alphabets, phonetic systems, punctuation marks, or learned symbol sets can be assigned their own phase maps. The paragraph ﬁeld can then be approximated as a superposition of letter-string basis functions: T(theta,t) = sum_l a_l(t) phi_l(theta). Here phi_l(theta) is the angular basis function centered on the letter’s phase position. This gives the model its ﬁrst useful p
+==================================================
+mbol identities and positions
+
+ 5
+o structural layer: word boundaries, punctuation, casing, and spacing o geometric layer: depth, spread, tension, stiffness, and coherence o diagnostic layer: curvature, asymmetry, expressivity, and cost The reconstruction operator can be stated as Text = R(S, P, B), where S is the set of letter strings, P is the complete position map, and B is the boundary and formatting structure needed to restore spacing, punctuation, casing, and paragraph order. L.D.E. is fully reconstructable only when symbol identities, positions, ordering, spacing, punctuation, and casing are preserved. Depth and geometry enrich the encoding, but they do not by themselves guarantee reconstruction. This clariﬁcation strengthens the claim: L.D.E. can support full reconstruction as a complete encoding, and it can also support compressed variants when exact reconstruction is not required.
+7. Deformable Boundary Geometry for Paragraph Identity
+The U.F.O. paper’s deformable membrane can be translated into a paragraph boundary. Instead of representing the text as a ﬁxed 26-dimensional vector, L.D.E. can represent it as a polar
+==================================================
+*** Term: reconstruction cost ***
+Matches: 1
+bution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet, a simple initialization is theta_l = 2*pi*i/26, where i indexes the letter. Other alphabets, phonetic systems, punctuation marks, or learned symbol sets can be assigned their own phase maps. The paragraph ﬁeld can then be approximated as a superposition of letter-string basis functions: T(theta,t) = sum_l a_l(t) phi_l(theta). Here phi_l(theta) is the angular basis function centered on the letter’s phase position. This gives the model its ﬁrst useful property: letters are blended into a ﬁeld rather than treated as isolated bins. This p
+==================================================
+*** Term: boundary participation ***
+Matches: 1
+*** Term: repetition pressure ***
+Matches: 3

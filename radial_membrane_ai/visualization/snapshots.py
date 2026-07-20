@@ -14,6 +14,9 @@ from radial_membrane_ai.workloads.workload import StabilityBand
 from radial_membrane_ai.kernel_regimes.regime import KernelRegimeType
 from radial_membrane_ai.workloads.engine import SAOEvent
 
+if TYPE_CHECKING:
+    from radial_membrane_ai.lde.models import LDEBoundaryGeometry, LDEVChannel, LDEString
+
 
 @dataclass
 class MembraneGeometrySnapshot:
@@ -54,6 +57,9 @@ class VisualizationFrame:
     coherence: float
     regime: KernelRegimeType
     rendered: Optional[Figure] = None
+    lde_boundary: Optional[LDEBoundaryGeometry] = None
+    lde_channels: Optional[List[LDEVChannel]] = None
+    lde_strings: Optional[Dict[str, LDEString]] = None
 
 
 @dataclass

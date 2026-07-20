@@ -1,0 +1,60 @@
+Checking for Appendix / Formulas...
+Match: Appendix
+ross U.F.O., L.D.E., or other symbolic systems.
+Appendix A — Textual Signal Logistics: From Neurobaseline to Output
+This appendix formalizes the logistical ﬂow of a textual signal through the L.D.E. system, using the same four-stage governance cycle as the U.F.O. architecture: Neurobaseline, V-Channel Analysis, Governor Layers, and Output Membrane. Each stage is deﬁned below with its operational role, mathematical objects, and transformation rules. 1. Neurobaseline — raw symbolic input 2. V-Channel Analysis — structured routing and depth extraction 3. Governor Layers — constraint, cost, and reconstruction control 4. Output Membrane — identity-preserving textual geometry
+A.1 Neurobaseline: Raw Symbolic Intake
+The Neurobaseline is the zero-assumption state of the text. It contains the raw character stream, original casing, punctuation, spacing, word boundaries, and paragraph boundaries. This layer is not geometric. It is the source of truth for reconstruction. o T_raw = original text o B = reconstruction metadata: casing, punctuati
+==================================================
+Match: appendix
+nal Logistics: From Neurobaseline to Output
+This appendix formalizes the logistical ﬂow of a textual signal through the L.D.E. system, using the same four-stage governance cycle as the U.F.O. architecture: Neurobaseline, V-Channel Analysis, Governor Layers, and Output Membrane. Each stage is deﬁned below with its operational role, mathematical objects, and transformation rules. 1. Neurobaseline — raw symbolic input 2. V-Channel Analysis — structured routing and depth extraction 3. Governor Layers — constraint, cost, and reconstruction control 4. Output Membrane — identity-preserving textual geometry
+A.1 Neurobaseline: Raw Symbolic Intake
+The Neurobaseline is the zero-assumption state of the text. It contains the raw character stream, original casing, punctuation, spacing, word boundaries, and paragraph boundaries. This layer is not geometric. It is the source of truth for reconstruction. o T_raw = original text o B = reconstruction metadata: casing, punctuation, spacing, and boundaries o T_n = rho(T_raw) = normalized analytic strea
+==================================================
+Match: A.1
+ Membrane — identity-preserving textual geometry
+A.1 Neurobaseline: Raw Symbolic Intake
+The Neurobaseline is the zero-assumption state of the text. It contains the raw character stream, original casing, punctuation, spacing, word boundaries, and paragraph boundaries. This layer is not geometric. It is the source of truth for reconstruction. o T_raw = original text o B = reconstruction metadata: casing, punctuation, spacing, and boundaries o T_n = rho(T_raw) = normalized analytic stream The Neurobaseline provides the initial symbol identities and the exact positional map that all later geometry must respect.
+A.2 V-Channel Analysis: Routing, Depth, and Coherence Extraction
+Once the Neurobaseline is established, the analytic stream T_n enters the V-Channel analysis layer. This is where letters become governed Strings, and words become routing corridors. For each letter l, the system estimates activation a_l, spread s_l, tension tau_l, stiffness k_l, depth d_l, position set P_l, and phase position theta_l. For each ordered pair i to j
+==================================================
+Match: A.2
+tional map that all later geometry must respect.
+A.2 V-Channel Analysis: Routing, Depth, and Coherence Extraction
+Once the Neurobaseline is established, the analytic stream T_n enters the V-Channel analysis layer. This is where letters become governed Strings, and words become routing corridors. For each letter l, the system estimates activation a_l, spread s_l, tension tau_l, stiffness k_l, depth d_l, position set P_l, and phase position theta_l. For each ordered pair i to j, the system estimates adjacency pressure A_ij, phase alignment alpha_ij, coherence Q_ij, and cost-aware channel pressure P_i_to_j.
+
+ 17
+o structural importance o repetition pressure o boundary roles o semantic clustering o routing corridors This is the analysis engine of L.D.E. — the textual equivalent of the U.F.O. V-Channel reasoning layer.
+A.3 Governor Layers: Constraint, Cost, and
+Reconstructability
+The Governor Layer enforces rules, limits, and reconstruction guarantees. It determines what must be preserved, what may be compressed, what is optional,
+==================================================
+Match: A.3
+ivalent of the U.F.O. V-Channel reasoning layer.
+A.3 Governor Layers: Constraint, Cost, and
+Reconstructability
+The Governor Layer enforces rules, limits, and reconstruction guarantees. It determines what must be preserved, what may be compressed, what is optional, and what is diagnostic. 1. Essential Layer: symbol identities, positions, and ordering. 2. Structural Layer: spacing, punctuation, casing, and word boundaries. 3. Geometric Layer: depth, spread, tension, stiffness, and coherence. 4. Diagnostic Layer: curvature, asymmetry, expressivity, and cost. The Governor ensures T_raw = R(S, P, B) whenever full-reconstruction mode is required. This is the textual equivalent of the U.F.O. Governor Control Layer.
+A.4 Output Membrane: Boundary Geometry and Identity Signature
+After governance, the system produces the textual membrane — the geometric identity of the paragraph. The membrane is deﬁned by the depth vector D, activation vector A, coherence matrix Q, boundary signature G(theta), and reconstruction state R. The boundary is r(t
+==================================================
+Match: A.4
+equivalent of the U.F.O. Governor Control Layer.
+A.4 Output Membrane: Boundary Geometry and Identity Signature
+After governance, the system produces the textual membrane — the geometric identity of the paragraph. The membrane is deﬁned by the depth vector D, activation vector A, coherence matrix Q, boundary signature G(theta), and reconstruction state R. The boundary is r(theta) = r_0 + sum_l d_l phi_l(theta). o outward stretches from high-depth letters o inward collapses from low-importance letters o curvature from symbolic pressure o asymmetry as stylistic ﬁngerprint o smooth corridors from high-coherence V-Channels This is the ﬁnal output — the identity-preserving geometric representation of the text.
+Appendix A Summary
+Stage L.D.E. Role U.F.O. Analog Output Neurobaseline Raw symbolic intake Neutral Baseline T_raw, B, T_n
+
+ 18
+V-Channels Routing, depth, coherence V-Shaped Reasoning Channels S, D, Q
+Governor Layers Constraint, cost, reconstruction Governor Control Layer S, P , B, reconstruction guarantees Output Membrane Bou
+==================================================
+Match: Appendix
+preserving geometric representation of the text.
+Appendix A Summary
+Stage L.D.E. Role U.F.O. Analog Output Neurobaseline Raw symbolic intake Neutral Baseline T_raw, B, T_n
+
+ 18
+V-Channels Routing, depth, coherence V-Shaped Reasoning Channels S, D, Q
+Governor Layers Constraint, cost, reconstruction Governor Control Layer S, P , B, reconstruction guarantees Output Membrane Boundary geometry, identity Membrane Field G(theta), R    Note of Thanks to Reviewers: Thank you for taking the time to review this document and the supplements I’ve shared throughout the application process. I know that evaluating early-stage research requires patience, curiosity, and a willingness to look closely at both the promise and the unfinished edges of an idea. I’m genuinely grateful for that attention. My goal is to contribute as someone who can think across systems, language, AI behavior, and practical product constraints. Everything I’ve submitted is offered in that spirit — not as a finished claim, but as a structured research direction meant to be
+==================================================

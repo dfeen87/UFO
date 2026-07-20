@@ -1,0 +1,37 @@
+Match: BoundaryParticipation
+        s_l ← (max(P_l) - min(P_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the boundary signature exposes paragraph shape, and the reconstruction map preserves exact recoverability when
+==================================================
+Match: RepetitionPressure
+(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the boundary signature exposes paragraph shape, and the reconstruction map preserves exact recoverability when required.
+10. Worked Example: The Fl
+==================================================
+Match: LocalTension
+l l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the boundary signature exposes paragraph shape, and the reconstruction map preserves exact recoverability when required.
+10. Worked Example: The Flag Sentence
+Example input: “Read
+==================================================
+Match: Stiffness
+cipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the boundary signature exposes paragraph shape, and the reconstruction map preserves exact recoverability when required.
+10. Worked Example: The Flag Sentence
+Example input: “Read from left to right, the U.S.
+==================================================
+Match: ReconstructionCost
+epetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the boundary signature exposes paragraph shape, and the reconstruction map preserves exact recoverability when required.
+10. Worked Example: The Flag Sentence
+Example input: “Read from left to right, the U.S. flag becomes a story — beginnings, gro
+==================================================

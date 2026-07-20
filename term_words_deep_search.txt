@@ -1,0 +1,82 @@
+Searching for specific equations in page 10-12...
+*** Word: tension ***
+Matches: 10
+outside the U.F.O. architecture. In L.D.E., each letter is treated as a governed String with depth, tension, and positional identity. Words become V-Channels, sentences become membrane ﬁelds, and paragraphs become identity integration. L.D.E. operates within a governed development environment (I.D.E.) that provides the structural rules, semantic bindings, and execution constraints required for symbolic consistency. Instead of treating letters as
+------------------------------
+chitecture, a facet or string is not a passive label. It is a governed unit with activation, depth, tension, stiffness, routing behavior, and cost. L.D.E. translates that idea into language. Each letter becomes a governed String: it has a location in the text, a phase position in the symbolic membrane, an activation strength based on recurrence, a depth value based on structural importance, and a tension value based on clustering, repetition, or
+------------------------------
+ne, an activation strength based on recurrence, a depth value based on structural importance, and a tension value based on clustering, repetition, or interpretive pressure. L.D.E. can also be understood as operating inside a lightweight I.D.E. for governed symbolic systems. In this view, letters and strings are authored as symbolic units, V-Channels are interpreted as routing constraints, and the textual membrane is executed as a reconstructable
+------------------------------
+ase position, theta_l o position set, P_l o spread or distribution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translat
+------------------------------
+en as d_l = f(a_l, s_l, tau_l, Q_l, role_l), where a_l is activation, s_l is spread, tau_l is local tension, Q_l is neighborhood coherence, and role_l captures structural contribution such as beginning, ending, repetition, or cluster membership. Depth can be decomposed into several interpretable components: frequency-weighted depth, positional-variance depth, boundary depth, repetition depth, and semantic-pressure depth. This decomposition keeps
+------------------------------
+*** Word: stiffness ***
+Matches: 6
+e, a facet or string is not a passive label. It is a governed unit with activation, depth, tension, stiffness, routing behavior, and cost. L.D.E. translates that idea into language. Each letter becomes a governed String: it has a location in the text, a phase position in the symbolic membrane, an activation strength based on recurrence, a depth value based on structural importance, and a tension value based on clustering, repetition, or interpret
+------------------------------
+osition set, P_l o spread or distribution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual do
+------------------------------
+layer: word boundaries, punctuation, casing, and spacing o geometric layer: depth, spread, tension, stiffness, and coherence o diagnostic layer: curvature, asymmetry, expressivity, and cost The reconstruction operator can be stated as Text = R(S, P, B), where S is the set of letter strings, P is the complete position map, and B is the boundary and formatting structure needed to restore spacing, punctuation, casing, and paragraph order. L.D.E. is
+------------------------------
+cipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):
+------------------------------
+uting corridors. For each letter l, the system estimates activation a_l, spread s_l, tension tau_l, stiffness k_l, depth d_l, position set P_l, and phase position theta_l. For each ordered pair i to j, the system estimates adjacency pressure A_ij, phase alignment alpha_ij, coherence Q_ij, and cost-aware channel pressure P_i_to_j.
+
+ 17
+o structural importance o repetition pressure o boundary roles o semantic clustering o routing corridors This
+------------------------------
+*** Word: cost ***
+Matches: 20
+sive label. It is a governed unit with activation, depth, tension, stiffness, routing behavior, and cost. L.D.E. translates that idea into language. Each letter becomes a governed String: it has a location in the text, a phase position in the symbolic membrane, an activation strength based on recurrence, a depth value based on structural importance, and a tension value based on clustering, repetition, or interpretive pressure. L.D.E. can also be
+------------------------------
+el; it names the environment in which governed symbolic text becomes programmable, inspectable, and cost-aware.
+
+ 2
+This creates a layered linguistic geometry. At the smallest scale, letters are Strings. At the next scale, words are V-Channels: bounded corridors where letter strings route through ordered adjacency, phonetic rhythm, spelling structure, and semantic pressure. At the sentence scale, those V-Channels form a membrane ﬁeld: a contin
+------------------------------
+stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase
+------------------------------
+), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet, a simple initialization is theta_l = 2*pi*i/26, where i indexes the letter. Other alphabets, ph
+------------------------------
+ble geometry rather than a static co-occurrence table.
+6. Textual Governor:
+Reconstructability
+, Cost, and Constraint
+ The textual governor determines how much information must be retained for the encoding to remain useful, compact, and reconstructable. It does not erase the original text unless lossy compression is explicitly allowed. Instead, it separates essential reconstruction data from optional interpretability features. The textual gove
+------------------------------
+*** Word: participation ***
+Matches: 1
+component. o S_l = (max P_l - min P_l) / (N - 1), the normalized spread component. o B_l = boundary participation, increased when the letter appears near word starts, word ends, sentence start, or sentence end. o R_l = repetition pressure, increased by short-gap recurrence or clustering. o C_l = channel contribution, the average coherence of l with neighboring or repeated partner strings.
+
+ 11
+For a simple demonstration, choose equal weights w
+------------------------------
+*** Word: pressure ***
+Matches: 21
+ased on structural importance, and a tension value based on clustering, repetition, or interpretive pressure. L.D.E. can also be understood as operating inside a lightweight I.D.E. for governed symbolic systems. In this view, letters and strings are authored as symbolic units, V-Channels are interpreted as routing constraints, and the textual membrane is executed as a reconstructable geometric state. The I.D.E. idea does not replace the L.D.E. mo
+------------------------------
+e letter strings route through ordered adjacency, phonetic rhythm, spelling structure, and semantic pressure. At the sentence scale, those V-Channels form a membrane ﬁeld: a continuous symbolic surface whose activation, curvature, and coherence can be measured. At the paragraph scale, multiple sentence ﬁelds integrate into a larger identity state that reﬂects topic, style, rhythm, authorship, and reconstructable structure. The central claim is th
+------------------------------
+ords and motifs. Boundary deformation shows how the sentence or paragraph takes shape under textual pressure. Reconstruction metadata preserves exact recoverability when full-reconstruction mode is required. The purpose of this note is to deﬁne that architecture clearly enough for implementation. The following sections move from the basic letter-string model to phase geometry, depth functions, V-Channel routing, textual governance, deformable par
+------------------------------
+rds how a symbol participates in the paragraph’s geometry, rhythm, reconstruction, and interpretive pressure. o activation or frequency, a_l o phase position, theta_l o position set, P_l o spread or distribution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t
+------------------------------
+s, while a common letter may have low depth if it is uniformly distributed and carries little local pressure. A basic depth rule can be written as d_l = f(a_l, s_l, tau_l, Q_l, role_l), where a_l is activation, s_l is spread, tau_l is local tension, Q_l is neighborhood coherence, and role_l captures structural contribution such as beginning, ending, repetition, or cluster membership. Depth can be decomposed into several interpretable components:
+------------------------------

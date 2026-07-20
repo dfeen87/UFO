@@ -1,0 +1,102 @@
+=== BoundaryParticipation ===
+        s_l ← (max(P_l) - min(P_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ←
+--------------------
+=== RepetitionPressure ===
+(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ←
+--------------------
+=== LocalTension ===
+l l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvat
+--------------------
+=== Stiffness ===
+e, a facet or string is not a passive label. It is a governed unit with activation, depth, tension, stiffness, routing behavior, and cost. L.D.E. translates that idea into language. Each letter becomes a governed String: it has a location in the text, a phase position in the symbolic membrane, an activation strength based on recurrence, a depth value based on structural importance, and a tension value based on clustering, repetition, or interpretive pressure. L.D.E. can also be understood as operating inside a lightweight I.D.E. for governed symbolic systems. In this view, letters and strings are authored as symbolic units, V-Channels are interpreted as routing constraints, and the textual m
+--------------------
+=== Stiffness ===
+osition set, P_l o spread or distribution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet, a simple initialization is theta_l = 2*pi*i/26, where i
+--------------------
+=== ReconstructionCost ===
+epetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:
+--------------------
+=== AdjacencyPressure ===
+tiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho
+--------------------
+=== Coherence ===
+ose V-Channels form a membrane ﬁeld: a continuous symbolic surface whose activation, curvature, and coherence can be measured. At the paragraph scale, multiple sentence ﬁelds integrate into a larger identity state that reﬂects topic, style, rhythm, authorship, and reconstructable structure. The central claim is therefore stronger than ordinary character analysis. L.D.E. does not merely count letters. It assigns letters roles inside a governed ﬁeld. A frequent letter may have low depth if it is evenly distributed and structurally neutral; a rare letter may have high depth if it anchors a meaningful cluster, marks a boundary, or participates in a high-coherence V-Channel. This lets the model d
+--------------------
+=== Coherence ===
+may have high depth if it anchors a meaningful cluster, marks a boundary, or participates in a high-coherence V-Channel. This lets the model distinguish between presence, importance, and recoverability. In this framing, a document is not only a sequence of tokens. It is a symbolic membrane whose smallest units carry measurable identity. Letter activation shows what symbols are present. Letter-depth shows which symbols matter structurally. V-Channel coherence shows how strings route into words and motifs. Boundary deformation shows how the sentence or paragraph takes shape under textual pressure. Reconstruction metadata preserves exact recoverability when full-reconstruction mode is required.
+--------------------
+=== w_f ===
+abet or symbol set     theta          // phase map for symbols     W              // depth weights (w_f, w_s, w_b, w_r, w_c)     phi_l          // basis functions for boundary geometry     rho            // reconstruction policy (full-reconstruction or compressed)  Output:     L = (S, P, D, Q, G, B)   // full L.D.E. state  Procedure LDE_Encode(T_raw):  1.  B ← ExtractReconstructionMetadata(T_raw)         // casing, punctuation, spacing, boundaries  2.  T_n ← Normalize(T_raw, rho)         // lowercase, retain selected symbols, encode separators  3.  Initialize:
+
+ 7
+        For each symbol l in Sigma:             P_l ← empty set             n_l ← 0             a_l ← 0             d_l ← 0
+--------------------
+=== w_f ===
+a_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor insi
+--------------------
+=== F_l ===
+- theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L
+--------------------
+=== F_l ===
+ral mid-strength directional strings; and a smaller but semantically clustered g-string. Letter n_l F_l = n_l / 10 Span S_l = span / 79 e 10 1.0000 79 - 2 = 77 0.9747 o 8 0.8000 67 - 8 = 59 0.7468 t 6 0.6000 70 - 10 = 60 0.7595 a 6 0.6000 77 - 3 = 74 0.9367 g 4 0.4000 61 - 28 = 33 0.4177 h 4 0.4000 76 - 20 = 56 0.7089
+10.4 Depth Function
+Depth should reward more than raw frequency. A useful ﬁrst implementation is a weighted sum of normalized components: d_l = w_f F_l + w_s S_l + w_b B_l + w_r R_l + w_c C_l, with weights constrained so w_f + w_s + w_b + w_r + w_c = 1. o F_l = n_l / max_j n_j, the normalized frequency component. o S_l = (max P_l - min P_l) / (N - 1), the normalized spread co
+--------------------
+=== S_l ===
+ctivation or frequency, a_l o phase position, theta_l o position set, P_l o spread or distribution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet
+--------------------
+=== S_l ===
+ghboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet, a simple initialization is theta_l = 2*pi*i/26, where i indexes the letter. Other alphabets, phonetic systems, punctuation marks, or learned symbol sets can be assigned their own phase maps.
+--------------------
+=== B_l ===
+(T_n)         s_l ← (max(P_l) - min(P_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(th
+--------------------
+=== B_l ===
+    Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalize
+--------------------
+=== R_l ===
+ / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)
+--------------------
+=== R_l ===
+ Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream s
+--------------------
+=== C_l ===
+ess, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet, a simple initialization is theta_l = 2*pi*i/26, where i indexes the letter. Other alphabets, phonetic systems, punctuation marks, or learned symbol sets can be a
+--------------------
+=== C_l ===
+ost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet, a simple initialization is theta_l = 2*pi*i/26, where i indexes the letter. Other alphabets, phonetic systems, punctuation marks, or learned symbol sets can be assigned their own phase maps. The paragraph ﬁeld can then be approximated as a superposition of
+--------------------
