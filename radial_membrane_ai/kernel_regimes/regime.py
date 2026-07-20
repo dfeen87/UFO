@@ -3,10 +3,9 @@ Kernel Regime classes and definitions for the U.F.O. Kernel Regime Expansion Lay
 """
 
 from __future__ import annotations
-import math
 import random
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple, Set
+from typing import Any, Callable, Dict, Optional
 
 
 class KernelRegimeType(Enum):
@@ -64,17 +63,21 @@ def balanced_closure_ratio_rule(agent: Any, cluster: Any, engine: Any) -> Dict[s
         "rollback_type": None
     }
 
+
 def balanced_tension_rule(agent: Any, cluster: Any, engine: Any) -> float:
     return 0.0
 
+
 def balanced_capacity_rule(agent: Any, cluster: Any, engine: Any) -> None:
     return None
+
 
 def balanced_sao_rule(agent: Any, cluster: Any, engine: Any) -> Dict[str, Any]:
     return {
         "allowed_ranges": {"short", "mid", "long"},
         "coherence_required": 0.0
     }
+
 
 def balanced_stability_rule(agent: Any, cluster: Any, engine: Any) -> Dict[str, Any]:
     return {
@@ -84,6 +87,7 @@ def balanced_stability_rule(agent: Any, cluster: Any, engine: Any) -> Dict[str, 
         "quarantine": False,
         "violation_severity": "none"
     }
+
 
 def balanced_temporal_rule(agent: Any, cluster: Any, engine: Any) -> Dict[str, Any]:
     return {

@@ -4,9 +4,8 @@ Multi-Agent Governed Simulation Engine for the U.F.O. architecture.
 
 from __future__ import annotations
 import numpy as np
-import math
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, TYPE_CHECKING, Set
+from typing import Dict, Any, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from radial_membrane_ai.semantic_memory.core import MeshSemanticMemory
@@ -28,7 +27,7 @@ from radial_membrane_ai.collective_reasoning.coherence import coherence_score
 
 # Kernel Regime imports
 from radial_membrane_ai.kernel_regimes.manager import RegimeManager
-from radial_membrane_ai.kernel_regimes.regime import KernelRegimeType, REGIMES
+from radial_membrane_ai.kernel_regimes.regime import KernelRegimeType
 
 
 @dataclass
@@ -165,17 +164,39 @@ class MultiAgentEngine:
         excitation = np.array(excitation, dtype=np.float64)
 
         # 0. Backup State
+        back_t = self.temporal_state
         backup = {
             "agents_state": [],
-            "t_state_accumulated_tension": self.temporal_state.accumulated_tension if hasattr(self, "temporal_state") else 0.0,
-            "t_state_consecutive_ticks": self.temporal_state.consecutive_admissible_ticks if hasattr(self, "temporal_state") else 0,
-            "t_state_green_ticks": self.temporal_state.green_ticks_count if hasattr(self, "temporal_state") else 0,
-            "t_state_tension_history": list(self.temporal_state.tension_history) if hasattr(self, "temporal_state") else [],
-            "t_state_curvature_history": list(self.temporal_state.curvature_history) if hasattr(self, "temporal_state") else [],
-            "t_state_admissibility_history": list(self.temporal_state.admissibility_history) if hasattr(self, "temporal_state") else [],
-            "mesh_memory_store": dict(self.mesh_memory.global_store) if hasattr(self, "mesh_memory") and self.mesh_memory else {},
-            "mesh_memory_history": list(self.mesh_memory.history) if hasattr(self, "mesh_memory") and self.mesh_memory else {},
-            "ledger_records": list(self.mesh_governance.ledger.records) if hasattr(self, "mesh_governance") else [],
+            "t_state_accumulated_tension": (
+                back_t.accumulated_tension if hasattr(self, "temporal_state") else 0.0
+            ),
+            "t_state_consecutive_ticks": (
+                back_t.consecutive_admissible_ticks if hasattr(self, "temporal_state") else 0
+            ),
+            "t_state_green_ticks": (
+                back_t.green_ticks_count if hasattr(self, "temporal_state") else 0
+            ),
+            "t_state_tension_history": (
+                list(back_t.tension_history) if hasattr(self, "temporal_state") else []
+            ),
+            "t_state_curvature_history": (
+                list(back_t.curvature_history) if hasattr(self, "temporal_state") else []
+            ),
+            "t_state_admissibility_history": (
+                list(back_t.admissibility_history) if hasattr(self, "temporal_state") else []
+            ),
+            "mesh_memory_store": (
+                dict(self.mesh_memory.global_store)
+                if hasattr(self, "mesh_memory") and self.mesh_memory else {}
+            ),
+            "mesh_memory_history": (
+                list(self.mesh_memory.history)
+                if hasattr(self, "mesh_memory") and self.mesh_memory else []
+            ),
+            "ledger_records": (
+                list(self.mesh_governance.ledger.records)
+                if hasattr(self, "mesh_governance") else []
+            ),
             "band_history": list(self.band_history),
             "h_hol_history": list(self.h_hol_history),
             "c_mesh_history": list(self.c_mesh_history),
@@ -185,6 +206,8 @@ class MultiAgentEngine:
         }
 
         for agent in self.agents:
+            a_ts = agent.membrane.temporal_state if hasattr(agent.membrane, "temporal_state") else None
+            a_sm = agent.semantic_memory if hasattr(agent, "semantic_memory") else None
             agent_backup = {
                 "agent_id": agent.agent_id,
                 "activations": [s.activation for s in agent.membrane.strings],
@@ -196,14 +219,26 @@ class MultiAgentEngine:
                 "coherence_history": list(agent.coherence_history),
                 "activation_history": list(agent.activation_history),
                 "residual_history": list(agent.residual_history),
-                "t_state_accumulated_tension": agent.membrane.temporal_state.accumulated_tension if hasattr(agent.membrane, "temporal_state") else 0.0,
-                "t_state_consecutive_ticks": agent.membrane.temporal_state.consecutive_admissible_ticks if hasattr(agent.membrane, "temporal_state") else 0,
-                "t_state_green_ticks": agent.membrane.temporal_state.green_ticks_count if hasattr(agent.membrane, "temporal_state") else 0,
-                "t_state_tension_history": list(agent.membrane.temporal_state.tension_history) if hasattr(agent.membrane, "temporal_state") else [],
-                "t_state_curvature_history": list(agent.membrane.temporal_state.curvature_history) if hasattr(agent.membrane, "temporal_state") else [],
-                "t_state_admissibility_history": list(agent.membrane.temporal_state.admissibility_history) if hasattr(agent.membrane, "temporal_state") else [],
-                "semantic_memory_store": dict(agent.semantic_memory.local_store) if hasattr(agent, "semantic_memory") and agent.semantic_memory else {},
-                "semantic_memory_history": list(agent.semantic_memory.history) if hasattr(agent, "semantic_memory") and agent.semantic_memory else [],
+                "t_state_accumulated_tension": (
+                    a_ts.accumulated_tension if a_ts else 0.0
+                ),
+                "t_state_consecutive_ticks": (
+                    a_ts.consecutive_admissible_ticks if a_ts else 0
+                ),
+                "t_state_green_ticks": (
+                    a_ts.green_ticks_count if a_ts else 0
+                ),
+                "t_state_tension_history": (
+                    list(a_ts.tension_history) if a_ts else []
+                ),
+                "t_state_curvature_history": (
+                    list(a_ts.curvature_history) if a_ts else []
+                ),
+                "t_state_admissibility_history": (
+                    list(a_ts.admissibility_history) if a_ts else []
+                ),
+                "semantic_memory_store": dict(a_sm.local_store) if a_sm else {},
+                "semantic_memory_history": list(a_sm.history) if a_sm else [],
             }
             backup["agents_state"].append(agent_backup)  # type: ignore
 
@@ -255,7 +290,10 @@ class MultiAgentEngine:
                 t_bar_eval = t_state.accumulated_tension if t_state is not None else 0.0
                 coherence_eval = agent.shard.quality_score
                 current_band_eval = self.band_history[-1] if self.band_history else "green"
-                max_curv_eval = float(max([agent.boundary.curvature(s.theta) for s in agent.membrane.strings])) if t_state is not None else 0.0
+                max_curv_eval = (
+                    float(max([agent.boundary.curvature(s.theta) for s in agent.membrane.strings]))
+                    if t_state is not None else 0.0
+                )
 
                 active_regime = self.regime_manager.evaluate_switching_triggers(
                     entity=agent,
@@ -291,9 +329,14 @@ class MultiAgentEngine:
                     if cl_res.get("clamped_activations") is not None:
                         for idx, s in enumerate(agent.membrane.strings):
                             s.activation = cl_res["clamped_activations"][idx]
-                    self.interventions.append(f"Agent {agent.agent_id} Deterministic Admissibility Violation: Clamped activations, soft rollback.")
+                    self.interventions.append(
+                        f"Agent {agent.agent_id} Deterministic Admissibility Violation: "
+                        f"Clamped activations, soft rollback."
+                    )
                     # Restore previous activations from backup
-                    matching_ab = next(ab for ab in backup["agents_state"] if ab["agent_id"] == agent.agent_id)  # type: ignore
+                    matching_ab = next(
+                        ab for ab in backup["agents_state"] if ab["agent_id"] == agent.agent_id  # type: ignore
+                    )
                     for idx, s in enumerate(agent.membrane.strings):
                         s.activation = matching_ab["activations"][idx]  # type: ignore
 
@@ -302,12 +345,13 @@ class MultiAgentEngine:
                     v_load = float(sum(s.radius for s in agent.membrane.strings))
                     c_tax = float(agent.shard.cost_factor * sum(s.cost for s in agent.membrane.strings))
                     sao_intensity = 0.0
-                    mem_writes = float(len(agent.semantic_memory.history)) if hasattr(agent, "semantic_memory") else 0.0
+                    mem_writes = float(len(agent.semantic_memory.history)) \
+                        if hasattr(agent, "semantic_memory") else 0.0
 
                     tension_mult = temp_rule_res.get("tension_accumulation_multiplier", 1.0)
                     tension_noise_val = active_regime.tension_rule(agent, None, self)
 
-                    t_acc = t_state.update_tension_accumulation(
+                    t_state.update_tension_accumulation(
                         v_channel_load=v_load,
                         cost_taxonomy_contrib=c_tax,
                         sao_promotions_intensity=sao_intensity,
@@ -501,7 +545,9 @@ class MultiAgentEngine:
                         quarantine_ticks=5,
                         failing_ids={a.agent_id for a in active_agents} if violations else None
                     )
-                    self.interventions.append(f"Collective reasoning rollback triggered. Violations: {violations}")
+                    self.interventions.append(
+                        f"Collective reasoning rollback triggered. Violations: {violations}"
+                    )
 
             # 7. Execute paired agent SAO promotions (legacy fallback / alignment checks)
             p_sao_sum = 0.0
@@ -510,7 +556,8 @@ class MultiAgentEngine:
                 for i in range(len(self.agents) - 1):
                     agent_l = self.agents[i]
                     agent_r = self.agents[i + 1]
-                    if agent_l.shard.state != ShardState.QUARANTINED and agent_r.shard.state != ShardState.QUARANTINED:
+                    if agent_l.shard.state != ShardState.QUARANTINED \
+                            and agent_r.shard.state != ShardState.QUARANTINED:
                         reg_l = self.regime_manager.get_regime_for_agent(agent_l.agent_id)
                         reg_r = self.regime_manager.get_regime_for_agent(agent_r.agent_id)
 
@@ -521,9 +568,11 @@ class MultiAgentEngine:
                         blocked_l = ("mid" not in sao_rule_l.get("allowed_ranges", {"short", "mid", "long"}))
                         blocked_r = ("mid" not in sao_rule_r.get("allowed_ranges", {"short", "mid", "long"}))
 
-                        if sao_rule_l.get("only_at_phase_boundary", False) and not sao_rule_l.get("is_boundary", False):
+                        if sao_rule_l.get("only_at_phase_boundary", False) \
+                                and not sao_rule_l.get("is_boundary", False):
                             blocked_l = True
-                        if sao_rule_r.get("only_at_phase_boundary", False) and not sao_rule_r.get("is_boundary", False):
+                        if sao_rule_r.get("only_at_phase_boundary", False) \
+                                and not sao_rule_r.get("is_boundary", False):
                             blocked_r = True
 
                         if blocked_l or blocked_r:
@@ -567,7 +616,9 @@ class MultiAgentEngine:
                     if st_res.get("quarantine", False):
                         agent.quarantine_timer = 5
                         agent.shard.state = ShardState.QUARANTINED
-                        self.interventions.append(f"Agent {agent.agent_id} placed under quarantine for stability violation.")
+                        self.interventions.append(
+                            f"Agent {agent.agent_id} placed under quarantine for stability violation."
+                        )
 
             # Check global stability rule
             if not glob_stab_res.get("valid", True):
@@ -588,29 +639,57 @@ class MultiAgentEngine:
                     ag.activation_history = list(ab["activation_history"])  # type: ignore
                     ag.residual_history = list(ab["residual_history"])  # type: ignore
                     if hasattr(ag.membrane, "temporal_state"):
-                        ag.membrane.temporal_state.accumulated_tension = ab["t_state_accumulated_tension"]  # type: ignore
-                        ag.membrane.temporal_state.consecutive_admissible_ticks = ab["t_state_consecutive_ticks"]  # type: ignore
-                        ag.membrane.temporal_state.green_ticks_count = ab["t_state_green_ticks"]  # type: ignore
+                        ag.membrane.temporal_state.accumulated_tension = (
+                            ab["t_state_accumulated_tension"]  # type: ignore
+                        )
+                        ag.membrane.temporal_state.consecutive_admissible_ticks = (
+                            ab["t_state_consecutive_ticks"]  # type: ignore
+                        )
+                        ag.membrane.temporal_state.green_ticks_count = (
+                            ab["t_state_green_ticks"]  # type: ignore
+                        )
                         ag.membrane.temporal_state.tension_history.clear()
-                        ag.membrane.temporal_state.tension_history.extend(ab["t_state_tension_history"])  # type: ignore
+                        ag.membrane.temporal_state.tension_history.extend(
+                            ab["t_state_tension_history"]  # type: ignore
+                        )
                         ag.membrane.temporal_state.curvature_history.clear()
-                        ag.membrane.temporal_state.curvature_history.extend(ab["t_state_curvature_history"])  # type: ignore
+                        ag.membrane.temporal_state.curvature_history.extend(
+                            ab["t_state_curvature_history"]  # type: ignore
+                        )
                         ag.membrane.temporal_state.admissibility_history.clear()
-                        ag.membrane.temporal_state.admissibility_history.extend(ab["t_state_admissibility_history"])  # type: ignore
+                        ag.membrane.temporal_state.admissibility_history.extend(
+                            ab["t_state_admissibility_history"]  # type: ignore
+                        )
                     if hasattr(ag, "semantic_memory") and ag.semantic_memory:
-                        ag.semantic_memory.local_store = dict(ab["semantic_memory_store"])  # type: ignore
-                        ag.semantic_memory.history = list(ab["semantic_memory_history"])  # type: ignore
+                        ag.semantic_memory.local_store = dict(
+                            ab["semantic_memory_store"]  # type: ignore
+                        )
+                        ag.semantic_memory.history = list(
+                            ab["semantic_memory_history"]  # type: ignore
+                        )
 
                 if hasattr(self, "temporal_state"):
-                    self.temporal_state.accumulated_tension = backup["t_state_accumulated_tension"]  # type: ignore
-                    self.temporal_state.consecutive_admissible_ticks = backup["t_state_consecutive_ticks"]  # type: ignore
-                    self.temporal_state.green_ticks_count = backup["t_state_green_ticks"]  # type: ignore
+                    self.temporal_state.accumulated_tension = (
+                        backup["t_state_accumulated_tension"]  # type: ignore
+                    )
+                    self.temporal_state.consecutive_admissible_ticks = (
+                        backup["t_state_consecutive_ticks"]  # type: ignore
+                    )
+                    self.temporal_state.green_ticks_count = (
+                        backup["t_state_green_ticks"]  # type: ignore
+                    )
                     self.temporal_state.tension_history.clear()
-                    self.temporal_state.tension_history.extend(backup["t_state_tension_history"])  # type: ignore
+                    self.temporal_state.tension_history.extend(
+                        backup["t_state_tension_history"]  # type: ignore
+                    )
                     self.temporal_state.curvature_history.clear()
-                    self.temporal_state.curvature_history.extend(backup["t_state_curvature_history"])  # type: ignore
+                    self.temporal_state.curvature_history.extend(
+                        backup["t_state_curvature_history"]  # type: ignore
+                    )
                     self.temporal_state.admissibility_history.clear()
-                    self.temporal_state.admissibility_history.extend(backup["t_state_admissibility_history"])  # type: ignore
+                    self.temporal_state.admissibility_history.extend(
+                        backup["t_state_admissibility_history"]  # type: ignore
+                    )
                 if hasattr(self, "mesh_memory") and self.mesh_memory:
                     self.mesh_memory.global_store = dict(backup["mesh_memory_store"])  # type: ignore
                     self.mesh_memory.history = list(backup["mesh_memory_history"])  # type: ignore
@@ -623,7 +702,9 @@ class MultiAgentEngine:
                 self.sao_events = list(backup["sao_events"])  # type: ignore
                 self.residual_history = list(backup["residual_history"])  # type: ignore
 
-                self.interventions.append(f"Regime Stability Violation: Complete Rollback triggered globally (band was '{band}').")
+                self.interventions.append(
+                    f"Regime Stability Violation: Complete Rollback triggered globally (band was '{band}')."
+                )
 
         finally:
             # Restore agent boundaries get_radius scale

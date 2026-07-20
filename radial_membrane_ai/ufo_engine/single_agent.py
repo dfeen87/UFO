@@ -28,7 +28,7 @@ from radial_membrane_ai.ufo_engine.config import CostWeights, StabilityBandConfi
 
 # Kernel Regime imports
 from radial_membrane_ai.kernel_regimes.manager import RegimeManager
-from radial_membrane_ai.kernel_regimes.regime import KernelRegimeType, REGIMES
+from radial_membrane_ai.kernel_regimes.regime import KernelRegimeType
 
 
 @dataclass
@@ -187,18 +187,37 @@ class SingleAgentEngine:
         excitation = np.array(excitation, dtype=np.float64)
 
         # 0. Backup State for precise rollback
+        m_t = self.membrane.temporal_state
         backup: Dict[str, Any] = {
             "activations": [s.activation for s in self.membrane.strings],
             "radii": [s.radius for s in self.membrane.strings],
             "deviations": dict(self.boundary.radius_deviation),
-            "t_state_accumulated_tension": self.membrane.temporal_state.accumulated_tension if hasattr(self.membrane, "temporal_state") else 0.0,
-            "t_state_consecutive_ticks": self.membrane.temporal_state.consecutive_admissible_ticks if hasattr(self.membrane, "temporal_state") else 0,
-            "t_state_green_ticks": self.membrane.temporal_state.green_ticks_count if hasattr(self.membrane, "temporal_state") else 0,
-            "t_state_tension_history": list(self.membrane.temporal_state.tension_history) if hasattr(self.membrane, "temporal_state") else [],
-            "t_state_curvature_history": list(self.membrane.temporal_state.curvature_history) if hasattr(self.membrane, "temporal_state") else [],
-            "t_state_admissibility_history": list(self.membrane.temporal_state.admissibility_history) if hasattr(self.membrane, "temporal_state") else [],
-            "semantic_memory_store": dict(self.semantic_memory.local_store) if hasattr(self, "semantic_memory") and self.semantic_memory else {},
-            "semantic_memory_history": list(self.semantic_memory.history) if hasattr(self, "semantic_memory") and self.semantic_memory else [],
+            "t_state_accumulated_tension": (
+                m_t.accumulated_tension if hasattr(self.membrane, "temporal_state") else 0.0
+            ),
+            "t_state_consecutive_ticks": (
+                m_t.consecutive_admissible_ticks if hasattr(self.membrane, "temporal_state") else 0
+            ),
+            "t_state_green_ticks": (
+                m_t.green_ticks_count if hasattr(self.membrane, "temporal_state") else 0
+            ),
+            "t_state_tension_history": (
+                list(m_t.tension_history) if hasattr(self.membrane, "temporal_state") else []
+            ),
+            "t_state_curvature_history": (
+                list(m_t.curvature_history) if hasattr(self.membrane, "temporal_state") else []
+            ),
+            "t_state_admissibility_history": (
+                list(m_t.admissibility_history) if hasattr(self.membrane, "temporal_state") else []
+            ),
+            "semantic_memory_store": (
+                dict(self.semantic_memory.local_store)
+                if hasattr(self, "semantic_memory") and self.semantic_memory else {}
+            ),
+            "semantic_memory_history": (
+                list(self.semantic_memory.history)
+                if hasattr(self, "semantic_memory") and self.semantic_memory else []
+            ),
             "ledger_records": list(self.ledger.records) if hasattr(self, "ledger") else [],
             "residual_history": list(self.residual_history),
         }
@@ -274,7 +293,8 @@ class SingleAgentEngine:
         t_bar_eval = t_state.accumulated_tension if t_state is not None else 0.0
         coherence_eval = self.compute_local_coherence()
         current_band_eval = self.band_history[-1] if self.band_history else "green"
-        max_curv_eval = float(max([self.boundary.curvature(s.theta) for s in self.membrane.strings])) if t_state is not None else 0.0
+        max_curv_eval = float(max([self.boundary.curvature(s.theta) for s in self.membrane.strings])) \
+            if t_state is not None else 0.0
 
         active_regime = self.regime_manager.evaluate_switching_triggers(
             entity="single_agent",
@@ -312,7 +332,9 @@ class SingleAgentEngine:
                 if cl_res.get("clamped_activations") is not None:
                     for idx, s in enumerate(self.membrane.strings):
                         s.activation = cl_res["clamped_activations"][idx]
-                self.interventions.append("Deterministic Admissibility Violation: Clamped activations, soft rollback.")
+                self.interventions.append(
+                    "Deterministic Admissibility Violation: Clamped activations, soft rollback."
+                )
                 # Restore previous activations from backup
                 for idx, s in enumerate(self.membrane.strings):
                     s.activation = backup["activations"][idx]
@@ -434,23 +456,41 @@ class SingleAgentEngine:
                         s.radius = backup["radii"][idx]
                     self.boundary.radius_deviation = dict(backup["deviations"])
                     if hasattr(self.membrane, "temporal_state"):
-                        self.membrane.temporal_state.accumulated_tension = backup["t_state_accumulated_tension"]  # type: ignore
-                        self.membrane.temporal_state.consecutive_admissible_ticks = backup["t_state_consecutive_ticks"]  # type: ignore
-                        self.membrane.temporal_state.green_ticks_count = backup["t_state_green_ticks"]  # type: ignore
+                        self.membrane.temporal_state.accumulated_tension = (
+                            backup["t_state_accumulated_tension"]  # type: ignore
+                        )
+                        self.membrane.temporal_state.consecutive_admissible_ticks = (
+                            backup["t_state_consecutive_ticks"]  # type: ignore
+                        )
+                        self.membrane.temporal_state.green_ticks_count = (
+                            backup["t_state_green_ticks"]  # type: ignore
+                        )
                         self.membrane.temporal_state.tension_history.clear()
-                        self.membrane.temporal_state.tension_history.extend(backup["t_state_tension_history"])  # type: ignore
+                        self.membrane.temporal_state.tension_history.extend(
+                            backup["t_state_tension_history"]  # type: ignore
+                        )
                         self.membrane.temporal_state.curvature_history.clear()
-                        self.membrane.temporal_state.curvature_history.extend(backup["t_state_curvature_history"])  # type: ignore
+                        self.membrane.temporal_state.curvature_history.extend(
+                            backup["t_state_curvature_history"]  # type: ignore
+                        )
                         self.membrane.temporal_state.admissibility_history.clear()
-                        self.membrane.temporal_state.admissibility_history.extend(backup["t_state_admissibility_history"])  # type: ignore
+                        self.membrane.temporal_state.admissibility_history.extend(
+                            backup["t_state_admissibility_history"]  # type: ignore
+                        )
                     if hasattr(self, "semantic_memory") and self.semantic_memory:
-                        self.semantic_memory.local_store = dict(backup["semantic_memory_store"])  # type: ignore
-                        self.semantic_memory.history = list(backup["semantic_memory_history"])  # type: ignore
+                        self.semantic_memory.local_store = (
+                            dict(backup["semantic_memory_store"])  # type: ignore
+                        )
+                        self.semantic_memory.history = (
+                            list(backup["semantic_memory_history"])  # type: ignore
+                        )
                     if hasattr(self, "ledger"):
                         self.ledger.records = list(backup["ledger_records"])  # type: ignore
                     self.residual_history = list(backup["residual_history"])  # type: ignore
 
-                    self.interventions.append(f"Regime Stability Violation: Complete Rollback triggered for band '{band}'.")
+                    self.interventions.append(
+                        f"Regime Stability Violation: Complete Rollback triggered for band '{band}'."
+                    )
 
                 if stab_res.get("quarantine", False):
                     self.quarantine_timer = 5
@@ -460,7 +500,6 @@ class SingleAgentEngine:
             if t_state is not None:
                 # Tension accumulation
                 v_load = float(sum(s.radius for s in self.membrane.strings))
-                c_tax = 0.0  # calculated below
                 sao_intensity = p_sao
                 mem_writes = float(len(self.semantic_memory.history)) if hasattr(self, "semantic_memory") else 0.0
 
@@ -488,7 +527,7 @@ class SingleAgentEngine:
                 obs_cost = reduced_cost.weighted_cost(self.cost_weights.to_dict(), quality_signal=avg_q_coh)
 
                 # Apply tension logic
-                t_acc = t_state.update_tension_accumulation(
+                t_state.update_tension_accumulation(
                     v_channel_load=v_load,
                     cost_taxonomy_contrib=obs_cost,
                     sao_promotions_intensity=sao_intensity,

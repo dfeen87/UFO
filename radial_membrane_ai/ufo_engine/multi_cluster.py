@@ -28,7 +28,7 @@ from radial_membrane_ai.collective_reasoning.coherence import global_mesh_cohere
 
 # Kernel Regime imports
 from radial_membrane_ai.kernel_regimes.manager import RegimeManager
-from radial_membrane_ai.kernel_regimes.regime import KernelRegimeType, REGIMES
+from radial_membrane_ai.kernel_regimes.regime import KernelRegimeType
 
 
 class MultiClusterEngine:
@@ -193,15 +193,28 @@ class MultiClusterEngine:
         excitation = np.array(default_excitation, dtype=np.float64)
 
         # 0. Backup State
+        back_t = self.temporal_state
         backup = {
             "clusters": [],
             "global_memory": dict(self.global_mesh_memory.global_store) if self.global_mesh_memory else {},
-            "t_state_accumulated_tension": self.temporal_state.accumulated_tension if hasattr(self, "temporal_state") else 0.0,
-            "t_state_consecutive_ticks": self.temporal_state.consecutive_admissible_ticks if hasattr(self, "temporal_state") else 0,
-            "t_state_green_ticks": self.temporal_state.green_ticks_count if hasattr(self, "temporal_state") else 0,
-            "t_state_tension_history": list(self.temporal_state.tension_history) if hasattr(self, "temporal_state") else [],
-            "t_state_curvature_history": list(self.temporal_state.curvature_history) if hasattr(self, "temporal_state") else [],
-            "t_state_admissibility_history": list(self.temporal_state.admissibility_history) if hasattr(self, "temporal_state") else [],
+            "t_state_accumulated_tension": (
+                back_t.accumulated_tension if hasattr(self, "temporal_state") else 0.0
+            ),
+            "t_state_consecutive_ticks": (
+                back_t.consecutive_admissible_ticks if hasattr(self, "temporal_state") else 0
+            ),
+            "t_state_green_ticks": (
+                back_t.green_ticks_count if hasattr(self, "temporal_state") else 0
+            ),
+            "t_state_tension_history": (
+                list(back_t.tension_history) if hasattr(self, "temporal_state") else []
+            ),
+            "t_state_curvature_history": (
+                list(back_t.curvature_history) if hasattr(self, "temporal_state") else []
+            ),
+            "t_state_admissibility_history": (
+                list(back_t.admissibility_history) if hasattr(self, "temporal_state") else []
+            ),
             "h_global_history": list(self.h_global_history),
             "c_global_history": list(self.c_global_history),
             "global_band_history": list(self.global_band_history),
@@ -213,10 +226,15 @@ class MultiClusterEngine:
                 "cluster_id": c_id,
                 "stability_band": cluster.stability_band,
                 "tension_metric": cluster.tension_metric,
-                "local_memory": dict(cluster.semantic_memory.global_store) if hasattr(cluster, "semantic_memory") and cluster.semantic_memory else {},
+                "local_memory": (
+                    dict(cluster.semantic_memory.global_store)
+                    if hasattr(cluster, "semantic_memory") and cluster.semantic_memory else {}
+                ),
                 "agents": []
             }
             for agent in cluster.agents:
+                a_ts = agent.membrane.temporal_state if hasattr(agent.membrane, "temporal_state") else None
+                a_sm = agent.semantic_memory if hasattr(agent, "semantic_memory") else None
                 agent_backup = {
                     "agent_id": agent.agent_id,
                     "activations": [s.activation for s in agent.membrane.strings],
@@ -228,14 +246,14 @@ class MultiClusterEngine:
                     "coherence_history": list(agent.coherence_history),
                     "activation_history": list(agent.activation_history),
                     "residual_history": list(agent.residual_history),
-                    "t_state_accumulated_tension": agent.membrane.temporal_state.accumulated_tension if hasattr(agent.membrane, "temporal_state") else 0.0,
-                    "t_state_consecutive_ticks": agent.membrane.temporal_state.consecutive_admissible_ticks if hasattr(agent.membrane, "temporal_state") else 0,
-                    "t_state_green_ticks": agent.membrane.temporal_state.green_ticks_count if hasattr(agent.membrane, "temporal_state") else 0,
-                    "t_state_tension_history": list(agent.membrane.temporal_state.tension_history) if hasattr(agent.membrane, "temporal_state") else [],
-                    "t_state_curvature_history": list(agent.membrane.temporal_state.curvature_history) if hasattr(agent.membrane, "temporal_state") else [],
-                    "t_state_admissibility_history": list(agent.membrane.temporal_state.admissibility_history) if hasattr(agent.membrane, "temporal_state") else [],
-                    "semantic_memory_store": dict(agent.semantic_memory.local_store) if hasattr(agent, "semantic_memory") and agent.semantic_memory else {},
-                    "semantic_memory_history": list(agent.semantic_memory.history) if hasattr(agent, "semantic_memory") and agent.semantic_memory else [],
+                    "t_state_accumulated_tension": a_ts.accumulated_tension if a_ts else 0.0,
+                    "t_state_consecutive_ticks": a_ts.consecutive_admissible_ticks if a_ts else 0,
+                    "t_state_green_ticks": a_ts.green_ticks_count if a_ts else 0,
+                    "t_state_tension_history": list(a_ts.tension_history) if a_ts else [],
+                    "t_state_curvature_history": list(a_ts.curvature_history) if a_ts else [],
+                    "t_state_admissibility_history": list(a_ts.admissibility_history) if a_ts else [],
+                    "semantic_memory_store": dict(a_sm.local_store) if a_sm else {},
+                    "semantic_memory_history": list(a_sm.history) if a_sm else [],
                 }
                 cluster_backup["agents"].append(agent_backup)  # type: ignore
             backup["clusters"].append(cluster_backup)  # type: ignore
@@ -253,6 +271,8 @@ class MultiClusterEngine:
         from radial_membrane_ai.projection import closure_ratio
 
         # 2. Local agent step execution with temporal dynamics
+        original_get_radii = {}
+
         try:
             for cluster in self.clusters.values():
                 if getattr(cluster, "quarantine_timer", 0) > 0:
@@ -305,7 +325,10 @@ class MultiClusterEngine:
                     t_bar_eval = t_state.accumulated_tension if t_state is not None else 0.0
                     coherence_eval = agent.shard.quality_score
                     current_band_eval = cluster.stability_band
-                    max_curv_eval = float(max([agent.boundary.curvature(s.theta) for s in agent.membrane.strings])) if t_state is not None else 0.0
+                    max_curv_eval = (
+                        float(max([agent.boundary.curvature(s.theta) for s in agent.membrane.strings]))
+                        if t_state is not None else 0.0
+                    )
 
                     active_regime = self.regime_manager.evaluate_switching_triggers(
                         entity=agent,
@@ -330,7 +353,7 @@ class MultiClusterEngine:
                     if capacity_scale is None:
                         capacity_scale = 1.0
 
-                    # Set custom radius scale
+                    original_get_radii[agent.agent_id] = agent.boundary.get_radius
                     agent.boundary._custom_radius_scale = capacity_scale
 
                     # Check closure ratio rules
@@ -339,7 +362,10 @@ class MultiClusterEngine:
                         if cl_res.get("clamped_activations") is not None:
                             for idx, s in enumerate(agent.membrane.strings):
                                 s.activation = cl_res["clamped_activations"][idx]
-                        self.interventions.append(f"Agent {agent.agent_id} Determinibility Violation: Clamped activations, soft rollback.")
+                        self.interventions.append(
+                            f"Agent {agent.agent_id} Determinibility Violation: "
+                            f"Clamped activations, soft rollback."
+                        )
                         matching_ab = None
                         for cb_data in backup["clusters"]:  # type: ignore
                             for ab_data in cb_data["agents"]:  # type: ignore
@@ -355,12 +381,13 @@ class MultiClusterEngine:
                         v_load = float(sum(s.radius for s in agent.membrane.strings))
                         c_tax = float(agent.shard.cost_factor * sum(s.cost for s in agent.membrane.strings))
                         sao_intensity = 0.0
-                        mem_writes = float(len(agent.semantic_memory.history)) if hasattr(agent, "semantic_memory") else 0.0
+                        mem_writes = float(len(agent.semantic_memory.history)) \
+                            if hasattr(agent, "semantic_memory") else 0.0
 
                         tension_mult = temp_rule_res.get("tension_accumulation_multiplier", 1.0)
                         tension_noise_val = active_regime.tension_rule(agent, cluster, self)
 
-                        t_acc = t_state.update_tension_accumulation(
+                        t_state.update_tension_accumulation(
                             v_channel_load=v_load,
                             cost_taxonomy_contrib=c_tax,
                             sao_promotions_intensity=sao_intensity,
@@ -449,7 +476,8 @@ class MultiClusterEngine:
                 valid_curvs = [
                     c.membrane.temporal_state.prior_curvature
                     for c in self.clusters.values()
-                    if getattr(c.membrane, "temporal_state", None) is not None and getattr(c, "quarantine_timer", 0) == 0
+                    if getattr(c.membrane, "temporal_state", None) is not None
+                    and getattr(c, "quarantine_timer", 0) == 0
                 ]
                 global_curv = float(np.mean(valid_curvs)) if valid_curvs else 0.0
 
@@ -522,7 +550,9 @@ class MultiClusterEngine:
                 )
 
             # 8. COLLECTIVE REASONING STEPS INTEGRATION FOR MULTI-CLUSTER ENGINE
-            all_agents = [a for c in self.clusters.values() for a in c.agents if getattr(c, "quarantine_timer", 0) == 0]
+            all_agents = [
+                a for c in self.clusters.values() for a in c.agents if getattr(c, "quarantine_timer", 0) == 0
+            ]
             all_clusters = [c for c in self.clusters.values() if getattr(c, "quarantine_timer", 0) == 0]
 
             if self.collective_enabled and all_clusters:
@@ -540,7 +570,9 @@ class MultiClusterEngine:
 
                 step_context = CollectiveStepContext(
                     proposed_activation=excitation,
-                    participating_agent_ids={a.agent_id for a in all_agents if a.shard.state != ShardState.QUARANTINED},
+                    participating_agent_ids={
+                        a.agent_id for a in all_agents if a.shard.state != ShardState.QUARANTINED
+                    },
                     involved_cluster_ids=set(self.clusters.keys()),
                     cost_band=1 if band == "yellow" else (2 if band == "red" else 0),
                     stability_band=band,
@@ -624,7 +656,9 @@ class MultiClusterEngine:
                         quarantine_ticks=5,
                         failing_ids={c.cluster_id for c in all_clusters} if violations else None
                     )
-                    self.interventions.append(f"Global Collective Reasoning Rollback Triggered. Violations: {violations}")
+                    self.interventions.append(
+                        f"Global Collective Reasoning Rollback Triggered. Violations: {violations}"
+                    )
 
             # 9. Evaluate multi-cluster stability violations and rollback
             global_rollback = False
@@ -638,7 +672,9 @@ class MultiClusterEngine:
                     if st_res.get("quarantine", False):
                         cluster.quarantine_timer = 5
                         cluster.stability_band = "red"
-                        self.interventions.append(f"Cluster {cluster.cluster_id} placed under quarantine for stability violation.")
+                        self.interventions.append(
+                            f"Cluster {cluster.cluster_id} placed under quarantine for stability violation."
+                        )
 
             # Check global stability rule violation
             if not glob_stab_res.get("valid", True):
@@ -665,37 +701,69 @@ class MultiClusterEngine:
                         ag.activation_history = list(ab["activation_history"])  # type: ignore
                         ag.residual_history = list(ab["residual_history"])  # type: ignore
                         if hasattr(ag.membrane, "temporal_state"):
-                            ag.membrane.temporal_state.accumulated_tension = ab["t_state_accumulated_tension"]  # type: ignore
-                            ag.membrane.temporal_state.consecutive_admissible_ticks = ab["t_state_consecutive_ticks"]  # type: ignore
-                            ag.membrane.temporal_state.green_ticks_count = ab["t_state_green_ticks"]  # type: ignore
+                            ag.membrane.temporal_state.accumulated_tension = (
+                                ab["t_state_accumulated_tension"]  # type: ignore
+                            )
+                            ag.membrane.temporal_state.consecutive_admissible_ticks = (
+                                ab["t_state_consecutive_ticks"]  # type: ignore
+                            )
+                            ag.membrane.temporal_state.green_ticks_count = (
+                                ab["t_state_green_ticks"]  # type: ignore
+                            )
                             ag.membrane.temporal_state.tension_history.clear()
-                            ag.membrane.temporal_state.tension_history.extend(ab["t_state_tension_history"])  # type: ignore
+                            ag.membrane.temporal_state.tension_history.extend(
+                                ab["t_state_tension_history"]  # type: ignore
+                            )
                             ag.membrane.temporal_state.curvature_history.clear()
-                            ag.membrane.temporal_state.curvature_history.extend(ab["t_state_curvature_history"])  # type: ignore
+                            ag.membrane.temporal_state.curvature_history.extend(
+                                ab["t_state_curvature_history"]  # type: ignore
+                            )
                             ag.membrane.temporal_state.admissibility_history.clear()
-                            ag.membrane.temporal_state.admissibility_history.extend(ab["t_state_admissibility_history"])  # type: ignore
+                            ag.membrane.temporal_state.admissibility_history.extend(
+                                ab["t_state_admissibility_history"]  # type: ignore
+                            )
                         if hasattr(ag, "semantic_memory") and ag.semantic_memory:
-                            ag.semantic_memory.local_store = dict(ab["semantic_memory_store"])  # type: ignore
-                            ag.semantic_memory.history = list(ab["semantic_memory_history"])  # type: ignore
+                            ag.semantic_memory.local_store = dict(
+                                ab["semantic_memory_store"]  # type: ignore
+                            )
+                            ag.semantic_memory.history = list(
+                                ab["semantic_memory_history"]  # type: ignore
+                            )
 
                 if self.global_mesh_memory:
-                    self.global_mesh_memory.global_store = dict(backup["global_memory"])  # type: ignore
+                    self.global_mesh_memory.global_store = dict(
+                        backup["global_memory"]  # type: ignore
+                    )
                 if hasattr(self, "temporal_state"):
-                    self.temporal_state.accumulated_tension = backup["t_state_accumulated_tension"]  # type: ignore
-                    self.temporal_state.consecutive_admissible_ticks = backup["t_state_consecutive_ticks"]  # type: ignore
-                    self.temporal_state.green_ticks_count = backup["t_state_green_ticks"]  # type: ignore
+                    self.temporal_state.accumulated_tension = (
+                        backup["t_state_accumulated_tension"]  # type: ignore
+                    )
+                    self.temporal_state.consecutive_admissible_ticks = (
+                        backup["t_state_consecutive_ticks"]  # type: ignore
+                    )
+                    self.temporal_state.green_ticks_count = (
+                        backup["t_state_green_ticks"]  # type: ignore
+                    )
                     self.temporal_state.tension_history.clear()
-                    self.temporal_state.tension_history.extend(backup["t_state_tension_history"])  # type: ignore
+                    self.temporal_state.tension_history.extend(
+                        backup["t_state_tension_history"]  # type: ignore
+                    )
                     self.temporal_state.curvature_history.clear()
-                    self.temporal_state.curvature_history.extend(backup["t_state_curvature_history"])  # type: ignore
+                    self.temporal_state.curvature_history.extend(
+                        backup["t_state_curvature_history"]  # type: ignore
+                    )
                     self.temporal_state.admissibility_history.clear()
-                    self.temporal_state.admissibility_history.extend(backup["t_state_admissibility_history"])  # type: ignore
+                    self.temporal_state.admissibility_history.extend(
+                        backup["t_state_admissibility_history"]  # type: ignore
+                    )
                 self.h_global_history = list(backup["h_global_history"])  # type: ignore
                 self.c_global_history = list(backup["c_global_history"])  # type: ignore
                 self.global_band_history = list(backup["global_band_history"])  # type: ignore
                 self.interventions = list(backup["interventions"])  # type: ignore
 
-                self.interventions.append(f"Regime Stability Violation: Global Multi-Cluster Rollback triggered (band was '{band}').")
+                self.interventions.append(
+                    f"Regime Stability Violation: Global Multi-Cluster Rollback triggered (band was '{band}')."
+                )
 
         finally:
             for cluster in self.clusters.values():

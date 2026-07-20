@@ -3,19 +3,13 @@ Comprehensive unit tests for the Kernel Regime Expansion Layer.
 """
 
 from __future__ import annotations
-import math
 import numpy as np
-import pytest
-from radial_membrane_ai.membrane import RadialMembrane
-from radial_membrane_ai.boundary import BoundaryGeometry
-from radial_membrane_ai.shard import ShardState
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.ufo_engine import SingleAgentEngine, MultiAgentEngine
 from radial_membrane_ai.ufo_engine.multi_cluster import MultiClusterEngine
 from radial_membrane_ai.kernel_regimes.manager import RegimeManager
 from radial_membrane_ai.kernel_regimes.regime import (
     KernelRegimeType,
-    REGIMES,
     BALANCED_REGIME,
     DETERMINISTIC_REGIME,
     STOCHASTIC_REGIME,
@@ -41,7 +35,6 @@ from radial_membrane_ai.kernel_regimes.regime import (
     multiphase_sao_rule,
     multiphase_stability_rule,
     multiphase_temporal_rule,
-    stochastic_closure_ratio_rule,
     deterministic_closure_ratio_rule,
     stochastic_sao_rule,
     high_curvature_capacity_rule,
@@ -147,7 +140,7 @@ def test_deterministic_rules() -> None:
 
     try:
         # Running tick should trigger deterministic admissibility violation clamp and soft rollback
-        band = engine.tick(task_value=0.5, excitation=np.ones(12) * 0.8)
+        _ = engine.tick(task_value=0.5, excitation=np.ones(12) * 0.8)
         assert any("Deterministic Admissibility" in m for m in engine.interventions)
     finally:
         adm_mod.angular_decomposition = original_decomp
@@ -230,7 +223,7 @@ def test_engine_complete_rollback_and_quarantine() -> None:
     engine.regime_manager.set_regime_for_agent("single_agent", KernelRegimeType.DETERMINISTIC)
 
     # Running tick should trigger stability rule violation rollback + 5-tick quarantine
-    band = engine.tick(task_value=0.5, excitation=np.ones(12) * 0.5)
+    _ = engine.tick(task_value=0.5, excitation=np.ones(12) * 0.5)
 
     assert any("Regime Stability Violation" in m for m in engine.interventions)
     assert any("quarantine" in m.lower() for m in engine.interventions)
@@ -255,7 +248,7 @@ def test_multi_agent_regime_integrations() -> None:
 
 def test_multi_cluster_regime_integrations() -> None:
     engine = MultiClusterEngine()
-    c1 = engine.create_cluster("cluster_1", "analytical")
+    _ = engine.create_cluster("cluster_1", "analytical")
     agent_1 = UFOAgent("agent_1")
     engine.assign_agent_to_cluster(agent_1, "cluster_1")
 
@@ -271,19 +264,19 @@ def test_coverage_gaps_in_kernel_regimes() -> None:
     # 1. regime.py balanced rules
     assert balanced_closure_ratio_rule(None, None, None)["admissible"] is True
     assert balanced_tension_rule(None, None, None) == 0.0
-    assert balanced_capacity_rule(None, None, None) is None
+    balanced_capacity_rule(None, None, None)
     assert "short" in balanced_sao_rule(None, None, None)["allowed_ranges"]
     assert balanced_stability_rule(None, None, None)["valid"] is True
     assert balanced_temporal_rule(None, None, None)["disable_hysteresis"] is False
 
     # 2. deterministic / stochastic / curvature helpers
-    assert deterministic_capacity_rule(None, None, None) is None
+    deterministic_capacity_rule(None, None, None)
     assert deterministic_temporal_rule(None, None, None)["disable_hysteresis"] is True
-    assert stochastic_capacity_rule(None, None, None) is None
+    stochastic_capacity_rule(None, None, None)
     assert high_curvature_closure_ratio_rule(None, None, None)["admissible"] is True
     assert high_curvature_tension_rule(None, None, None) == 0.0
     assert adversarial_tension_rule(None, None, None) == 0.0
-    assert adversarial_capacity_rule(None, None, None) is None
+    adversarial_capacity_rule(None, None, None)
 
     # 3. multiphase deterministic / stochastic rules manually executed with mocks
     manager = RegimeManager()
@@ -294,7 +287,7 @@ def test_coverage_gaps_in_kernel_regimes() -> None:
     manager.multiphase_states["global"] = ("deterministic", 3)
     assert multiphase_closure_ratio_rule(None, None, engine)["clamped_activations"] is None
     assert multiphase_tension_rule(None, None, engine) == 0.0
-    assert multiphase_capacity_rule(None, None, engine) is None
+    multiphase_capacity_rule(None, None, engine)
     assert multiphase_stability_rule(None, None, engine)["valid"] is True
     assert multiphase_temporal_rule(None, None, engine)["disable_hysteresis"] is True
 
@@ -302,7 +295,7 @@ def test_coverage_gaps_in_kernel_regimes() -> None:
     manager.multiphase_states["global"] = ("stochastic", 3)
     assert multiphase_closure_ratio_rule(None, None, engine)["admissible"] is True
     assert isinstance(multiphase_tension_rule(None, None, engine), float)
-    assert multiphase_capacity_rule(None, None, engine) is None
+    multiphase_capacity_rule(None, None, engine)
     assert multiphase_stability_rule(None, None, engine)["valid"] is True
     assert multiphase_temporal_rule(None, None, engine)["activation_noise"] is not None
 
@@ -326,12 +319,17 @@ def test_coverage_gaps_in_kernel_regimes() -> None:
 
     # _get_entity_key and getters for other objects
     assert manager._get_entity_key("cluster_abc") == "global"
+
     class DummyAgent:
+
         def __init__(self):
             self.agent_id = "dum"
+
     class DummyCluster:
+
         def __init__(self):
             self.cluster_id = "clu"
+
     dum_agent = DummyAgent()
     dum_cluster = DummyCluster()
     assert manager._get_entity_key(dum_agent) == "agent_dum"
@@ -372,16 +370,21 @@ def test_additional_coverage_gaps() -> None:
 
     # stochastic_sao_rule with cluster mocked
     class MockCluster:
+
         def compute_cluster_coherence(self):
             return 0.8
+
     assert "mid" in stochastic_sao_rule(None, MockCluster(), None)["allowed_ranges"]
 
     # high_curvature_capacity_rule with active_agent temporal state hasattr check
     class MockAgent:
+
         class MockMembrane:
             pass
+
         def __init__(self):
             self.membrane = MockAgent.MockMembrane()
+
     res_cap = high_curvature_capacity_rule(MockAgent(), None, None)
     assert res_cap == 1.0
 
@@ -395,6 +398,7 @@ def test_additional_coverage_gaps() -> None:
     assert multiphase_tension_rule(None, None, None) == 0.0
 
     class MockClusterWithManager:
+
         def __init__(self):
             self.regime_manager = RegimeManager()
 
@@ -403,9 +407,12 @@ def test_additional_coverage_gaps() -> None:
 
     # multiphase_sao_rule with temporal_state ticks branch
     class MockEngineWithTemporal:
+
         class MockTemporal:
+
             def __init__(self):
                 self.consecutive_admissible_ticks = 10
+
         def __init__(self):
             self.temporal_state = MockEngineWithTemporal.MockTemporal()
 

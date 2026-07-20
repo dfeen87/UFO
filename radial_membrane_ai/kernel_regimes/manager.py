@@ -3,7 +3,7 @@ Regime Manager for tracking active regimes and evaluation triggers.
 """
 
 from __future__ import annotations
-from typing import Any, Dict, Optional, Tuple, Set, Union
+from typing import Any, Dict, Tuple, Union
 from radial_membrane_ai.kernel_regimes.regime import (
     KernelRegime,
     KernelRegimeType,
