@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Set, Optional, Literal
 from radial_membrane_ai.residuals import ResidualRecord, ResidualLedger
 from radial_membrane_ai.semantic_memory.policy import MemoryPolicy, AdmissibilityContext, PolicyContext
 from radial_membrane_ai.semantic_memory.curvature import MemoryCurvatureState
+from radial_membrane_ai.collective_reasoning.policy_envelope import PolicyEnvelope
 
 
 @dataclass(frozen=True)
@@ -36,7 +37,7 @@ class MemoryRecord:
     created_at: float
     updated_at: float
     origin_agent_id: Optional[str]
-    policy_envelope: MemoryPolicy
+    policy_envelope: PolicyEnvelope
     residual_state: Optional[ResidualRecord] = None
 
 

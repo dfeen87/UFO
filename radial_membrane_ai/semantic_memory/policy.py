@@ -9,6 +9,8 @@ from typing import Literal, TYPE_CHECKING
 if TYPE_CHECKING:
     from radial_membrane_ai.semantic_memory.core import MemoryRecord
 
+from radial_membrane_ai.collective_reasoning.policy_envelope import PolicyEnvelope
+
 
 @dataclass(frozen=True)
 class AdmissibilityContext:
@@ -31,9 +33,10 @@ class PolicyContext:
 
 
 @dataclass(frozen=True)
-class MemoryPolicy:
+class MemoryPolicy(PolicyEnvelope):
     """
     Policy constraining the reading and writing of a semantic memory record.
+    MemoryPolicy is a specialization/view of PolicyEnvelope.
     """
     read_scope: Literal["local", "shared", "global"] = "global"
     write_scope: Literal["local", "shared"] = "shared"
