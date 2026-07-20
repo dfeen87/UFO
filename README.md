@@ -133,13 +133,13 @@ flowchart TB
         D1["Tone"] --- D2["Emotional Warmth"] --- D3["Conciseness"]
     end
 
-    Hull -- "activation aᵢ(t)" --> VChan["⚡ V-Channel Routing<br/>coherent, phase-aligned corridors"]
-    VChan -- "inverse-cost propagation" --> Gov["🧠 Governor<br/>cost · coherence · policy · stability"]
-    Gov -- "bounded depth, suppression" --> Skin["🫧 Deformable Boundary<br/>ΔR · curvature · asymmetry"]
+    Hull -- "activation aᵢ(t)<br/>identity energy · phase position" --> VChan["⚡ V-Channel Routing<br/>coherent, phase-aligned corridors"]
+    VChan -- "inverse-cost propagation<br/>local cost contribution" --> Gov["🧠 Governor<br/>cost · coherence · policy · stability<br/>depth bounding · suppression · variance control"]
+    Gov -- "bounded depth, suppression" --> Skin["🫧 Deformable Boundary<br/>ΔR · curvature · asymmetry<br/>radius deviation · tension feedback"]
     Skin -- "geometry feedback" --> Gov
-    Gov -- "weighted cost vector" --> Cost["⛽ Multidimensional Cost Taxonomy"]
+    Gov -- "weighted cost vector<br/>Lyapunov stabilization" --> Cost["⛽ Multidimensional Cost Taxonomy"]
     Cost -- "quality-preserving reduction" --> Gov
-    Gov -- "runtime controls" --> Out["Response: depth, tokens, tools, tone"]
+    Gov -- "runtime controls" --> Out["Response: depth · tokens · tools · tone<br/>+ rigor · precision · initiative · exploration"]
 ```
 
 The membrane has four architectural layers, plus a fuel gauge. Each is detailed below.
