@@ -3,11 +3,13 @@ Policy definitions and admissibility/policy checking for Policy-Bound Semantic M
 """
 
 from __future__ import annotations
-from dataclasses import dataclass
-from typing import Literal, TYPE_CHECKING
+from dataclasses import dataclass, field
+from typing import Literal, TYPE_CHECKING, Set, Optional
 
 if TYPE_CHECKING:
     from radial_membrane_ai.semantic_memory.core import MemoryRecord
+
+from radial_membrane_ai.collective_reasoning.policy_envelope import PolicyEnvelope
 
 
 @dataclass(frozen=True)
@@ -31,9 +33,10 @@ class PolicyContext:
 
 
 @dataclass(frozen=True)
-class MemoryPolicy:
+class MemoryPolicy(PolicyEnvelope):
     """
     Policy constraining the reading and writing of a semantic memory record.
+    MemoryPolicy is a specialization/view of PolicyEnvelope.
     """
     read_scope: Literal["local", "shared", "global"] = "global"
     write_scope: Literal["local", "shared"] = "shared"

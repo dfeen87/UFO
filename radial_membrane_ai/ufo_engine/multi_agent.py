@@ -5,7 +5,7 @@ Multi-Agent Governed Simulation Engine for the U.F.O. architecture.
 from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, TYPE_CHECKING
+from typing import Dict, Any, List, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from radial_membrane_ai.semantic_memory.core import MeshSemanticMemory
@@ -15,6 +15,13 @@ from radial_membrane_ai.multi_agent.coupling import InterAgentVChannel, GlobalHo
 from radial_membrane_ai.multi_agent.governance import MultiAgentMeshGovernance
 from radial_membrane_ai.shard import ShardState
 from radial_membrane_ai.ufo_engine.config import CostWeights, StabilityBandConfig
+
+# Collective Reasoning imports
+from radial_membrane_ai.collective_reasoning.policy_envelope import PolicyEnvelope
+from radial_membrane_ai.collective_reasoning.collective_admissibility import CollectiveStepContext, collective_admissibility
+from radial_membrane_ai.collective_reasoning.collective_sao import collective_sao_promote
+from radial_membrane_ai.collective_reasoning.mesh_correctness import MeshCorrectness
+from radial_membrane_ai.collective_reasoning.coherence import coherence_score
 
 
 @dataclass
@@ -90,11 +97,25 @@ class MultiAgentEngine:
         self.sao_events: List[Dict[str, Any]] = []
         self.residual_history: List[float] = []
 
+        # Collective reasoning layer components (defaults to False for legacy backward compatibility)
+        self.collective_enabled: bool = False
+        self.global_envelope = PolicyEnvelope(
+            min_trust=0.4,
+            allowed_roles={"analytical", "creative", "balanced", "general"},
+            stability_required_band="yellow"
+        )
+        self.correctness_checker = MeshCorrectness(self.mesh_governance.ledger)
+
         # Bind Policy-Bound Semantic Memory Layer
         from radial_membrane_ai.semantic_memory.integration import bind_to_mesh, bind_to_agent
         bind_to_mesh(self)
         for agent in self.agents:
             bind_to_agent(agent)
+            # Give agents a default PolicyEnvelope
+            setattr(agent, "policy_envelope", PolicyEnvelope(
+                allowed_agents={agent.agent_id},
+                min_trust=0.5
+            ))
 
         from radial_membrane_ai.temporal import TemporalMembraneState
         self.temporal_state = TemporalMembraneState()
@@ -116,19 +137,7 @@ class MultiAgentEngine:
 
     def tick(self, task_value: float, excitation: np.ndarray) -> str:
         """
-        Runs a single multi-agent tick cycle.
-
-        Steps:
-        1. Local agent step execution.
-        2. Inter-agent channel propagation (V-Channels).
-        3. Global Holistic Governor field H_hol calculation.
-        4. Mesh coherence score C_mesh calculation.
-        5. Band transition checking and intervention execution.
-        6. SAO promotions of shared paired-state representations.
-        7. Audit mesh & log results.
-
-        Returns:
-            The determined stability band for the tick ("green", "yellow", or "red").
+        Runs a single multi-agent tick cycle with integrated collective reasoning governance.
         """
         # Ensure correct array format
         excitation = np.array(excitation, dtype=np.float64)
@@ -150,12 +159,11 @@ class MultiAgentEngine:
             # Apply Hysteresis Inertial Damping on resulting activations: A_new = (1-alpha)*A_instant + alpha*A_prev
             if t_state is not None and len(agent.activation_history) > 0:
                 prior_act = agent.activation_history[-1]
-                # Previous tension acts as damping on activation updates
                 alpha = 0.3 * t_state.get_normalized_tension_history()
                 for idx, s in enumerate(agent.membrane.strings):
                     s.activation = (1.0 - alpha) * s.activation + alpha * float(prior_act[idx])
 
-            # Update Agent-level Temporal Membrane State
+            # 2. Update Agent-level Temporal Membrane State
             if t_state is not None:
                 max_curv = float(max([agent.boundary.curvature(s.theta) for s in agent.membrane.strings]))
                 has_tension = any(s.tension > 0 for s in agent.membrane.strings)
@@ -173,7 +181,7 @@ class MultiAgentEngine:
                 # Temporal Tension Accumulation
                 v_load = float(sum(s.radius for s in agent.membrane.strings))
                 c_tax = float(agent.shard.cost_factor * sum(s.cost for s in agent.membrane.strings))
-                sao_intensity = 0.0  # Filled dynamically during promotion
+                sao_intensity = 0.0
                 mem_writes = float(len(agent.semantic_memory.history)) if hasattr(agent, "semantic_memory") else 0.0
                 t_state.update_tension_accumulation(
                     v_channel_load=v_load,
@@ -186,22 +194,20 @@ class MultiAgentEngine:
                 low_load = (v_load < 2.0)
                 t_state.decay_tension(low_load=low_load)
 
-                # Agent recovery rule: gradual relaxation based on local stability
+                # Agent recovery rule
                 is_stable = (agent.shard.quality_score >= 0.7)
                 recovery_mu = t_state.update_recovery_dynamics(is_green=is_stable, mu=0.1)
                 t_state.apply_curvature_drift(agent.boundary, mu=recovery_mu)
 
-        # 2. Propagate inter-agent coupling V-channels
+        # 3. Propagate inter-agent coupling V-channels
         for channel in self.channels:
             channel.propagate()
 
-        # 3. Compute global fields
+        # 4. Compute global fields
         h_hol = self.global_governor.compute_global_holistic_field(self.agents)
         self.h_hol_history.append(h_hol)
 
-        # 4. Compute mesh coherence score C_mesh(t)
-        # We adjust weights according to our configured cost weighting
-        # We also scale by quality factor / cost weights to enforce proper dynamic coherence
+        # 5. Compute mesh coherence score C_mesh(t)
         c_mesh = self.mesh_governance.compute_mesh_coherence(
             w_q=0.4, w_t=0.3, w_e=0.2, w_r=0.2, w_p=0.2, w_l=0.1, w_f=0.2
         )
@@ -225,7 +231,6 @@ class MultiAgentEngine:
                     if ts.admissibility_history
                 ]))
 
-                # Global mesh/cluster temporal updates
                 self.temporal_state.update_tick_history(mean_curv, mean_tension, mean_cl)
                 self.temporal_state.accumulated_tension = mean_tension
 
@@ -234,14 +239,13 @@ class MultiAgentEngine:
                         f"Global Temporal Tension Warning: max={max_tension:.2f}, mean={mean_tension:.2f}"
                     )
 
-                # Scale dynamic coherence based on global temporal tension
                 c_mesh_eff = max(0.0, min(1.0, c_mesh - 0.25 * self.temporal_state.accumulated_tension))
             else:
                 c_mesh_eff = c_mesh
         else:
             c_mesh_eff = c_mesh
 
-        # 5. Stability Band Check & Interventions (evaluated on effective coherence)
+        # Stability Band Check
         if c_mesh_eff >= self.band_config.c_green:
             band = "green"
             self.interventions.append("Green Band (Nominal): Stable multi-agent routing operating optimally.")
@@ -249,9 +253,8 @@ class MultiAgentEngine:
             band = "yellow"
             self.interventions.append(
                 f"Yellow Band (Soft Intervention): Coherence={c_mesh_eff:.4f}. "
-                "Damping activations and rebalancing routes."
+                "Damping activations."
             )
-            # Soft interventions: damp active strings slightly on all non-quarantined agents
             for agent in self.agents:
                 if agent.shard.state != ShardState.QUARANTINED:
                     for s in agent.membrane.strings:
@@ -261,27 +264,101 @@ class MultiAgentEngine:
             band = "red"
             self.interventions.append(
                 f"Red Band (Hard Intervention): Coherence={c_mesh_eff:.4f}. "
-                "Throttling, shard quarantine, and fallback checks."
+                "Throttling."
             )
-            # Hard interventions: throttle activations heavily
             for agent in self.agents:
                 if agent.shard.state != ShardState.QUARANTINED:
                     for s in agent.membrane.strings:
                         s.activation *= 0.5
                         s.radius *= 0.8
-
-            # Run mesh audit to isolate/quarantine low performing/violating agents
             self.mesh_governance.run_mesh_audit()
 
             # Fallback checks: If only one agent is left active, log fallback
-            active_agents = [a for a in self.agents if a.shard.state != ShardState.QUARANTINED]
-            if len(active_agents) == 1:
-                self.interventions.append(f"Fallback triggered: Sole active agent is {active_agents[0].agent_id}.")
+            active_agents_after_audit = [a for a in self.agents if a.shard.state != ShardState.QUARANTINED]
+            if len(active_agents_after_audit) == 1:
+                self.interventions.append(f"Fallback triggered: Sole active agent is {active_agents_after_audit[0].agent_id}.")
 
         self.band_history.append(band)
 
-        # 6. Execute SAO promotions on paired agents
-        # Record promotion residuals and audit failures
+        # 6. COLLECTIVE REASONING STEPS INTEGRATION (TICK ENHANCEMENTS)
+        if self.collective_enabled and active_agents:
+            # Backup state
+            state_backup = self.correctness_checker.backup_state(self.agents, [], self.mesh_memory)
+
+            # Build CollectiveStepContext
+            used_tags = set()
+            used_fields = set()
+            for a in active_agents:
+                if hasattr(a, "semantic_memory") and a.semantic_memory is not None:
+                    for key, rec in a.semantic_memory.local_store.items():
+                        used_tags.update(rec.tags)
+                        used_fields.add(key)
+
+            step_context = CollectiveStepContext(
+                proposed_activation=excitation,
+                participating_agent_ids={a.agent_id for a in active_agents},
+                involved_cluster_ids=set(),
+                cost_band=1 if band == "yellow" else (2 if band == "red" else 0),
+                stability_band=band,
+                trust_score=float(np.mean([a.shard.trust_score for a in active_agents])),
+                ticks=self.temporal_state.consecutive_admissible_ticks,
+                used_tags=used_tags,
+                used_fields=used_fields
+            )
+
+            # A. Collective admissibility check
+            is_admissible = collective_admissibility(
+                agents=self.agents,
+                clusters=[],
+                step=step_context,
+                global_envelope=self.global_envelope
+            )
+
+            # B. Coherence detection
+            cluster_coherence = coherence_score(active_agents)
+
+            # C. Collective SAO promotion (local -> cluster)
+            promo_success = False
+            if is_admissible and cluster_coherence >= 0.7 and band != "red":
+                # Promote active records
+                for agent in active_agents:
+                    if hasattr(agent, "semantic_memory") and agent.semantic_memory is not None:
+                        for key in list(agent.semantic_memory.local_store.keys()):
+                            # Map stability bands
+                            sb_dict = {"global": band}
+                            res_sao = collective_sao_promote(
+                                level="local",
+                                source_entity=agent,
+                                target_entity=self.mesh_memory,
+                                key=key,
+                                global_envelope=self.global_envelope,
+                                coherence_score_val=cluster_coherence,
+                                stability_bands=sb_dict,
+                                current_ticks=self.temporal_state.consecutive_admissible_ticks,
+                                ledger=self.mesh_governance.ledger
+                            )
+                            success, p_sao, promoted_rec_val = res_sao
+                            if success:
+                                promo_success = True
+
+            # D. Mesh correctness checks & rollbacks
+            is_correct, violations = self.correctness_checker.audit_correctness(
+                self.agents, [], step_context, self.global_envelope
+            )
+
+            if not is_correct or not is_admissible:
+                # Trigger complete rollback to the exact backup state
+                self.correctness_checker.rollback(
+                    backup=state_backup,
+                    agents=self.agents,
+                    clusters=[],
+                    global_memory=self.mesh_memory,
+                    quarantine_ticks=5,
+                    failing_ids={a.agent_id for a in active_agents} if violations else None
+                )
+                self.interventions.append(f"Collective reasoning rollback triggered. Violations: {violations}")
+
+        # 7. Execute paired agent SAO promotions (legacy fallback / alignment checks)
         p_sao_sum = 0.0
         promo_count = 0
         if len(self.agents) >= 2:
@@ -289,7 +366,6 @@ class MultiAgentEngine:
                 agent_l = self.agents[i]
                 agent_r = self.agents[i + 1]
                 if agent_l.shard.state != ShardState.QUARANTINED and agent_r.shard.state != ShardState.QUARANTINED:
-                    # Dynamically adjust threshold based on mesh coherence
                     limit = max(0.02, 0.5 * c_mesh)
                     verdict, p_sao, proj_state = self.mesh_governance.execute_sao_promotion(
                         agent_l, agent_r, shared_capacity_limit=limit
@@ -304,7 +380,6 @@ class MultiAgentEngine:
                     p_sao_sum += p_sao
                     promo_count += 1
 
-                    # Call on_sao_promotion when successful promotion occurs
                     if verdict == "ascend":
                         if hasattr(agent_l, "semantic_memory") and agent_l.semantic_memory is not None:
                             for key in list(agent_l.semantic_memory.local_store.keys()):

@@ -4,40 +4,24 @@ Cross-Cluster V-Channels and Policy Envelopes for multi-cluster UFO communicatio
 
 from __future__ import annotations
 from typing import List, Set, Optional
+from dataclasses import dataclass, field
 
 from radial_membrane_ai.multi_agent.cluster import UFOCluster
 from radial_membrane_ai.shard import ShardState
+from radial_membrane_ai.collective_reasoning.policy_envelope import PolicyEnvelope
 
 
-class ClusterPolicyEnvelope:
+@dataclass(frozen=True)
+class ClusterPolicyEnvelope(PolicyEnvelope):
     """
     Enforces policies governing cross-cluster signal routing and memory sharing.
-    Validates cluster compatibility, trust thresholds, and semantic constraints.
+    ClusterPolicyEnvelope specializes PolicyEnvelope with cluster-specific defaults.
     """
-
-    def __init__(
-        self,
-        min_trust: float = 0.5,
-        min_compliance: float = 0.5,
-        allowed_roles: Optional[Set[str]] = None,
-        blocked_tags: Optional[Set[str]] = None,
-        blocked_prefixes: Optional[List[str]] = None
-    ) -> None:
-        """
-        Initializes the ClusterPolicyEnvelope.
-
-        Args:
-            min_trust: Minimum average trust required for source and target clusters.
-            min_compliance: Minimum average policy compliance required.
-            allowed_roles: Set of roles target cluster must have to receive routing from source.
-            blocked_tags: Set of memory tags that cannot traverse the boundary.
-            blocked_prefixes: List of memory key prefixes blocked from cross-cluster sharing.
-        """
-        self.min_trust = min_trust
-        self.min_compliance = min_compliance
-        self.allowed_roles = allowed_roles if allowed_roles is not None else set()
-        self.blocked_tags = blocked_tags if blocked_tags is not None else set()
-        self.blocked_prefixes = blocked_prefixes if blocked_prefixes is not None else []
+    min_trust: float = 0.5
+    min_compliance: float = 0.5
+    allowed_roles: Set[str] = field(default_factory=set)
+    blocked_tags: Set[str] = field(default_factory=set)
+    blocked_prefixes: List[str] = field(default_factory=list)
 
     def check_admissibility(
         self,
