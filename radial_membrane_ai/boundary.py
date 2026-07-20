@@ -44,6 +44,7 @@ class BoundaryGeometry:
         self.basis_sigma = basis_sigma
         self.min_radius_ratio = min_radius_ratio
         self.max_radius_ratio = max_radius_ratio
+        self._custom_radius_scale: float = 1.0
 
         # Store radius deviations for each of the 12 string indices (1 to 12)
         self.radius_deviation: dict[int, float] = {i: 0.0 for i in range(1, 13)}
@@ -88,7 +89,7 @@ class BoundaryGeometry:
         # Clamp radius to stay within physical bounds
         min_r = self.base_radius * self.min_radius_ratio
         max_r = self.base_radius * self.max_radius_ratio
-        return max(min_r, min(max_r, r))
+        return max(min_r, min(max_r, r)) * self._custom_radius_scale
 
     def update_boundary(
         self,
