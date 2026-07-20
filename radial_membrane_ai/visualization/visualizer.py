@@ -264,10 +264,9 @@ class MeshVisualizer:
                 regime=regime,
                 lde_boundary=lde_state.boundary if lde_state else None,
                 lde_channels=lde_state.channels if lde_state else None,
-                lde_strings=lde_state.strings if lde_state else None
+                lde_strings=lde_state.strings if lde_state else None,
+                lde_state=lde_state
             )
-            if lde_state:
-                setattr(frame, "lde_state", lde_state)
             viz_frames.append(frame)
 
         # Compute summary
@@ -309,7 +308,7 @@ class MeshVisualizer:
         )
 
         # Render unified timeline dashboard
-        if viz_frames and getattr(viz_frames[0], "lde_state", None) is not None:
+        if viz_frames and viz_frames[0].lde_state is not None:
             from radial_membrane_ai.lde.visualizer import LDEVisualizer
             lde_vis = LDEVisualizer()
             fig = lde_vis.render_lde_dashboard(viz_frames[0].lde_state)
