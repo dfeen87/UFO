@@ -461,7 +461,7 @@ This step is performed **before** the Full Integration Pass so that all modules 
 
 ---
 
-## **Variable Reference**
+## Variable Reference
 
 ### **String‑Level Variables (U.F.O. & L.D.E.)**
 - **Activation coefficient** `aᵢ(t)` — instantaneous activation of string `i`  
