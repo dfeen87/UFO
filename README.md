@@ -422,7 +422,7 @@ It is intentionally lightweight, reversible, and mathematically structured, maki
 
 ---
 
-# Runtime Hardening Pass (Stability‑Critical Release Preparation)
+# Runtime Hardening Pass Stability Critical Release Preparation
 
 Before the final Full Integration Pass, the repository undergoes a **Runtime Hardening Pass**. This step ensures that the entire governed architecture — including U.F.O., L.D.E., the Mesh Visualizer, and the Diagnostic Dashboard — behaves **deterministically**, **reliably**, and **reproducibly** across machines and environments. The goal is to deliver a research‑grade system that is stable, inspectable, and suitable for public release.
 
