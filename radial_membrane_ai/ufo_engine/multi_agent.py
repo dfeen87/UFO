@@ -5,7 +5,7 @@ Multi-Agent Governed Simulation Engine for the U.F.O. architecture.
 from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, TYPE_CHECKING, Optional
+from typing import Dict, Any, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from radial_membrane_ai.semantic_memory.core import MeshSemanticMemory
@@ -18,7 +18,9 @@ from radial_membrane_ai.ufo_engine.config import CostWeights, StabilityBandConfi
 
 # Collective Reasoning imports
 from radial_membrane_ai.collective_reasoning.policy_envelope import PolicyEnvelope
-from radial_membrane_ai.collective_reasoning.collective_admissibility import CollectiveStepContext, collective_admissibility
+from radial_membrane_ai.collective_reasoning.collective_admissibility import (
+    CollectiveStepContext, collective_admissibility
+)
 from radial_membrane_ai.collective_reasoning.collective_sao import collective_sao_promote
 from radial_membrane_ai.collective_reasoning.mesh_correctness import MeshCorrectness
 from radial_membrane_ai.collective_reasoning.coherence import coherence_score
@@ -274,9 +276,12 @@ class MultiAgentEngine:
             self.mesh_governance.run_mesh_audit()
 
             # Fallback checks: If only one agent is left active, log fallback
-            active_agents_after_audit = [a for a in self.agents if a.shard.state != ShardState.QUARANTINED]
+            active_agents_after_audit = [
+                a for a in self.agents if a.shard.state != ShardState.QUARANTINED
+            ]
             if len(active_agents_after_audit) == 1:
-                self.interventions.append(f"Fallback triggered: Sole active agent is {active_agents_after_audit[0].agent_id}.")
+                msg = f"Fallback triggered: Sole active agent is {active_agents_after_audit[0].agent_id}."
+                self.interventions.append(msg)
 
         self.band_history.append(band)
 
@@ -318,7 +323,6 @@ class MultiAgentEngine:
             cluster_coherence = coherence_score(active_agents)
 
             # C. Collective SAO promotion (local -> cluster)
-            promo_success = False
             if is_admissible and cluster_coherence >= 0.7 and band != "red":
                 # Promote active records
                 for agent in active_agents:
@@ -337,9 +341,7 @@ class MultiAgentEngine:
                                 current_ticks=self.temporal_state.consecutive_admissible_ticks,
                                 ledger=self.mesh_governance.ledger
                             )
-                            success, p_sao, promoted_rec_val = res_sao
-                            if success:
-                                promo_success = True
+                            _, _, _ = res_sao
 
             # D. Mesh correctness checks & rollbacks
             is_correct, violations = self.correctness_checker.audit_correctness(

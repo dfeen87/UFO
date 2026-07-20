@@ -4,7 +4,7 @@ Cross-agent collective admissibility constraints for U.F.O. collective reasoning
 
 from __future__ import annotations
 import numpy as np
-from typing import Sequence, Set, Dict, Any, Optional, List
+from typing import Sequence, Set, Any, Optional, List
 from dataclasses import dataclass, field
 
 from radial_membrane_ai.multi_agent.agent import UFOAgent

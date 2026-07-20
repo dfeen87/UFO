@@ -3,11 +3,9 @@ Emergent Coherence Detection for U.F.O. collective reasoning.
 """
 
 from __future__ import annotations
-import math
 import numpy as np
-from typing import Sequence, List, Set, Any, Dict, Tuple
+from typing import Sequence, List, Set, Any, Tuple
 
-from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.multi_agent.cluster import UFOCluster
 from radial_membrane_ai.shard import ShardState
 
@@ -40,7 +38,7 @@ def value_similarity(v1: Any, v2: Any) -> float:
     Measures the similarity of two semantic memory values.
     Handles numpy arrays, strings, numbers, and fallback types.
     """
-    if type(v1) != type(v2):
+    if type(v1) is not type(v2):
         return 0.0
 
     if isinstance(v1, np.ndarray) and isinstance(v2, np.ndarray):
@@ -148,16 +146,24 @@ def compute_tension_curvature_coherence(entities: List[Any]) -> float:
             # Vector pad/align
             max_len = max(len(tens1), len(tens2))
             if max_len > 0:
-                tens1_pad = np.pad(tens1, (0, max_len - len(tens1)), mode='constant') if tens1 else np.zeros(max_len)
-                tens2_pad = np.pad(tens2, (0, max_len - len(tens2)), mode='constant') if tens2 else np.zeros(max_len)
+                tens1_pad = np.pad(
+                    tens1, (0, max_len - len(tens1)), mode='constant'
+                ) if tens1 else np.zeros(max_len)
+                tens2_pad = np.pad(
+                    tens2, (0, max_len - len(tens2)), mode='constant'
+                ) if tens2 else np.zeros(max_len)
                 t_sim = cosine_similarity(tens1_pad, tens2_pad)
             else:
                 t_sim = 1.0
 
             max_len_c = max(len(curv1), len(curv2))
             if max_len_c > 0:
-                curv1_pad = np.pad(curv1, (0, max_len_c - len(curv1)), mode='constant') if curv1 else np.zeros(max_len_c)
-                curv2_pad = np.pad(curv2, (0, max_len_c - len(curv2)), mode='constant') if curv2 else np.zeros(max_len_c)
+                curv1_pad = np.pad(
+                    curv1, (0, max_len_c - len(curv1)), mode='constant'
+                ) if curv1 else np.zeros(max_len_c)
+                curv2_pad = np.pad(
+                    curv2, (0, max_len_c - len(curv2)), mode='constant'
+                ) if curv2 else np.zeros(max_len_c)
                 c_sim = cosine_similarity(curv1_pad, curv2_pad)
             else:
                 c_sim = 1.0

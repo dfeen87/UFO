@@ -12,7 +12,9 @@ from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.multi_agent.cluster import UFOCluster
 from radial_membrane_ai.semantic_memory.core import MemoryRecord, MeshSemanticMemory
 from radial_membrane_ai.collective_reasoning.policy_envelope import PolicyEnvelope
-from radial_membrane_ai.collective_reasoning.collective_admissibility import CollectiveStepContext, get_agent_temporal_closure_ratio
+from radial_membrane_ai.collective_reasoning.collective_admissibility import (
+    CollectiveStepContext, get_agent_temporal_closure_ratio
+)
 from radial_membrane_ai.shard import ShardState
 
 
@@ -173,7 +175,8 @@ class MeshCorrectness:
 
         # 2. Global policy envelope check
         if step.cost_band > global_envelope.max_cost_band:
-            violations.append(f"Global: Step cost band {step.cost_band} exceeds global limit {global_envelope.max_cost_band}")
+            msg = f"Global: Step cost band {step.cost_band} exceeds global limit {global_envelope.max_cost_band}"
+            violations.append(msg)
 
         return len(violations) == 0, violations
 

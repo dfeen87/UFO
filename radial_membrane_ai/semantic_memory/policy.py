@@ -3,8 +3,8 @@ Policy definitions and admissibility/policy checking for Policy-Bound Semantic M
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import Literal, TYPE_CHECKING, Set, Optional
+from dataclasses import dataclass
+from typing import Literal, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from radial_membrane_ai.semantic_memory.core import MemoryRecord

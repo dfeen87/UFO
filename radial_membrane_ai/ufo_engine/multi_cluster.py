@@ -19,7 +19,9 @@ from radial_membrane_ai.shard import ShardState
 
 # Collective reasoning imports
 from radial_membrane_ai.collective_reasoning.policy_envelope import PolicyEnvelope
-from radial_membrane_ai.collective_reasoning.collective_admissibility import CollectiveStepContext, collective_admissibility
+from radial_membrane_ai.collective_reasoning.collective_admissibility import (
+    CollectiveStepContext, collective_admissibility
+)
 from radial_membrane_ai.collective_reasoning.collective_sao import collective_sao_promote
 from radial_membrane_ai.collective_reasoning.mesh_correctness import MeshCorrectness
 from radial_membrane_ai.collective_reasoning.coherence import global_mesh_coherence_score

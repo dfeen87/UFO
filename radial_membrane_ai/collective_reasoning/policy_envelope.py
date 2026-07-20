@@ -6,7 +6,7 @@ and violation detection.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Set, Optional, Dict, Any
+from typing import Set, Optional, Any
 
 STABILITY_ORDER = {"red": 0, "yellow": 1, "green": 2}
 
@@ -84,7 +84,9 @@ class PolicyEnvelope:
         if self.temporal_window_max is not None and other.temporal_window_max is not None:
             new_temp_max: Optional[int] = min(self.temporal_window_max, other.temporal_window_max)
         else:
-            new_temp_max = self.temporal_window_max if self.temporal_window_max is not None else other.temporal_window_max
+            new_temp_max = (
+                self.temporal_window_max if self.temporal_window_max is not None else other.temporal_window_max
+            )
 
         return PolicyEnvelope(
             allowed_agents=intersected_agents,

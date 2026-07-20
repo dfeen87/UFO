@@ -6,25 +6,26 @@ from __future__ import annotations
 import numpy as np
 import pytest
 import time
-from typing import Set, Any
+from typing import Any
 
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.multi_agent.cluster import UFOCluster
 from radial_membrane_ai.shard import ShardState
 from radial_membrane_ai.residuals import ResidualLedger
 from radial_membrane_ai.semantic_memory.core import MemoryRecord, MeshSemanticMemory, write_memory
-from radial_membrane_ai.semantic_memory.policy import MemoryPolicy, AdmissibilityContext, PolicyContext
+from radial_membrane_ai.semantic_memory.policy import MemoryPolicy, AdmissibilityContext
 from radial_membrane_ai.semantic_memory.integration import bind_to_agent
 
 # Collective Reasoning imports
 from radial_membrane_ai.collective_reasoning.policy_envelope import PolicyEnvelope
-from radial_membrane_ai.collective_reasoning.collective_admissibility import CollectiveStepContext, collective_admissibility
+from radial_membrane_ai.collective_reasoning.collective_admissibility import (
+    CollectiveStepContext, collective_admissibility
+)
 from radial_membrane_ai.collective_reasoning.collective_sao import collective_sao_promote
-from radial_membrane_ai.collective_reasoning.mesh_correctness import MeshCorrectness, StateBackup
+from radial_membrane_ai.collective_reasoning.mesh_correctness import MeshCorrectness
 from radial_membrane_ai.collective_reasoning.coherence import (
     coherence_score,
     cluster_coherence_score,
-    global_mesh_coherence_score,
     cosine_similarity,
     jaccard_similarity,
     value_similarity
@@ -72,6 +73,7 @@ def test_value_similarity_types() -> None:
     class CustomObj:
         def __init__(self, x: int) -> None:
             self.x = x
+
         def __eq__(self, other: Any) -> bool:
             return isinstance(other, CustomObj) and self.x == other.x
 
@@ -309,7 +311,9 @@ def test_collective_sao_promotions() -> None:
 
     # Cluster SAO fails because ticks < 20
     c_t_state.consecutive_admissible_ticks = 10
-    success, _, _ = collective_sao_promote("cluster", cluster, mesh_memory, "test_key", global_env, 0.8, {"global": "green"}, 10)
+    success, _, _ = collective_sao_promote(
+        "cluster", cluster, mesh_memory, "test_key", global_env, 0.8, {"global": "green"}, 10
+    )
     assert success is False
     c_t_state.consecutive_admissible_ticks = 25
 
@@ -346,7 +350,9 @@ def test_mesh_correctness_and_rollbacks() -> None:
     agent.residual_history.append(0.1)
 
     # Put a key in global store to ensure it is rolled back
-    mesh_memory.global_store["some_key"] = MemoryRecord("some_key", "original_val", set(), time.time(), time.time(), "agent_1", PolicyEnvelope())
+    mesh_memory.global_store["some_key"] = MemoryRecord(
+        "some_key", "original_val", set(), time.time(), time.time(), "agent_1", PolicyEnvelope()
+    )
 
     # Backup
     backup = checker.backup_state([agent], [cluster], mesh_memory)
@@ -356,7 +362,9 @@ def test_mesh_correctness_and_rollbacks() -> None:
     agent.membrane.strings[0].radius = 1.0
     agent.boundary.radius_deviation[1] = 0.9
     agent.residual_history.append(10.0)
-    mesh_memory.global_store["some_key"] = MemoryRecord("some_key", "mutated_val", set(), time.time(), time.time(), "agent_1", PolicyEnvelope())
+    mesh_memory.global_store["some_key"] = MemoryRecord(
+        "some_key", "mutated_val", set(), time.time(), time.time(), "agent_1", PolicyEnvelope()
+    )
 
     # Rollback
     checker.rollback(backup, [agent], [cluster], mesh_memory)
@@ -471,7 +479,9 @@ def test_engine_integration_ticks() -> None:
     c_engine.temporal_state.consecutive_admissible_ticks = 55
 
     # Create dummy cluster record to promote
-    cluster_rec = MemoryRecord("k1", "val", {"tag1"}, time.time(), time.time(), "cluster_1", c_engine.global_envelope)
+    cluster_rec = MemoryRecord(
+        "k1", "val", {"tag1"}, time.time(), time.time(), "cluster_1", c_engine.global_envelope
+    )
     c_engine.clusters["cluster_1"].semantic_memory.global_store["k1"] = cluster_rec
 
     # Tick

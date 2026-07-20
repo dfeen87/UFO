@@ -5,7 +5,7 @@ Collective Symmetric Ascension Operator (SAO) for multi-agent collective reasoni
 from __future__ import annotations
 import time
 from typing import Any, Tuple, Optional, Dict
-from radial_membrane_ai.semantic_memory.core import MemoryRecord, MeshSemanticMemory
+from radial_membrane_ai.semantic_memory.core import MemoryRecord
 from radial_membrane_ai.collective_reasoning.policy_envelope import PolicyEnvelope
 from radial_membrane_ai.residuals import ResidualRecord
 
@@ -33,7 +33,9 @@ def collective_sao_promote(
     if level == "local":
         # Local SAO (agent -> cluster)
         # Requires short-range gate: ticks >= 5, tension < 2.0 (green/yellow, no red)
-        t_state = getattr(source_entity.membrane, "temporal_state", None) if hasattr(source_entity, "membrane") else None
+        t_state = getattr(
+            source_entity.membrane, "temporal_state", None
+        ) if hasattr(source_entity, "membrane") else None
         ticks = t_state.consecutive_admissible_ticks if t_state else current_ticks
         avg_tension = t_state.accumulated_tension if t_state else 0.0
 
@@ -47,7 +49,9 @@ def collective_sao_promote(
             return False, p_sao, None
 
         # Stability compliance: no red band for agent's cluster or global
-        if stability_bands.get("global") == "red" or stability_bands.get(getattr(target_entity, "cluster_id", "")) == "red":
+        g_red = (stability_bands.get("global") == "red")
+        tgt_red = (stability_bands.get(getattr(target_entity, "cluster_id", "")) == "red")
+        if g_red or tgt_red:
             return False, p_sao, None
 
         # Envelope check
@@ -69,7 +73,9 @@ def collective_sao_promote(
     elif level == "cluster":
         # Cluster SAO (cluster -> global mesh)
         # Requires mid-range gate: ticks >= 20, cluster tension predominantly green (< 1.0)
-        c_t_state = getattr(source_entity.membrane, "temporal_state", None) if hasattr(source_entity, "membrane") else None
+        c_t_state = getattr(
+            source_entity.membrane, "temporal_state", None
+        ) if hasattr(source_entity, "membrane") else None
         ticks = c_t_state.consecutive_admissible_ticks if c_t_state else current_ticks
         avg_tension = source_entity.tension_metric if hasattr(source_entity, "tension_metric") else 0.0
 
@@ -128,7 +134,6 @@ def collective_sao_promote(
         raise ValueError(f"Unknown level: {level}")
 
     # 2. Extract or Create Memory Record to Promote
-    # Determine the memory record to promote
     record_to_promote: Optional[MemoryRecord] = None
 
     if level == "local":
