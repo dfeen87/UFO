@@ -371,6 +371,54 @@ A repository‑wide integration sweep that unifies:
 
 This pass ensures the entire operator stack behaves as one coherent governed system.
 
+## **10. Letter‑Depth Encoding (L.D.E.) — Governed Symbolic Text Geometry**
+
+**Letter‑Depth Encoding (L.D.E.)** is a governed symbolic layer for text that parallels the U.F.O. Facet Layer. Instead of treating language as flat tokens or opaque embeddings, L.D.E. models written text as a **textual membrane** with measurable geometry, depth, routing, and reconstructable identity.
+
+In L.D.E., **letters act as governed strings**, **words act as V‑Channels**, **sentences form membrane fields**, and **paragraphs integrate into identity signatures**. This creates an interpretable, reversible representation of text that exposes symbolic structure normally hidden inside statistical models.
+
+### **Core Concepts**
+- **Letter Strings:** Each letter is represented as a state‑bearing unit with activation, phase, positions, spread, depth, tension, stiffness, and reconstruction cost.  
+- **V‑Channel Routing:** Repeated pairings, adjacency, rhythmic recurrence, and semantic pressure form coherent routing corridors between letter strings.  
+- **Textual Membrane Geometry:** Sentences and paragraphs are projected into deformable polar boundaries whose curvature, tangent, and asymmetry reflect symbolic pressure and structural identity.  
+- **Reconstruction Layer:** L.D.E. preserves exact symbol identities, positions, spacing, punctuation, and casing, enabling full reversibility when required.  
+- **Governed Runtime:** All encoding occurs inside a symbolic I.D.E. that enforces consistency, cost constraints, and reconstruction rules.
+
+### **Pipeline Overview**
+L.D.E. implements a full encoding pipeline that produces:
+- letter‑string states  
+- depth vectors  
+- coherence matrices  
+- V‑Channel pressures  
+- deformable boundary geometry  
+- reconstruction metadata  
+
+This pipeline is fully inspectable and designed for integration with the governed visualization layer and diagnostic dashboard.
+
+### **Integration with U.F.O.**
+L.D.E. maps directly onto the U.F.O. architecture:
+
+| U.F.O. Layer | L.D.E. Analog |
+|--------------|----------------|
+| Facet Strings | Letter Strings |
+| V‑Channels | Letter‑Pair Coherence |
+| Membrane Geometry | Paragraph Boundary |
+| Stability Bands | Depth Distribution |
+| Regime Diagnostics | Boundary Deformation |
+| Reconstruction Operator | Text Reconstruction Map |
+
+This makes L.D.E. a natural symbolic subsystem within the broader governed mesh.
+
+### **Research Value**
+L.D.E. provides an interpretable alternative to opaque token embeddings, supporting:
+- authorship and style signatures  
+- compression and reconstruction research  
+- geometric NLP experiments  
+- educational visualization  
+- symbolic interpretability for AI systems  
+
+It is intentionally lightweight, reversible, and mathematically structured, making it suitable for both standalone use and deep integration with governed architectures.
+
 ---
 
 ## Variable Reference
