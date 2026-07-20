@@ -86,6 +86,20 @@ class WorkloadFrameMetrics:
 
 
 @dataclass
+class WorkloadFrame:
+    metrics: WorkloadFrameMetrics
+    membrane_geometry: Optional[Any] = None
+    vchannels: Optional[Any] = None
+    sao_events: List[SAOEvent] = field(default_factory=list)
+
+
+@dataclass
+class WorkloadTrace:
+    frames: List[WorkloadFrame]
+    result: Optional[WorkloadResult] = None
+
+
+@dataclass
 class WorkloadResult:
     frames: List[WorkloadFrameMetrics] = field(default_factory=list)
     regime_transitions: List[RegimeTransition] = field(default_factory=list)
@@ -321,6 +335,240 @@ class WorkloadEngine:
         # Build final correctness report
         result.correctness_report = self._build_correctness_report(result, workload)
         return result
+
+    def run_trace(self, workload: Workload) -> WorkloadTrace:
+        """
+        Executes a complete workload and returns a full diagnostic WorkloadTrace.
+        """
+        engine = self._select_engine(workload.target)
+        trace_frames: List[WorkloadFrame] = []
+
+        prev_regime: Optional[str] = None
+        prev_band: Optional[StabilityBand] = None
+        prev_envelope: Optional[EnvelopeState] = None
+
+        # Enable collective layer if multi-agent or multi-cluster has it
+        if hasattr(engine, "collective_enabled"):
+            engine.collective_enabled = True
+
+        # Track semantic memory state
+        def capture_memory_state() -> dict:
+            state = {}
+            if workload.target == SimulationTarget.SINGLE_AGENT:
+                if hasattr(engine, "semantic_memory") and engine.semantic_memory:
+                    for k, rec in engine.semantic_memory.local_store.items():
+                        state[k] = {"value": rec.value, "tags": list(rec.tags)}
+            elif workload.target == SimulationTarget.MULTI_AGENT:
+                if hasattr(engine, "mesh_memory") and engine.mesh_memory:
+                    for k, rec in engine.mesh_memory.global_store.items():
+                        state[k] = {"value": rec.value, "tags": list(rec.tags)}
+                for a in engine.agents:
+                    if hasattr(a, "semantic_memory") and a.semantic_memory:
+                        for k, rec in a.semantic_memory.local_store.items():
+                            state[f"{a.agent_id}:{k}"] = {"value": rec.value, "tags": list(rec.tags)}
+            elif workload.target == SimulationTarget.MULTI_CLUSTER:
+                if hasattr(engine, "global_mesh_memory") and engine.global_mesh_memory:
+                    for k, rec in engine.global_mesh_memory.global_store.items():
+                        state[k] = {"value": rec.value, "tags": list(rec.tags)}
+                for c_id, c in engine.clusters.items():
+                    if hasattr(c, "semantic_memory") and c.semantic_memory:
+                        for k, rec in c.semantic_memory.global_store.items():
+                            state[f"{c_id}:{k}"] = {"value": rec.value, "tags": list(rec.tags)}
+                    for a in c.agents:
+                        if hasattr(a, "semantic_memory") and a.semantic_memory:
+                            for k, rec in a.semantic_memory.local_store.items():
+                                state[f"{c_id}:{a.agent_id}:{k}"] = {"value": rec.value, "tags": list(rec.tags)}
+            return state
+
+        # Initial memory snapshot
+        curr_memory = capture_memory_state()
+
+        # Track quarantine states
+        quarantined_entities: Set[str] = set()
+
+        # We also need a WorkloadResult to populate correctness report
+        result = WorkloadResult()
+
+        for step_idx, step in enumerate(workload.steps):
+            # Capture semantic memory before actions
+            mem_before = dict(curr_memory)
+
+            # A. Apply Actions
+            self._apply_actions(engine, step, workload.target)
+
+            # Determine task value and excitation for tick
+            task_value = 0.8
+            excitation = np.ones(12, dtype=np.float64) * 0.5
+
+            # Combine actions to extract activation sequentials
+            all_acts = (
+                list(step.agent_actions.values())
+                + list(step.cluster_actions.values())
+                + step.global_actions
+            )
+            for act in all_acts:
+                if act.type == ActionType.SET_ACTIVATION:
+                    val = act.payload.get("value")
+                    if isinstance(val, list):
+                        excitation = np.array(val[:12], dtype=np.float64)
+                        if len(excitation) < 12:
+                            excitation = np.pad(
+                                excitation,
+                                (0, 12 - len(excitation)),
+                                'constant',
+                                constant_values=0.5
+                            )
+                    elif isinstance(val, (int, float)):
+                        excitation = np.ones(12, dtype=np.float64) * float(val)
+
+            # B. Execute tick
+            if workload.target == SimulationTarget.SINGLE_AGENT:
+                engine.tick(task_value=task_value, excitation=excitation)
+            elif workload.target == SimulationTarget.MULTI_AGENT:
+                engine.tick(task_value=task_value, excitation=excitation)
+            elif workload.target == SimulationTarget.MULTI_CLUSTER:
+                engine.tick(task_value=task_value, default_excitation=excitation)
+
+            # C. Capture metrics & Frame
+            frame = self._capture_frame(engine, workload.target, step_idx)
+            result.frames.append(frame)
+
+            # Extract snapshots
+            from radial_membrane_ai.visualization.visualizer import extract_geom_and_vchannel
+            if workload.target == SimulationTarget.SINGLE_AGENT:
+                geom, vch = extract_geom_and_vchannel(engine.membrane, engine.boundary)
+            elif workload.target == SimulationTarget.MULTI_AGENT:
+                from radial_membrane_ai.multi_agent.cluster import UFOCluster
+                temp_c = UFOCluster(cluster_id="global_mesh")
+                temp_c.agents = engine.agents
+                temp_c.update_cluster_membrane()
+                geom, vch = extract_geom_and_vchannel(temp_c.membrane, temp_c.boundary)
+            elif workload.target == SimulationTarget.MULTI_CLUSTER:
+                from radial_membrane_ai.multi_agent.cluster import UFOCluster
+                temp_c = UFOCluster(cluster_id="global_mesh")
+                agents = []
+                for c in engine.clusters.values():
+                    agents.extend(c.agents)
+                temp_c.agents = agents
+                temp_c.update_cluster_membrane()
+                geom, vch = extract_geom_and_vchannel(temp_c.membrane, temp_c.boundary)
+
+            # Track transitions/events (programmatic correctness report mapping)
+            if prev_regime is not None and frame.regime != prev_regime:
+                result.regime_transitions.append(
+                    RegimeTransition(step_index=step_idx, from_regime=prev_regime, to_regime=frame.regime)
+                )
+            prev_regime = frame.regime
+
+            # Current SAO Level Events
+            step_sao_events = []
+            if frame.sao_level != SAOLevel.NONE:
+                evt = SAOEvent(step_index=step_idx, level=frame.sao_level)
+                result.sao_events.append(evt)
+                step_sao_events.append(evt)
+
+            # Build WorkloadFrame
+            trace_frames.append(WorkloadFrame(
+                metrics=frame,
+                membrane_geometry=geom,
+                vchannels=vch,
+                sao_events=step_sao_events
+            ))
+
+            # Programmatically populate stability, etc.
+            if prev_band is not None and frame.stability_band != prev_band:
+                result.stability_band_events.append(
+                    StabilityBandEvent(step_index=step_idx, band=frame.stability_band)
+                )
+            prev_band = frame.stability_band
+
+            if prev_envelope is not None and frame.envelope_state != prev_envelope:
+                result.envelope_events.append(
+                    EnvelopeAlignmentEvent(step_index=step_idx, state=frame.envelope_state)
+                )
+            prev_envelope = frame.envelope_state
+
+            # Detect rollbacks/quarantines to match run() perfectly
+            rollback_detected = False
+            rollback_reason = ""
+            if hasattr(engine, "interventions") and engine.interventions:
+                for inter in reversed(engine.interventions):
+                    if "Rollback" in inter or "rollback" in inter:
+                        rollback_detected = True
+                        rollback_reason = inter
+                        break
+            if rollback_detected:
+                result.rollback_events.append(RollbackEvent(step_index=step_idx, reason=rollback_reason))
+
+            if workload.target == SimulationTarget.SINGLE_AGENT:
+                if getattr(engine, "quarantine_timer", 0) > 0 and "single_agent" not in quarantined_entities:
+                    quarantined_entities.add("single_agent")
+                    result.quarantine_events.append(
+                        QuarantineEvent(
+                            step_index=step_idx,
+                            entity_id="single_agent",
+                            reason="Stability violation quarantine."
+                        )
+                    )
+            elif workload.target == SimulationTarget.MULTI_AGENT:
+                for agent in engine.agents:
+                    if agent.shard.state == ShardState.QUARANTINED and agent.agent_id not in quarantined_entities:
+                        quarantined_entities.add(agent.agent_id)
+                        result.quarantine_events.append(
+                            QuarantineEvent(
+                                step_index=step_idx,
+                                entity_id=agent.agent_id,
+                                reason="Mesh audit or safety quarantine."
+                            )
+                        )
+                    elif agent.shard.state != ShardState.QUARANTINED and agent.agent_id in quarantined_entities:
+                        quarantined_entities.remove(agent.agent_id)
+            elif workload.target == SimulationTarget.MULTI_CLUSTER:
+                for c_id, c in engine.clusters.items():
+                    if getattr(c, "quarantine_timer", 0) > 0 and c_id not in quarantined_entities:
+                        quarantined_entities.add(c_id)
+                        result.quarantine_events.append(
+                            QuarantineEvent(
+                                step_index=step_idx,
+                                entity_id=c_id,
+                                reason="Cluster safety quarantine."
+                            )
+                        )
+                    elif getattr(c, "quarantine_timer", 0) == 0 and c_id in quarantined_entities:
+                        quarantined_entities.remove(c_id)
+                for c in engine.clusters.values():
+                    for agent in c.agents:
+                        if agent.shard.state == ShardState.QUARANTINED and agent.agent_id not in quarantined_entities:
+                            quarantined_entities.add(agent.agent_id)
+                            result.quarantine_events.append(
+                                QuarantineEvent(
+                                    step_index=step_idx,
+                                    entity_id=agent.agent_id,
+                                    reason="Agent quarantine under cluster."
+                                )
+                            )
+                        elif agent.shard.state != ShardState.QUARANTINED and agent.agent_id in quarantined_entities:
+                            quarantined_entities.remove(agent.agent_id)
+
+            curr_memory = capture_memory_state()
+            if curr_memory != mem_before:
+                diff_before = {}
+                diff_after = {}
+                for k, v in curr_memory.items():
+                    if k not in mem_before:
+                        diff_after[k] = v
+                    elif mem_before[k] != v:
+                        diff_before[k] = mem_before[k]
+                        diff_after[k] = v
+                for k, v in mem_before.items():
+                    if k not in curr_memory:
+                        diff_before[k] = v
+                result.semantic_diffs.append(
+                    SemanticMemoryDiff(step_index=step_idx, before=diff_before, after=diff_after)
+                )
+
+        result.correctness_report = self._build_correctness_report(result, workload)
+        return WorkloadTrace(frames=trace_frames, result=result)
 
     def _select_engine(self, target: SimulationTarget) -> Any:
         if target is SimulationTarget.SINGLE_AGENT:
