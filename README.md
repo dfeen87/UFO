@@ -459,33 +459,61 @@ The hardening pass transforms the repository from a functional prototype into a 
 
 This step is performed **before** the Full Integration Pass so that all modules connect on a stable foundation.
 
-### **Outcome**
-After the Runtime Hardening Pass, the repository is prepared for:
-
-- the Full Integration Pass  
-- final documentation  
-- example notebooks  
-- release tagging  
-- public announcement  
-
-This ensures the final release is **tip‑top tier**, professionally engineered, and ready for researchers, developers, and collaborators.
-
 ---
 
-## Variable Reference
+## **Variable Reference**
 
-| Variable | Meaning |
-|---|---|
-| `aᵢ(t)` | Activation coefficient of string `i` |
-| `θᵢ` | Home phase position of string `i` |
-| `rᵢ(t)` | Reasoning radius / cognitive reach |
-| `cᵢ(t)` | Local compute cost |
-| `τᵢ(t), κᵢ(t)` | Dynamic tension and stiffness |
-| `R(θ,t)` | Deformable boundary radius |
-| `ΔR(θ,t)` | Radius deviation (stretch / collapse) |
-| `K(θ,t)` | Local boundary curvature |
-| `E_tan(θ,t)` | Tangent expressivity |
-| `V(t)` | Lyapunov-style stability energy |
+### **String‑Level Variables (U.F.O. & L.D.E.)**
+- **Activation coefficient** `aᵢ(t)` — instantaneous activation of string `i`  
+- **Home phase** `θᵢ` — canonical angular position of string `i`  
+- **Phase offset** `Δθᵢ(t)` — deviation from home phase  
+- **Depth** `dᵢ` — weighted depth contribution of string `i`  
+- **Spread** `sᵢ` — normalized positional spread  
+- **Positions** `Pᵢ` — list of occurrences of string `i`  
+- **Frequency** `Fᵢ` — normalized frequency  
+- **Boundary participation** `Bᵢ` — proportion of occurrences near word/sentence boundaries  
+- **Repetition pressure** `Rᵢ` — inverse mean gap between occurrences  
+- **Local tension** `τᵢ(t)` — clustering variability  
+- **Stiffness** `κᵢ(t)` — inverse spread  
+- **Reconstruction cost** `cᵢ` — rarity‑based reconstruction weight  
+- **Channel contribution** `Cᵢ` — average coherence with neighbors  
+
+### **V‑Channel Variables**
+- **Adjacency count** `Aᵢⱼ` — number of times `i` is followed by `j`  
+- **Coherence** `Qᵢⱼ` — normalized adjacency (directional)  
+- **Channel strength** `Vᵢⱼ(t)` — activation‑weighted coherence  
+- **Channel pressure** `Ψᵢⱼ(t)` — influence of channel on membrane geometry  
+
+### **Membrane Geometry Variables**
+- **Boundary radius** `R(θ,t)` — deformable radius at angle `θ`  
+- **Radius deviation** `ΔR(θ,t)` — stretch/collapse relative to baseline  
+- **Curvature** `K(θ,t)` — second derivative of radius  
+- **Tangent expressivity** `E_tan(θ,t)` — first derivative of radius  
+- **Asymmetry** `A_sym` — `1 − r_min / r_max`  
+- **Angular basis** `φᵢ(θ)` — cosine/Gaussian kernel centered at `θᵢ`  
+- **Base radius** `r₀` — neutral membrane radius  
+
+### **Compute & Stability Variables**
+- **Local compute cost** `cᵢ(t)` — cost of activating string `i`  
+- **Global compute cost** `C_total(t)` — sum of all local costs  
+- **Lyapunov energy** `V(t)` — stability energy of the system  
+- **Variance penalty** `Λ_var` — penalty for uneven activation  
+- **Phase stability** `S_phase(t)` — deviation from stable phase distribution  
+- **Depth stability** `S_depth(t)` — deviation from balanced depth  
+
+### **Reconstruction Variables (L.D.E.)**
+- **Raw text** `T_raw` — original input text  
+- **Normalized stream** `S` — alphabet‑only normalized text  
+- **Reconstruction map** `B` — positions of non‑alphabetic symbols  
+- **Full reconstruction** `R(S,P,B)` — returns `T_raw`  
+- **Lossy reconstruction** `R_lossy` — reconstruction without punctuation/casing  
+
+### **Workload & Visualization Variables**
+- **Workload trace** `W` — ordered list of frames  
+- **Visualization frame** `F_t` — snapshot of system at time `t`  
+- **Boundary geometry** `G_t` — radius/curvature/tangent maps  
+- **Channel graph** `H_t` — V‑Channel network at time `t`  
+- **String table** `L_t` — all LDEString objects at time `t`  
 
 ---
 
