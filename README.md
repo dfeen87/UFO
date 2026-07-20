@@ -1,4 +1,4 @@
-# 🛸 The U.F.O. — Governed Deformable Radial Membrane
+# 🛸 The U.F.O. (User‑Formed Optimization) — Governed Deformable Radial Membrane
 
 **A compute-aware AI personalization architecture that treats behavior as a living, saucer-shaped control surface — not a static personality preset.**
 
