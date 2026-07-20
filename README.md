@@ -5,6 +5,7 @@
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21401979-blue)](https://doi.org/10.5281/zenodo.21401979)
 [![Status](https://img.shields.io/badge/status-MIT%20research%20grade-orange)](#status--validation)
 [![Status](https://img.shields.io/badge/simulation-governed%20model-purple)](#status--validation)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-pink.svg)](https://www.python.org/downloads/)
 [![CI](https://github.com/dfeen87/UFO/actions/workflows/ci.yml/badge.svg)](https://github.com/dfeen87/UFO/actions/workflows/ci.yml)
 
 
