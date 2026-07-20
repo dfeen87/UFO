@@ -26,6 +26,10 @@ from radial_membrane_ai.facet import FacetVector, TensionAutomaton, TensionState
 from radial_membrane_ai.coherence import closure_coherence
 from radial_membrane_ai.ufo_engine.config import CostWeights, StabilityBandConfig
 
+# Kernel Regime imports
+from radial_membrane_ai.kernel_regimes.manager import RegimeManager
+from radial_membrane_ai.kernel_regimes.regime import KernelRegimeType, REGIMES
+
 
 @dataclass
 class SingleAgentRunResult:
@@ -90,6 +94,11 @@ class SingleAgentEngine:
         self.activation_history: List[np.ndarray] = []
         self.radius_history: List[np.ndarray] = []
         self.residual_history: List[float] = []
+
+        # Kernel Regime Expansion Layer components
+        self.regime_manager = RegimeManager()
+        self.quarantine_timer: int = 0
+        self.tick_count: int = 0
 
         # Bind Policy-Bound Semantic Memory Layer
         from radial_membrane_ai.semantic_memory.integration import bind_to_mesh
@@ -163,31 +172,41 @@ class SingleAgentEngine:
         context_loads: list[float] | np.ndarray | None = None
     ) -> str:
         """
-        Runs a single tick cycle of the single-agent engine.
-
-        Steps:
-        1. Local cost calculations & activation update via Governor.
-        2. V-Channel reasoning radius propagation (Depth).
-        3. Pythagorean projection, tension updating, and facet resolution.
-        4. Boundary geometry deformation.
-        5. Lyapunov energy calculation and band determination.
-        6. Soft/Hard interventions by Governor.
-        7. Bounded compute envelope check (Brim).
-        8. SAO Promotion gate.
-        9. Cost taxonomy evaluation and quality-preserving reduction.
-        10. Logging of states, residuals, and interventions.
-
-        Returns:
-            The determined stability band for the tick ("green", "yellow", or "red").
+        Runs a single tick cycle of the single-agent engine, supporting multiple
+        governed behavioral regimes.
         """
+        self.tick_count += 1
+
+        # Check Quarantine
+        if self.quarantine_timer > 0:
+            self.quarantine_timer -= 1
+            self.band_history.append("quarantined")
+            return "quarantined"
+
         # Ensure correct array format
         excitation = np.array(excitation, dtype=np.float64)
 
-        # Call Semantic Memory on_tick_start hook
+        # 0. Backup State for precise rollback
+        backup: Dict[str, Any] = {
+            "activations": [s.activation for s in self.membrane.strings],
+            "radii": [s.radius for s in self.membrane.strings],
+            "deviations": dict(self.boundary.radius_deviation),
+            "t_state_accumulated_tension": self.membrane.temporal_state.accumulated_tension if hasattr(self.membrane, "temporal_state") else 0.0,
+            "t_state_consecutive_ticks": self.membrane.temporal_state.consecutive_admissible_ticks if hasattr(self.membrane, "temporal_state") else 0,
+            "t_state_green_ticks": self.membrane.temporal_state.green_ticks_count if hasattr(self.membrane, "temporal_state") else 0,
+            "t_state_tension_history": list(self.membrane.temporal_state.tension_history) if hasattr(self.membrane, "temporal_state") else [],
+            "t_state_curvature_history": list(self.membrane.temporal_state.curvature_history) if hasattr(self.membrane, "temporal_state") else [],
+            "t_state_admissibility_history": list(self.membrane.temporal_state.admissibility_history) if hasattr(self.membrane, "temporal_state") else [],
+            "semantic_memory_store": dict(self.semantic_memory.local_store) if hasattr(self, "semantic_memory") and self.semantic_memory else {},
+            "semantic_memory_history": list(self.semantic_memory.history) if hasattr(self, "semantic_memory") and self.semantic_memory else [],
+            "ledger_records": list(self.ledger.records) if hasattr(self, "ledger") else [],
+            "residual_history": list(self.residual_history),
+        }
+
+        # 1. Local updates (Governor activation update & routing & boundary update)
         from radial_membrane_ai.semantic_memory.integration import on_tick_start, on_tick_end
         on_tick_start(self)
 
-        # 1. Update activations via Governor
         self.governor.update_membrane(
             membrane=self.membrane,
             task_value=task_value,
@@ -196,16 +215,19 @@ class SingleAgentEngine:
             context_loads=context_loads
         )
 
-        # Apply Hysteresis Inertial Damping on resulting activations: A_new = (1 - alpha) * A_instant + alpha * A_prev
-        t_state = getattr(self.membrane, "temporal_state", None)
-        if t_state is not None and len(self.activation_history) > 0:
+        # Apply Hysteresis Inertial Damping if not disabled by active regime
+        active_regime = self.regime_manager.get_regime_for_agent("single_agent")
+        temp_rule_res = active_regime.temporal_rule(None, None, self)
+        disable_hyst = temp_rule_res.get("disable_hysteresis", False)
+
+        if not disable_hyst and len(self.activation_history) > 0:
             prior_act = self.activation_history[-1]
-            # Previous tension acts as damping on activation updates
-            alpha = 0.3 * t_state.get_normalized_tension_history()
+            t_state = getattr(self.membrane, "temporal_state", None)
+            alpha = 0.3 * t_state.get_normalized_tension_history() if t_state is not None else 0.0
             for idx, s in enumerate(self.membrane.strings):
                 s.activation = (1.0 - alpha) * s.activation + alpha * float(prior_act[idx])
 
-        # 2. V-Channel Routing (Radius Propagation)
+        # V-Channel Routing (Radius Propagation)
         old_radii = [s.radius for s in self.membrane.strings]
         for t_idx in range(12):
             target = self.membrane.strings[t_idx]
@@ -230,116 +252,9 @@ class SingleAgentEngine:
             target_radius_target = max(r_internal, r_propagated)
             target.radius = (1.0 - self.r_relaxation) * target.radius + self.r_relaxation * target_radius_target
 
-        # 3. Pythagorean Projection Layer & Facets
-        Q_matrix = self._update_facet_vectors(task_value, excitation)
-
-        # 4. Boundary Deformation
-        self.boundary.update_boundary(
-            membrane=self.membrane,
-            task_value=task_value
-        )
-
-        # 5. Lyapunov Energy & Band Analysis
-        energy = self.governor.compute_lyapunov_energy(self.membrane)
-        self.v_history.append(energy)
-
-        # Determine stability band
-        if energy <= self.band_config.v_green:
-            band = "green"
-        elif energy <= self.band_config.v_red:
-            band = "yellow"
-        else:
-            band = "red"
-        self.band_history.append(band)
-
-        # 6. Governor Interventions
-        if band == "green":
-            self.interventions.append("Green Band (Nominal): No intervention required.")
-        elif band == "yellow":
-            self.interventions.append(
-                "Yellow Band (Soft Intervention): Damping high-cost strings and tightening envelope."
-            )
-            # Damp activations on high-cost strings (> task_value)
-            for s in self.membrane.strings:
-                if s.cost > task_value:
-                    s.activation *= 0.85
-                    s.radius *= 0.95
-        else:  # "red"
-            self.interventions.append(
-                "Red Band (Hard Intervention): Throttling activations, "
-                "aggressive suppression of non-essentials."
-            )
-            # Aggressive suppression of all strings, especially non-analytical/non-contextual ones
-            for s in self.membrane.strings:
-                s.activation *= 0.5
-                s.radius *= 0.8
-
-        # 7. Brim Compute Envelope Evaluation
-        brim_verdict, brim_meta = self.envelope.evaluate_envelope(self.membrane, self.boundary)
-        if brim_verdict == "block":
-            self.interventions.append("Brim Envelope Block: Strong fallback containment.")
-            for s in self.membrane.strings:
-                s.activation *= 0.5
-        elif brim_verdict == "constrain":
-            self.interventions.append("Brim Envelope Constrain: Soft activation restriction.")
-            for s in self.membrane.strings:
-                s.activation *= 0.8
-
-        # 8. SAO Promotion Gate
-        sao_verdict, p_sao, sao_meta = self.sao_promotor.promote(self.membrane, self.boundary, "Holistic Governor")
-        sao_record = {
-            "verdict": sao_verdict,
-            "p_sao": p_sao,
-            "meta": sao_meta
-        }
-        self.sao_events.append(sao_record)
-
-        if sao_verdict in ("block", "constrain"):
-            # Record promotion residual failure in our ledger
-            self.ledger.log_failure(
-                record_id=f"single_agent_sao_{len(self.ledger.records)}",
-                error_type="sao_promotion_restriction",
-                shard_id="single_agent",
-                severity="high" if sao_verdict == "block" else "medium",
-                details={"p_sao": p_sao, "verdict": sao_verdict, "energy": energy}
-            )
-            # Append residual to history
-            self.residual_history.append(p_sao)
-        else:
-            self.residual_history.append(0.0)
-
-        # 9. Cost Taxonomy Integration
-        total_act = sum(s.activation for s in self.membrane.strings)
-        total_rad = sum(s.radius for s in self.membrane.strings)
-        avg_q_coh = float(np.mean(Q_matrix)) if Q_matrix.size > 0 else 0.5
-
-        if band == "red":
-            avg_q_coh *= 0.5
-
-        raw_cost = RuntimeCostVector(
-            tokens=total_act * 35.0,
-            depth=total_rad * 2.5,
-            context=float(sum(context_loads)) if context_loads is not None else 100.0,
-            retrievals=float(sum(tool_loads)) * 1.5 if tool_loads is not None else 1.0,
-            tool_calls=float(sum(tool_loads)) if tool_loads is not None else 0.0,
-            latency=total_rad * 0.35 + total_act * 0.1,
-            corrections=(1.0 - avg_q_coh) * 7.5,
-            recovery=10.0 if band == "red" else (4.0 if band == "yellow" else 0.0)
-        )
-
-        reduced_cost = reduce_avoidable_cost(raw_cost, avg_q_coh)
-        self.cost_history.append(reduced_cost)
-
-        obs_cost = reduced_cost.weighted_cost(self.cost_weights.to_dict(), quality_signal=avg_q_coh)
-        self.observable_cost_history.append(obs_cost)
-
-        # 10. Coh & State tracking
-        self.coherence_history.append(self.compute_local_coherence())
-        self._record_state()
-
-        # 11. Update Temporal Membrane State
+        # 2. Update Temporal Membrane State (First part of temporal tracking)
+        t_state = getattr(self.membrane, "temporal_state", None)
         if t_state is not None:
-            # Gather metrics
             max_curv = float(max([self.boundary.curvature(s.theta) for s in self.membrane.strings]))
             has_tens = any(s.tension > 0 for s in self.membrane.strings)
             max_tens = float(max([s.tension for s in self.membrane.strings])) if has_tens else 0.0
@@ -348,7 +263,6 @@ class SingleAgentEngine:
             closure_ratios = []
             for s in self.membrane.strings:
                 a_theta, b_theta = angular_decomposition(self.membrane, s.theta, samples=32)
-                # Use temporal capacity (geometric hysteresis + time-weighted tension)
                 from radial_membrane_ai.admissibility import dynamic_capacity_boundary_temporal
                 c_theta = dynamic_capacity_boundary_temporal(self.boundary, s.theta, self.membrane)
                 closure_ratios.append(closure_ratio(a_theta, b_theta, c_theta))
@@ -356,47 +270,292 @@ class SingleAgentEngine:
 
             t_state.update_tick_history(max_curv, max_tens, max_cl)
 
-            # Temporal Tension Accumulation
-            v_load = float(sum(s.radius for s in self.membrane.strings))
-            c_tax = float(obs_cost)
-            sao_intensity = p_sao
-            mem_writes = float(len(self.semantic_memory.history)) if hasattr(self, "semantic_memory") else 0.0
-            t_state.update_tension_accumulation(
-                v_channel_load=v_load,
-                cost_taxonomy_contrib=c_tax,
-                sao_promotions_intensity=sao_intensity,
-                mem_writes_norm=min(1.0, mem_writes / 10.0)
+        # 3. Regime Evaluation (Evaluating switched triggers based on latest temporal metrics)
+        t_bar_eval = t_state.accumulated_tension if t_state is not None else 0.0
+        coherence_eval = self.compute_local_coherence()
+        current_band_eval = self.band_history[-1] if self.band_history else "green"
+        max_curv_eval = float(max([self.boundary.curvature(s.theta) for s in self.membrane.strings])) if t_state is not None else 0.0
+
+        active_regime = self.regime_manager.evaluate_switching_triggers(
+            entity="single_agent",
+            t_bar=t_bar_eval,
+            coherence=coherence_eval,
+            stability_band=current_band_eval,
+            curvature=max_curv_eval
+        )
+        temp_rule_res = active_regime.temporal_rule(None, None, self)
+
+        # If Multi-Phase, update phase tick
+        if active_regime.regime_type == KernelRegimeType.MULTI_PHASE:
+            self.regime_manager.tick_multiphase_state("single_agent", t_bar_eval)
+
+        # 4. Regime-Specific Physics Application
+        # Apply stochastic activation noise if provided
+        act_noise_func = temp_rule_res.get("activation_noise", None)
+        if act_noise_func is not None:
+            for s in self.membrane.strings:
+                s.activation = max(0.0, min(1.0, s.activation + act_noise_func()))
+
+        # Evaluate capacity scaling
+        capacity_scale = active_regime.capacity_rule(None, None, self)
+        if capacity_scale is None:
+            capacity_scale = 1.0
+
+        # Scale boundary scale factor
+        self.boundary._custom_radius_scale = capacity_scale
+
+        try:
+            # Check closure ratio rules
+            cl_res = active_regime.closure_ratio_rule(None, None, self)
+            if cl_res.get("violation", False):
+                # Clamp activations and trigger soft rollback
+                if cl_res.get("clamped_activations") is not None:
+                    for idx, s in enumerate(self.membrane.strings):
+                        s.activation = cl_res["clamped_activations"][idx]
+                self.interventions.append("Deterministic Admissibility Violation: Clamped activations, soft rollback.")
+                # Restore previous activations from backup
+                for idx, s in enumerate(self.membrane.strings):
+                    s.activation = backup["activations"][idx]
+
+            # Pythagorean Projection Layer & Facets
+            Q_matrix = self._update_facet_vectors(task_value, excitation)
+
+            # Boundary Deformation
+            self.boundary.update_boundary(
+                membrane=self.membrane,
+                task_value=task_value
             )
 
-            # Drift, Decay, and Recovery Dynamics
-            low_load = (v_load < 2.0)
-            t_state.decay_tension(low_load=low_load)
+            # 5. Collective Admissibility (None for Single-Agent)
 
-            is_green = (band == "green")
-            recovery_mu = t_state.update_recovery_dynamics(is_green=is_green, mu=0.1)
-            t_state.apply_curvature_drift(self.boundary, mu=recovery_mu)
+            # 6. Coherence Detection
+            self.coherence_history.append(self.compute_local_coherence())
 
-            # Integrate accumulated tension back into Lyapunov stability bands via Effective Energy correction
-            # E_eff = E_Lyapunov + lambda * T_acc (lambda = 0.5)
-            # Adjust energy in v_history (only after >= 5 ticks to avoid startup cold start alerts)
-            if len(t_state.tension_history) >= 5:
-                eff_energy = energy + 0.5 * t_state.accumulated_tension
-                self.v_history[-1] = eff_energy
+            # 7. SAO Promotion Gate with regime rules
+            # Map target range based on allowed SAO rules
+            sao_rule_res = active_regime.sao_rule(None, None, self)
+            allowed_ranges = sao_rule_res.get("allowed_ranges", {"short", "mid", "long"})
+            restrict_to_cluster = sao_rule_res.get("restrict_to_cluster", False)
+            only_at_phase_boundary = sao_rule_res.get("only_at_phase_boundary", False)
 
-                # Re-evaluate stability band with effective energy
-                if eff_energy <= self.band_config.v_green:
-                    updated_band = "green"
-                elif eff_energy <= self.band_config.v_red:
-                    updated_band = "yellow"
-                else:
-                    updated_band = "red"
+            # Let's promote to Holistic Governor (short range)
+            target_layer = "Holistic Governor"
+            target_range = "short"
+            sao_blocked = (target_range not in allowed_ranges) or restrict_to_cluster
+            if only_at_phase_boundary and not sao_rule_res.get("is_boundary", False):
+                sao_blocked = True
 
-                self.band_history[-1] = updated_band
-                band = updated_band
+            if sao_blocked:
+                sao_verdict = "block"
+                p_sao = 0.5
+                sao_meta = {"blocked_by_regime": True}
+            else:
+                sao_verdict, p_sao, sao_meta = self.sao_promotor.promote(self.membrane, self.boundary, target_layer)
 
-        # Call Semantic Memory on_tick_end hook
+            sao_record = {
+                "verdict": sao_verdict,
+                "p_sao": p_sao,
+                "meta": sao_meta
+            }
+            self.sao_events.append(sao_record)
+
+            if sao_verdict in ("block", "constrain"):
+                self.ledger.log_failure(
+                    record_id=f"single_agent_sao_{len(self.ledger.records)}",
+                    error_type="sao_promotion_restriction",
+                    shard_id="single_agent",
+                    severity="high" if sao_verdict == "block" else "medium",
+                    details={"p_sao": p_sao, "verdict": sao_verdict}
+                )
+                self.residual_history.append(p_sao)
+            else:
+                self.residual_history.append(0.0)
+
+            # 8. Correctness Checks & Stability Rules Evaluator
+            # Lyapunov Energy & Band Analysis
+            energy = self.governor.compute_lyapunov_energy(self.membrane)
+            self.v_history.append(energy)
+
+            # Stability thresholds multiplier
+            stab_res_init = active_regime.stability_rule(None, None, self)
+            thresh_mult = stab_res_init.get("threshold_multiplier", 1.0)
+            effective_v_green = self.band_config.v_green * thresh_mult
+            effective_v_red = self.band_config.v_red * thresh_mult
+
+            # Determine stability band with effective thresholds
+            if energy <= effective_v_green:
+                band = "green"
+            elif energy <= effective_v_red:
+                band = "yellow"
+            else:
+                band = "red"
+            self.band_history.append(band)
+
+            # Evaluate stability rule validity based on newly determined band
+            stab_res = active_regime.stability_rule(None, None, self)
+
+            # Governor Interventions
+            if band == "green":
+                self.interventions.append("Green Band (Nominal): No intervention required.")
+            elif band == "yellow":
+                self.interventions.append(
+                    "Yellow Band (Soft Intervention): Damping high-cost strings and tightening envelope."
+                )
+                for s in self.membrane.strings:
+                    if s.cost > task_value:
+                        s.activation *= 0.85
+                        s.radius *= 0.95
+            else:  # "red"
+                self.interventions.append(
+                    "Red Band (Hard Intervention): Throttling activations, "
+                    "aggressive suppression of non-essentials."
+                )
+                for s in self.membrane.strings:
+                    s.activation *= 0.5
+                    s.radius *= 0.8
+
+            # Brim Compute Envelope Evaluation
+            brim_verdict, brim_meta = self.envelope.evaluate_envelope(self.membrane, self.boundary)
+            if brim_verdict == "block":
+                self.interventions.append("Brim Envelope Block: Strong fallback containment.")
+                for s in self.membrane.strings:
+                    s.activation *= 0.5
+            elif brim_verdict == "constrain":
+                self.interventions.append("Brim Envelope Constrain: Soft activation restriction.")
+                for s in self.membrane.strings:
+                    s.activation *= 0.8
+
+            # 9. Rollback if Stability Rule Violations occur
+            if not stab_res.get("valid", True):
+                if stab_res.get("rollback", False):
+                    # Complete rollback
+                    for idx, s in enumerate(self.membrane.strings):
+                        s.activation = backup["activations"][idx]
+                        s.radius = backup["radii"][idx]
+                    self.boundary.radius_deviation = dict(backup["deviations"])
+                    if hasattr(self.membrane, "temporal_state"):
+                        self.membrane.temporal_state.accumulated_tension = backup["t_state_accumulated_tension"]  # type: ignore
+                        self.membrane.temporal_state.consecutive_admissible_ticks = backup["t_state_consecutive_ticks"]  # type: ignore
+                        self.membrane.temporal_state.green_ticks_count = backup["t_state_green_ticks"]  # type: ignore
+                        self.membrane.temporal_state.tension_history.clear()
+                        self.membrane.temporal_state.tension_history.extend(backup["t_state_tension_history"])  # type: ignore
+                        self.membrane.temporal_state.curvature_history.clear()
+                        self.membrane.temporal_state.curvature_history.extend(backup["t_state_curvature_history"])  # type: ignore
+                        self.membrane.temporal_state.admissibility_history.clear()
+                        self.membrane.temporal_state.admissibility_history.extend(backup["t_state_admissibility_history"])  # type: ignore
+                    if hasattr(self, "semantic_memory") and self.semantic_memory:
+                        self.semantic_memory.local_store = dict(backup["semantic_memory_store"])  # type: ignore
+                        self.semantic_memory.history = list(backup["semantic_memory_history"])  # type: ignore
+                    if hasattr(self, "ledger"):
+                        self.ledger.records = list(backup["ledger_records"])  # type: ignore
+                    self.residual_history = list(backup["residual_history"])  # type: ignore
+
+                    self.interventions.append(f"Regime Stability Violation: Complete Rollback triggered for band '{band}'.")
+
+                if stab_res.get("quarantine", False):
+                    self.quarantine_timer = 5
+                    self.interventions.append("Agent placed under Quarantine for 5 ticks due to stability violation.")
+
+            # Update temporal state for future ticks (tension accumulation, decay, etc.)
+            if t_state is not None:
+                # Tension accumulation
+                v_load = float(sum(s.radius for s in self.membrane.strings))
+                c_tax = 0.0  # calculated below
+                sao_intensity = p_sao
+                mem_writes = float(len(self.semantic_memory.history)) if hasattr(self, "semantic_memory") else 0.0
+
+                # Determine active regime tension multiplier or noise
+                tension_mult = temp_rule_res.get("tension_accumulation_multiplier", 1.0)
+                tension_noise_val = active_regime.tension_rule(None, None, self)
+
+                # Temporarily calculate raw cost for taxonomy
+                total_act = sum(s.activation for s in self.membrane.strings)
+                total_rad = sum(s.radius for s in self.membrane.strings)
+                avg_q_coh = float(np.mean(Q_matrix)) if Q_matrix.size > 0 else 0.5
+
+                raw_cost = RuntimeCostVector(
+                    tokens=total_act * 35.0,
+                    depth=total_rad * 2.5,
+                    context=float(sum(context_loads)) if context_loads is not None else 100.0,
+                    retrievals=float(sum(tool_loads)) * 1.5 if tool_loads is not None else 1.0,
+                    tool_calls=float(sum(tool_loads)) if tool_loads is not None else 0.0,
+                    latency=total_rad * 0.35 + total_act * 0.1,
+                    corrections=(1.0 - avg_q_coh) * 7.5,
+                    recovery=10.0 if band == "red" else (4.0 if band == "yellow" else 0.0)
+                )
+
+                reduced_cost = reduce_avoidable_cost(raw_cost, avg_q_coh)
+                obs_cost = reduced_cost.weighted_cost(self.cost_weights.to_dict(), quality_signal=avg_q_coh)
+
+                # Apply tension logic
+                t_acc = t_state.update_tension_accumulation(
+                    v_channel_load=v_load,
+                    cost_taxonomy_contrib=obs_cost,
+                    sao_promotions_intensity=sao_intensity,
+                    mem_writes_norm=min(1.0, mem_writes / 10.0)
+                )
+
+                if tension_mult != 1.0:
+                    t_state.accumulated_tension *= tension_mult
+
+                if tension_noise_val != 0.0:
+                    t_state.accumulated_tension = max(0.0, t_state.accumulated_tension + tension_noise_val)
+
+                # Decay and drift
+                low_load = (v_load < 2.0)
+                t_state.decay_tension(low_load=low_load)
+
+                is_green = (band == "green")
+                recovery_mu = t_state.update_recovery_dynamics(is_green=is_green, mu=0.1)
+                t_state.apply_curvature_drift(self.boundary, mu=recovery_mu)
+
+                # Integrate accumulated tension back into Lyapunov stability bands via Effective Energy correction
+                if len(t_state.tension_history) >= 5:
+                    eff_energy = energy + 0.5 * t_state.accumulated_tension
+                    self.v_history[-1] = eff_energy
+
+                    # Re-evaluate stability band
+                    if eff_energy <= effective_v_green:
+                        updated_band = "green"
+                    elif eff_energy <= effective_v_red:
+                        updated_band = "yellow"
+                    else:
+                        updated_band = "red"
+
+                    self.band_history[-1] = updated_band
+                    band = updated_band
+
+            # Finalize Cost & Coh tracking
+            total_act = sum(s.activation for s in self.membrane.strings)
+            total_rad = sum(s.radius for s in self.membrane.strings)
+            avg_q_coh = float(np.mean(Q_matrix)) if Q_matrix.size > 0 else 0.5
+            if band == "red":
+                avg_q_coh *= 0.5
+
+            raw_cost = RuntimeCostVector(
+                tokens=total_act * 35.0,
+                depth=total_rad * 2.5,
+                context=float(sum(context_loads)) if context_loads is not None else 100.0,
+                retrievals=float(sum(tool_loads)) * 1.5 if tool_loads is not None else 1.0,
+                tool_calls=float(sum(tool_loads)) if tool_loads is not None else 0.0,
+                latency=total_rad * 0.35 + total_act * 0.1,
+                corrections=(1.0 - avg_q_coh) * 7.5,
+                recovery=10.0 if band == "red" else (4.0 if band == "yellow" else 0.0)
+            )
+
+            reduced_cost = reduce_avoidable_cost(raw_cost, avg_q_coh)
+            self.cost_history.append(reduced_cost)
+
+            obs_cost = reduced_cost.weighted_cost(self.cost_weights.to_dict(), quality_signal=avg_q_coh)
+            self.observable_cost_history.append(obs_cost)
+
+            self._record_state()
+
+        finally:
+            # Restore boundary scale factor
+            self.boundary._custom_radius_scale = 1.0
+
         on_tick_end(self)
-
         return band
 
     def run(

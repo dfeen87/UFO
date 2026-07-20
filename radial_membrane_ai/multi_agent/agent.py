@@ -75,6 +75,7 @@ class UFOAgent:
         self.coherence_history: list[float] = []
         self.activation_history: list[np.ndarray] = []
         self.residual_history: list[float] = []
+        self.quarantine_timer: int = 0
 
     def compute_local_coherence(self) -> float:
         """

@@ -53,6 +53,7 @@ class UFOCluster:
         self.stability_curvature = MemoryCurvatureState()
         self.stability_band: str = "green"  # "green", "yellow", or "red"
         self.tension_metric: float = 0.0
+        self.quarantine_timer: int = 0
         self.coherence_history: List[float] = []
         self.tension_history: List[float] = []
 
