@@ -25,6 +25,7 @@ from radial_membrane_ai.admissibility import angular_decomposition
 from radial_membrane_ai.facet import FacetVector, TensionAutomaton, TensionState
 from radial_membrane_ai.coherence import closure_coherence
 from radial_membrane_ai.ufo_engine.config import CostWeights, StabilityBandConfig
+from radial_membrane_ai.utils import set_deterministic_env
 
 # Kernel Regime imports
 from radial_membrane_ai.kernel_regimes.manager import RegimeManager
@@ -94,6 +95,9 @@ class SingleAgentEngine:
         self.activation_history: List[np.ndarray] = []
         self.radius_history: List[np.ndarray] = []
         self.residual_history: List[float] = []
+
+        # Call deterministic environment seeding
+        set_deterministic_env()
 
         # Kernel Regime Expansion Layer components
         self.regime_manager = RegimeManager()
@@ -587,6 +591,38 @@ class SingleAgentEngine:
 
             obs_cost = reduced_cost.weighted_cost(self.cost_weights.to_dict(), quality_signal=avg_q_coh)
             self.observable_cost_history.append(obs_cost)
+
+            # Post-tick invariant assertions and near-violation warning logs
+            hard_energy_limit = 15.0
+            hard_tension_limit = 10.0
+
+            # Check Lyapunov energy
+            latest_energy = self.v_history[-1] if self.v_history else 0.0
+            if latest_energy > hard_energy_limit:
+                from radial_membrane_ai.exceptions import GovernanceError
+                raise GovernanceError(
+                    f"Governed bound violated: Lyapunov energy ({latest_energy:.4f}) "
+                    f"exceeded hard limit ({hard_energy_limit})."
+                )
+            elif latest_energy >= 0.95 * hard_energy_limit:
+                self.interventions.append(
+                    f"Near-violation warning: Lyapunov energy ({latest_energy:.4f}) "
+                    f"is within 5% of hard limit ({hard_energy_limit})."
+                )
+
+            # Check Tension
+            latest_tension = t_state.accumulated_tension if t_state is not None else 0.0
+            if latest_tension > hard_tension_limit:
+                from radial_membrane_ai.exceptions import GovernanceError
+                raise GovernanceError(
+                    f"Governed bound violated: Temporal tension ({latest_tension:.4f}) "
+                    f"exceeded hard limit ({hard_tension_limit})."
+                )
+            elif latest_tension >= 0.95 * hard_tension_limit:
+                self.interventions.append(
+                    f"Near-violation warning: Temporal tension ({latest_tension:.4f}) "
+                    f"is within 5% of hard limit ({hard_tension_limit})."
+                )
 
             self._record_state()
 

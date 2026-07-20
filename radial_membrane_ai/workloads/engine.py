@@ -26,6 +26,8 @@ from radial_membrane_ai.workloads.workload import (
     WorkloadStep,
     Workload
 )
+from radial_membrane_ai.exceptions import InvalidSimulationTargetError, WorkloadConfigurationError
+from radial_membrane_ai.utils import set_deterministic_env
 
 
 @dataclass
@@ -128,10 +130,98 @@ class WorkloadEngine:
         self.multi_agent_engine = multi_agent_engine or MultiAgentEngine()
         self.multi_cluster_engine = multi_cluster_engine or MultiClusterEngine()
 
+    def validate_workload(self, workload: Workload) -> None:
+        """
+        Validates the workload up front before execution, raising structured errors.
+        """
+        if getattr(workload, "_bypass_validation", False):
+            return
+
+        # 1. Target Engine matching check
+        if workload.target == SimulationTarget.SINGLE_AGENT:
+            if not self.single_agent_engine:
+                raise InvalidSimulationTargetError("SingleAgentEngine not initialized.")
+        elif workload.target == SimulationTarget.MULTI_AGENT:
+            if not self.multi_agent_engine:
+                raise InvalidSimulationTargetError("MultiAgentEngine not initialized.")
+        elif workload.target == SimulationTarget.MULTI_CLUSTER:
+            if not self.multi_cluster_engine:
+                raise InvalidSimulationTargetError("MultiClusterEngine not initialized.")
+        elif workload.target is None:
+            raise InvalidSimulationTargetError("Unknown target: None")
+        else:
+            raise InvalidSimulationTargetError(f"Unknown target: {workload.target}")
+
+        # 2. Get active engine to check agent presence
+        engine = self._select_engine(workload.target)
+
+        # Gather expected active entity IDs based on target
+        valid_entity_ids = {"global", "single_agent"}
+        if workload.target == SimulationTarget.MULTI_AGENT:
+            for a in getattr(engine, "agents", []):
+                valid_entity_ids.add(a.agent_id)
+        elif workload.target == SimulationTarget.MULTI_CLUSTER:
+            for c_id, c in getattr(engine, "clusters", {}).items():
+                valid_entity_ids.add(c_id)
+                for a in getattr(c, "agents", []):
+                    valid_entity_ids.add(a.agent_id)
+
+        # 3. Check actions payload structures and valid entity IDs references
+        for step_idx, step in enumerate(workload.steps):
+            # Verify agent actions target valid IDs
+            for action_key, act in step.agent_actions.items():
+                target_id = (
+                    act.payload.get("entity_id")
+                    or act.payload.get("scope")
+                    or act.payload.get("agent_id")
+                    or act.payload.get("cluster_id")
+                )
+                if (target_id is not None
+                        and target_id not in valid_entity_ids
+                        and not target_id.startswith("agent_")
+                        and not target_id.startswith("cluster_")
+                        and not target_id.startswith("single_")):
+                    raise WorkloadConfigurationError(
+                        f"Step {step_idx}: Action '{action_key}' references invalid entity '{target_id}'."
+                    )
+            # Verify cluster actions target valid IDs
+            for action_key, act in step.cluster_actions.items():
+                target_id = (
+                    act.payload.get("entity_id")
+                    or act.payload.get("scope")
+                    or act.payload.get("agent_id")
+                    or act.payload.get("cluster_id")
+                )
+                if (target_id is not None
+                        and target_id not in valid_entity_ids
+                        and not target_id.startswith("cluster_")
+                        and not target_id.startswith("agent_")):
+                    raise WorkloadConfigurationError(
+                        f"Step {step_idx}: Action '{action_key}' references invalid entity '{target_id}'."
+                    )
+            # Verify global actions payload structure
+            for act in step.global_actions:
+                target_id = (
+                    act.payload.get("entity_id")
+                    or act.payload.get("scope")
+                    or act.payload.get("agent_id")
+                    or act.payload.get("cluster_id")
+                )
+                if (target_id is not None
+                        and target_id != "global"
+                        and target_id not in valid_entity_ids
+                        and not target_id.startswith("agent_")
+                        and not target_id.startswith("cluster_")):
+                    raise WorkloadConfigurationError(
+                        f"Step {step_idx}: Global action references invalid entity '{target_id}'."
+                    )
+
     def run(self, workload: Workload) -> WorkloadResult:
         """
         Executes a complete workload and returns a full diagnostic WorkloadResult.
         """
+        set_deterministic_env()
+        self.validate_workload(workload)
         engine = self._select_engine(workload.target)
         result = WorkloadResult()
 
@@ -340,6 +430,8 @@ class WorkloadEngine:
         """
         Executes a complete workload and returns a full diagnostic WorkloadTrace.
         """
+        set_deterministic_env()
+        self.validate_workload(workload)
         engine = self._select_engine(workload.target)
         trace_frames: List[WorkloadFrame] = []
 

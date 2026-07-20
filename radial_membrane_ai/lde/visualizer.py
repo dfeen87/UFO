@@ -29,7 +29,7 @@ class LDEVisualizer(MeshVisualizer):
         """
         Renders activation, spread, tension, and stiffness of each letter string as a bar plot.
         """
-        fig = plt.figure(figsize=(10, 5), dpi=100)
+        fig = plt.figure(figsize=(10, 5), dpi=120)
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title("L.D.E. String Local Metrics", fontsize=12, fontweight="bold")
 
@@ -58,7 +58,7 @@ class LDEVisualizer(MeshVisualizer):
         """
         Renders letter-pair coherence corridors (V-Channels) in a polar routing layout.
         """
-        fig = plt.figure(figsize=(8, 8), dpi=100)
+        fig = plt.figure(figsize=(8, 8), dpi=120)
         ax = fig.add_subplot(1, 1, 1, projection="polar")
         ax.set_title("L.D.E. V-Channel Routing Corridors", fontsize=12, fontweight="bold", pad=20)
 
@@ -92,12 +92,13 @@ class LDEVisualizer(MeshVisualizer):
         """
         Renders polar boundary radius map r(theta).
         """
-        fig = plt.figure(figsize=(8, 8), dpi=100)
+        fig = plt.figure(figsize=(8, 8), dpi=120)
         ax = fig.add_subplot(1, 1, 1, projection="polar")
         ax.set_title("L.D.E. Polar Boundary Geometry", fontsize=12, fontweight="bold", pad=20)
 
-        dtheta = (2.0 * math.pi) / 100.0
-        angles = [k * dtheta for k in range(100)]
+        samples = len(state.boundary.radius_map)
+        dtheta = (2.0 * math.pi) / samples
+        angles = [k * dtheta for k in range(samples)]
         radii = state.boundary.radius_map
 
         # Close the loop
@@ -115,7 +116,7 @@ class LDEVisualizer(MeshVisualizer):
             if string_obj.depth > 0.1:
                 theta_l = string_obj.phase
                 # Find closest index
-                best_k = min(range(100), key=lambda k: abs(k * dtheta - theta_l))
+                best_k = min(range(samples), key=lambda k: abs(k * dtheta - theta_l))
                 r_l = radii[best_k]
                 ax.scatter(theta_l, r_l, color="#F44336", s=50, edgecolors="black", zorder=4)
                 ax.text(theta_l, r_l + 0.1, l, fontsize=9, fontweight="bold")
@@ -127,7 +128,7 @@ class LDEVisualizer(MeshVisualizer):
         """
         Renders the sorted depth values of all letter strings.
         """
-        fig = plt.figure(figsize=(10, 5), dpi=100)
+        fig = plt.figure(figsize=(10, 5), dpi=120)
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title("L.D.E. Letter Depth Distribution", fontsize=12, fontweight="bold")
 
@@ -166,8 +167,9 @@ class LDEVisualizer(MeshVisualizer):
         # Panel A: Boundary Geometry
         # -------------------------------------------------------------
         ax_a.set_title("A. Boundary Geometry", fontsize=10, fontweight="bold", pad=10)
-        dtheta = (2.0 * math.pi) / 100.0
-        angles = [k * dtheta for k in range(100)]
+        samples = len(state.boundary.radius_map)
+        dtheta = (2.0 * math.pi) / samples
+        angles = [k * dtheta for k in range(samples)]
         angles_closed = angles + [angles[0]]
         radii_closed = state.boundary.radius_map + [state.boundary.radius_map[0]]
         ax_a.plot(angles_closed, radii_closed, color="#3F51B5", linewidth=1.5)
@@ -180,7 +182,7 @@ class LDEVisualizer(MeshVisualizer):
         for l in deepest_letters:
             s_obj = state.strings[l]
             if s_obj.depth > 0:
-                best_k = min(range(100), key=lambda k: abs(k * dtheta - s_obj.phase))
+                best_k = min(range(samples), key=lambda k: abs(k * dtheta - s_obj.phase))
                 ax_a.scatter(s_obj.phase, state.boundary.radius_map[best_k], color="#F44336", s=30, edgecolors="black")
                 ax_a.text(s_obj.phase, state.boundary.radius_map[best_k] + 0.1, l, fontsize=8, fontweight="bold")
 
@@ -219,7 +221,8 @@ class LDEVisualizer(MeshVisualizer):
         # Panel D: Boundary Deformation
         # -------------------------------------------------------------
         ax_d.set_title("D. Boundary Deformation", fontsize=10, fontweight="bold")
-        sample_indices = np.arange(100)
+        samples = len(state.boundary.radius_map)
+        sample_indices = np.arange(samples)
         radius_deviation = [r - 1.0 for r in state.boundary.radius_map]
         ax_d.plot(sample_indices, radius_deviation, color="#9C27B0", label="Deviation (r - r_0)", linewidth=1.2)
         ax_d.plot(sample_indices, state.boundary.tangent_map, color="#00BCD4", label="Tangent", linewidth=1.0)

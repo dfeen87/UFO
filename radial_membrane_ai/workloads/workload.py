@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple, Any
 
 from radial_membrane_ai.kernel_regimes.regime import KernelRegimeType
 from radial_membrane_ai.collective_reasoning.policy_envelope import PolicyEnvelope
+from radial_membrane_ai.exceptions import WorkloadValidationError
 
 # Type aliases as specified
 AgentID = str
@@ -115,6 +116,54 @@ class WorkloadStep:
     expected_stability_band: StabilityBand = StabilityBand.GREEN
     expected_coherence_range: Tuple[float, float] = (0.0, 1.0)
     expected_envelope_state: EnvelopeState = EnvelopeState.ADMIT
+    _bypass_validation: bool = False
+
+    def __post_init__(self) -> None:
+        if not self._bypass_validation:
+            self.validate()
+
+    def validate(self) -> None:
+        if not isinstance(self.agent_actions, dict):
+            raise WorkloadValidationError("agent_actions must be a dictionary.")
+        if not isinstance(self.cluster_actions, dict):
+            raise WorkloadValidationError("cluster_actions must be a dictionary.")
+        if not isinstance(self.global_actions, list):
+            raise WorkloadValidationError("global_actions must be a list.")
+
+        # Check expected_coherence_range
+        if not isinstance(self.expected_coherence_range, tuple) or len(self.expected_coherence_range) != 2:
+            raise WorkloadValidationError("expected_coherence_range must be a tuple of length 2.")
+        min_coh, max_coh = self.expected_coherence_range
+        if not (0.0 <= min_coh <= max_coh <= 1.0):
+            raise WorkloadValidationError(
+                f"expected_coherence_range must be between 0.0 and 1.0 with min <= max. "
+                f"Got {self.expected_coherence_range}."
+            )
+
+        # Validate Actions
+        for key, act in self.agent_actions.items():
+            if not isinstance(act, Action):
+                raise WorkloadValidationError(f"Value for agent action '{key}' must be an Action instance.")
+            if not isinstance(act.type, ActionType):
+                raise WorkloadValidationError(f"Action '{key}' has an invalid type: {act.type}.")
+            if not isinstance(act.payload, dict):
+                raise WorkloadValidationError(f"Action '{key}' payload must be a dictionary.")
+
+        for key, act in self.cluster_actions.items():
+            if not isinstance(act, Action):
+                raise WorkloadValidationError(f"Value for cluster action '{key}' must be an Action instance.")
+            if not isinstance(act.type, ActionType):
+                raise WorkloadValidationError(f"Action '{key}' has an invalid type: {act.type}.")
+            if not isinstance(act.payload, dict):
+                raise WorkloadValidationError(f"Action '{key}' payload must be a dictionary.")
+
+        for idx, act in enumerate(self.global_actions):
+            if not isinstance(act, Action):
+                raise WorkloadValidationError(f"Global action at index {idx} must be an Action instance.")
+            if not isinstance(act.type, ActionType):
+                raise WorkloadValidationError(f"Global action at index {idx} has an invalid type: {act.type}.")
+            if not isinstance(act.payload, dict):
+                raise WorkloadValidationError(f"Global action at index {idx} payload must be a dictionary.")
 
 
 @dataclass
@@ -127,6 +176,36 @@ class Workload:
     coherence_expectation: float
     envelope_expectation: PolicyEnvelope
     steps: List[WorkloadStep]
+    _bypass_validation: bool = False
+
+    def __post_init__(self) -> None:
+        if not self._bypass_validation:
+            self.validate()
+
+    def validate(self) -> None:
+        if not self.name or not isinstance(self.name, str):
+            raise WorkloadValidationError("Workload name must be a non-empty string.")
+        if not isinstance(self.target, SimulationTarget):
+            raise WorkloadValidationError(f"Workload target must be a valid SimulationTarget. Got {self.target}.")
+        if not isinstance(self.regime_expectation, KernelRegimeType):
+            raise WorkloadValidationError(
+                f"Workload regime_expectation must be a valid KernelRegimeType enum. Got {self.regime_expectation}."
+            )
+        if not isinstance(self.stability_expectation, StabilityBand):
+            raise WorkloadValidationError(
+                f"Workload stability_expectation must be a valid StabilityBand enum. Got {self.stability_expectation}."
+            )
+        if not (0.0 <= self.coherence_expectation <= 1.0):
+            raise WorkloadValidationError(
+                f"Workload coherence_expectation must be between 0.0 and 1.0. Got {self.coherence_expectation}."
+            )
+        if not isinstance(self.envelope_expectation, PolicyEnvelope):
+            raise WorkloadValidationError("Workload envelope_expectation must be a valid PolicyEnvelope instance.")
+        if not isinstance(self.steps, list):
+            raise WorkloadValidationError("Workload steps must be a list of WorkloadStep instances.")
+        for idx, step in enumerate(self.steps):
+            if not isinstance(step, WorkloadStep):
+                raise WorkloadValidationError(f"Workload step at index {idx} must be a WorkloadStep instance.")
 
 
 # =============================================================================

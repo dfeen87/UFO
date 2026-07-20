@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.multi_agent.coupling import InterAgentVChannel, GlobalHolisticGovernor
+from radial_membrane_ai.utils import set_deterministic_env
 from radial_membrane_ai.multi_agent.governance import MultiAgentMeshGovernance
 from radial_membrane_ai.shard import ShardState
 from radial_membrane_ai.ufo_engine.config import CostWeights, StabilityBandConfig
@@ -102,6 +103,9 @@ class MultiAgentEngine:
         self.interventions: List[str] = []
         self.sao_events: List[Dict[str, Any]] = []
         self.residual_history: List[float] = []
+
+        # Call deterministic environment seeding
+        set_deterministic_env()
 
         # Kernel Regime Expansion Layer components
         self.regime_manager = RegimeManager()
@@ -704,6 +708,22 @@ class MultiAgentEngine:
 
                 self.interventions.append(
                     f"Regime Stability Violation: Complete Rollback triggered globally (band was '{band}')."
+                )
+
+            # Post-tick invariant assertions and near-violation warning logs
+            hard_tension_limit = 10.0
+            latest_tension = self.temporal_state.accumulated_tension if self.temporal_state is not None else 0.0
+
+            if latest_tension > hard_tension_limit:
+                from radial_membrane_ai.exceptions import GovernanceError
+                raise GovernanceError(
+                    f"Governed bound violated: Global accumulated tension ({latest_tension:.4f}) "
+                    f"exceeded hard limit ({hard_tension_limit})."
+                )
+            elif latest_tension >= 0.95 * hard_tension_limit:
+                self.interventions.append(
+                    f"Near-violation warning: Global accumulated tension ({latest_tension:.4f}) "
+                    f"is within 5% of hard limit ({hard_tension_limit})."
                 )
 
         finally:
