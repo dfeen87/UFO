@@ -39,6 +39,7 @@ The saucer‑like appearance is therefore not the origin of the name, nor a refe
 - [3. The Cockpit — Governor & Stability Control](#3-the-cockpit--governor--stability-control)
 - [4. The Skin — Deformable Bidirectional Boundary](#4-the-skin--deformable-bidirectional-boundary)
 - [5. The Fuel Gauge — Cost Taxonomy](#5-the-fuel-gauge--cost-taxonomy)
+- [Governed Operator Stack: Architectural Expansions](#governed-operator-stack-architectural-expansions)
 - [Variable Reference](#variable-reference)
 - [Project Rainbow (Toy Simulation)](#project-rainbow-toy-simulation)
 - [Status & Validation](#status--validation)
@@ -251,6 +252,123 @@ The governor's objective is never blind minimization — it's:
 $$\min C_{\text{avoidable}} \quad \text{subject to task success, safety, correctness, accessibility, trust, and requested depth}$$
 
 Verbosity and redundant context get cut first; safety, correctness, and explicitly requested depth are protected last.
+
+---
+
+# Governed Operator Stack: Architectural Expansions
+
+The U.F.O. repository implements far more than the baseline radial membrane described in the core paper. Over time, the architecture has expanded into a full governed cognitive‑simulation stack. This section summarizes the major operator layers added through the project’s development — each corresponding to a formal prompt, research module, or architectural milestone.
+
+These expansions transform the U.F.O. from a geometric identity membrane into a **multi‑agent, multi‑cluster, temporally governed, policy‑aligned intelligence system**.
+
+## **1. Policy‑Bound Semantic Memory**
+A governed semantic memory layer that binds all memory operations to admissibility rules, stability bands, and policy envelopes. Features include:
+
+- residual‑preserving writes  
+- temporal admissibility windows  
+- SAO‑mediated promotion  
+- cluster‑level and global semantic fields  
+- cost‑aware memory routing  
+
+This layer ensures memory is not a free‑floating store — it is a governed cognitive substrate.
+
+## **2. Federated Shard Mesh & Multi‑Cluster Mesh**
+The membrane extends from single‑agent operation into a **multi‑agent mesh**, and then into a **multi‑cluster distributed mesh**. This includes:
+
+- shard‑level isolation  
+- cluster membranes  
+- cross‑cluster V‑Channels  
+- hierarchical governance  
+- cluster‑level SAO promotion  
+- distributed stability bands  
+- inter‑cluster policy envelopes  
+
+This layer enables governed distributed reasoning across multiple agents and clusters.
+
+## **3. Temporal Governance (Membrane Dynamics Over Time)**
+The membrane becomes a **dynamic temporal system**, not a static geometry. Temporal governance introduces:
+
+- membrane hysteresis  
+- temporal tension accumulation  
+- long‑range SAO promotion  
+- time‑weighted admissibility  
+- drift, decay, and recovery dynamics  
+- short‑ and long‑horizon temporal histories  
+
+This layer models how the membrane evolves under sustained workload.
+
+## **4. Collective Reasoning Governance**
+A multi‑agent reasoning layer that governs how agents and clusters reason together. Includes:
+
+- shared policy envelopes  
+- cross‑agent admissibility  
+- collective SAO promotion  
+- mesh‑level correctness guarantees  
+- emergent coherence detection  
+- cluster‑level and global reasoning cycles  
+
+This layer transforms the mesh into a governed collective intelligence system.
+
+## **5. Kernel Regime Expansion (Behavioral Physics Layer)**
+The U.F.O. supports multiple behavioral “physics regimes,” each with its own membrane dynamics, stability rules, and SAO behavior:
+
+- deterministic regime  
+- stochastic regime  
+- high‑curvature regime  
+- adversarial regime  
+- multi‑phase regime  
+
+A regime manager supervises switching based on tension, coherence, cost, and policy envelopes.
+
+## **6. Workload Families**
+A structured suite of governed workloads used to evaluate stability, coherence, and correctness across regimes:
+
+- cooperative workloads  
+- competitive workloads  
+- policy‑tension workloads  
+- asymmetric workloads  
+- high‑cost workloads  
+
+These workloads serve as the architecture’s stress‑testing framework.
+
+## **7. Mesh Visualization Layer**
+A diagnostic visualization layer for inspecting:
+
+- membrane curvature  
+- tension trajectories  
+- SAO promotion flows  
+- cluster coherence  
+- global stability bands  
+
+This layer makes the governed dynamics inspectable and falsifiable.
+
+## **8. Global Mesh Governance**
+The highest governance layer in the architecture, responsible for:
+
+- global policy envelopes  
+- global admissibility  
+- global SAO  
+- global semantic memory  
+- multi‑cluster coherence  
+- global stability bands  
+
+This layer completes the governed cognitive stack.
+
+## **9. Full Integration Pass**
+A repository‑wide integration sweep that unifies:
+
+- membrane geometry  
+- projection invariants  
+- semantic memory  
+- multi‑agent engine  
+- multi‑cluster mesh  
+- temporal governance  
+- collective reasoning  
+- kernel regimes  
+- workload families  
+- global governance  
+
+This pass ensures the entire operator stack behaves as one coherent governed system.
 
 ---
 
