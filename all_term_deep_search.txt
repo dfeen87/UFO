@@ -1,0 +1,69 @@
+Searching for formulas of: BoundaryParticipation, RepetitionPressure, LocalTension, Stiffness, ReconstructionCost, etc.
+*** Term: BoundaryParticipation ***
+Matches: 1
+or each symbol l:         a_l ← n_l / length(T_n)         s_l ← (max(P_l) - min(P_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized
+==================================================
+*** Term: RepetitionPressure ***
+Matches: 1
+gth(T_n)         s_l ← (max(P_l) - min(P_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter str
+==================================================
+*** Term: LocalTension ***
+Matches: 1
+_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-chan
+==================================================
+*** Term: Stiffness ***
+Matches: 6
+s from the U.F.O. Facet Layer. In that architecture, a facet or string is not a passive label. It is a governed unit with activation, depth, tension, stiffness, routing behavior, and cost. L.D.E. translates that idea into language. Each letter becomes a governed String: it has a location in the text, a phase position in the symbolic membrane, an activation strength based on recurrence, a depth value based on structural importance, and a tension value based on clustering, repetition, or interpretive pressure. L.D.E. can also be understood as operating inside a lightweight I.D.E. for governed symbolic systems. In this view, letters and strings are authored as symbolic units, V-Channels are interpreted as routing constraints, and the textual membrane is executed as a reconstructable geometric state. The I.D.E. idea does not replace the L.D.E. model; it names the environment in which governed symbolic text becomes programmable, inspectable, and cost-aware.
+
+ 2
+This creates a layered linguistic geometry. At the smallest scale, letters are Strings. At the next scale, words are V-Channels: bounded corridors where letter strings route th
+==================================================
+on or frequency, a_l o phase position, theta_l o position set, P_l o spread or distribution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)). This mirrors the U.F.O. idea that a string carries both expressive behavior and cost-bearing geometry, but translates it into the textual domain.
+3. Phase Domain and Alphabetic Geometry
+The alphabet can be placed around a circular phase domain, allowing letters to occupy stable angular positions. For a 26-letter English alphabet, a simple initialization is theta_l = 2*pi*i/26, where i indexes the letter. Other alphabets, phonetic systems, punctuation marks, or learned symbol sets can be assigned their own phase maps. The paragraph ﬁeld can then be approximated as a superposition of letter-string basis functions: T(theta,t) = sum_l a_l(t) phi_l(theta). Here phi_l(theta) is the angular basis function centered on the letter’s phase position. This gives the model its ﬁrst useful p
+==================================================
+mbol identities and positions
+
+ 5
+o structural layer: word boundaries, punctuation, casing, and spacing o geometric layer: depth, spread, tension, stiffness, and coherence o diagnostic layer: curvature, asymmetry, expressivity, and cost The reconstruction operator can be stated as Text = R(S, P, B), where S is the set of letter strings, P is the complete position map, and B is the boundary and formatting structure needed to restore spacing, punctuation, casing, and paragraph order. L.D.E. is fully reconstructable only when symbol identities, positions, ordering, spacing, punctuation, and casing are preserved. Depth and geometry enrich the encoding, but they do not by themselves guarantee reconstruction. This clariﬁcation strengthens the claim: L.D.E. can support full reconstruction as a complete encoding, and it can also support compressed variants when exact reconstruction is not required.
+7. Deformable Boundary Geometry for Paragraph Identity
+The U.F.O. paper’s deformable membrane can be translated into a paragraph boundary. Instead of representing the text as a ﬁxed 26-dimensional vector, L.D.E. can represent it as a polar
+==================================================
+6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the
+==================================================
+tters become governed Strings, and words become routing corridors. For each letter l, the system estimates activation a_l, spread s_l, tension tau_l, stiffness k_l, depth d_l, position set P_l, and phase position theta_l. For each ordered pair i to j, the system estimates adjacency pressure A_ij, phase alignment alpha_ij, coherence Q_ij, and cost-aware channel pressure P_i_to_j.
+
+ 17
+o structural importance o repetition pressure o boundary roles o semantic clustering o routing corridors This is the analysis engine of L.D.E. — the textual equivalent of the U.F.O. V-Channel reasoning layer.
+A.3 Governor Layers: Constraint, Cost, and
+Reconstructability
+The Governor Layer enforces rules, limits, and reconstruction guarantees. It determines what must be preserved, what may be compressed, what is optional, and what is diagnostic. 1. Essential Layer: symbol identities, positions, and ordering. 2. Structural Layer: spacing, punctuation, casing, and word boundaries. 3. Geometric Layer: depth, spread, tension, stiffness, and coherence. 4. Diagnostic Layer: curvature, asymmetry, expressivity, and cost. The Governor ensures T_raw = R(S, P
+==================================================
+ntities, positions, and ordering. 2. Structural Layer: spacing, punctuation, casing, and word boundaries. 3. Geometric Layer: depth, spread, tension, stiffness, and coherence. 4. Diagnostic Layer: curvature, asymmetry, expressivity, and cost. The Governor ensures T_raw = R(S, P, B) whenever full-reconstruction mode is required. This is the textual equivalent of the U.F.O. Governor Control Layer.
+A.4 Output Membrane: Boundary Geometry and Identity Signature
+After governance, the system produces the textual membrane — the geometric identity of the paragraph. The membrane is deﬁned by the depth vector D, activation vector A, coherence matrix Q, boundary signature G(theta), and reconstruction state R. The boundary is r(theta) = r_0 + sum_l d_l phi_l(theta). o outward stretches from high-depth letters o inward collapses from low-importance letters o curvature from symbolic pressure o asymmetry as stylistic ﬁngerprint o smooth corridors from high-coherence V-Channels This is the ﬁnal output — the identity-preserving geometric representation of the text.
+Appendix A Summary
+Stage L.D.E. Role U.F.O. Analog Output Neurobaseline Raw symbol
+==================================================
+*** Term: ReconstructionCost ***
+Matches: 1
+  B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the boundary signature exposes p
+==================================================

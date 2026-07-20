@@ -1,0 +1,33 @@
+*** SUBSECTION 10.3 ***
+10.3 Letter-String Activation Table
+For each letter l, deﬁne its position set P_l = {p : T_n[p] = l}, count n_l = |P_l|, and activation a_l = n_l/N. The following table shows a worked subset of the letter strings with exact positions in the normalized stream. Letter string Positions P_l Count n_l Activation a_l Initial interpretation
+e {2, 12, 21, 24, 38, 41, 49, 58, 71, 79} 10 0.1250 highest activation; broad structural presence
+t {10, 14, 18, 23, 45, 70} 6 0.0750 routing hinge across direction and article words
+o {8, 15, 17, 35, 43, 52, 59, 67} 8 0.1000 strong recurrence across motion, story, and horizon terms
+g {28, 51, 55, 61} 4 0.0500 clustered symbolic pressure around ﬂag, beginnings, grounding
+h {20, 25, 69, 76} 4 0.0500 boundary-like presence in the/the/horizon/ahead region
+
+ 10
+a {3, 29, 39, 56, 63, 77} 6 0.0750 anchors read, ﬂag, and ahead; distributed but not dominant The full normalized letter count for the 80-symbol stream is: a=6, b=2, c=1, d=5, e=10, f=3, g=4, h=4, i=5, l=3, m=2, n=6, o=8, r=6, s=5, t=6, u=2, y=1, z=1. Letters not listed have count zero in this example. The maximum count is max_j n_j = 10, so e becomes the frequency reference string. Using N = 80, activation is computed as a_l = n_l / 80. For example, a_e = 10/80 = 0.1250, a_o = 8/80 = 0.1000, a_t = 6/80 = 0.0750, and a_g = 4/80 = 0.0500. These values become the ﬁrst layer of the sentence membrane: a high, broad e-string; a strong o-string; several mid-strength directional strings; and
+================================================================================
+*** SUBSECTION 10.4 ***
+10.4 Depth Function
+Depth should reward more than raw frequency. A useful ﬁrst implementation is a weighted sum of normalized components: d_l = w_f F_l + w_s S_l + w_b B_l + w_r R_l + w_c C_l, with weights constrained so w_f + w_s + w_b + w_r + w_c = 1. o F_l = n_l / max_j n_j, the normalized frequency component. o S_l = (max P_l - min P_l) / (N - 1), the normalized spread component. o B_l = boundary participation, increased when the letter appears near word starts, word ends, sentence start, or sentence end. o R_l = repetition pressure, increased by short-gap recurrence or clustering. o C_l = channel contribution, the average coherence of l with neighboring or repeated partner strings.
+
+ 11
+For a simple demonstration, choose equal weights w_f = w_s = w_b = w_r = w_c = 0.20. These weights are not ﬁnal. They make the example transparent and can later be tuned for compression, authorship analysis, or interpretability. To make the sample arithmetic concrete, assign illustrative component values for the remaining three terms. These values can be computed more rigorously later, but they let the example show the full depth equation in action: B_e = 0.70, R_e = 0.55, C_e = 0.80; B_g = 0.65, R_g = 0.85, C_g = 0.60; B_o = 0.55, R_o = 0.60, C_o = 0.75; B_t = 0.70, R_t = 0.65, C_t = 0.70. Letter F_l S_l B_l R_l C_l d_l with equal weights e 1.0000 0.9747 0.70 0.55 0.80 0.8049 o 0.8000 0.7468 0.55 0.60 0.75 0.6894 t 0.6000 0.7595 0.70 0.65 0.70 0.6819 a 0.6000 0.9367 0.60 0.50 0.65 0.
+================================================================================
+*** SUBSECTION 10.5 ***
+10.5 V-Channel Coherence
+For two letter strings i and j, deﬁne adjacency pressure A_ij as the number of times i is immediately followed by j in the normalized stream. Deﬁne a normalized adjacency coherence Q_ij = A_ij / max(1, n_i). This gives a directional channel from i to j.
+
+ 12
+For example, the pair t to o occurs in left-to-right language through “to” and related directional structure. If A_t,o = 2 and n_t = 6, then Q_t,o = 2/6 = 0.3333. The pair h to e occurs in “the” twice, so if A_h,e = 2 and n_h = 4, then Q_h,e = 2/4 = 0.5000. The pair i to n appears in beginnings and grounding; if A_i,n = 3 and n_i = 5, then Q_i,n = 3/5 = 0.6000. Channel A_ij n_i Q_ij Interpretation t to o 2 6 0.3333 directional corridor through “to” structure h to e 2 4 0.5000 article corridor through repeated “the” i to n 3 5 0.6000 cluster corridor through beginnings and grounding g to i 2 4 0.5000 localized ridge in beginnings / grounding region Several visible V-channels appear in the example. The channel t to o is activated by left-to-right directional language, and the channel i to n is activated by beginnings and grounding. The channel h to e appears in the repeated word the and also contributes to ahead through a nearby h/e region. These channels show how letter strings form corridors of textual motion rather than isolated counts. A cost-aware channel pressure can be written as P_i_to_j = sigmoid(a_j) * ((1 + cos(theta_i - theta_j)) / 2) * Q_ij * gamma_j, where gamma_j = 1 / (1 + c_j).
+================================================================================
+*** SUBSECTION 10.6 ***
+10.6 Boundary Signature
+After activation and depth are computed, the sentence can be projected into a deformable paragraph boundary. Let r(theta) = r_0 + sum_l d_l phi_l(theta), where r_0 is the neutral textual radius and phi_l(theta) is a basis function centered at the letter’s phase position. Letters with high
+
+ 13
+depth stretch the boundary outward; weak or suppressed strings remain close to the neutral radius. For a simple discrete approximation, set r_0 = 1.00 and evaluate only the six sample letter strings using narrow basis functions that peak at 1.00 at their own phase and near 0.00 elsewhere. At each sampled letter phase, the approximate local radius is r_l approx 1 + d_l. Letter phase d_l Approx. radius r_l = 1 + d_l Radius deviation Delta r e 0.8049 1.8049 0.8049 o 0.6894 1.6894 0.6894 t 0.6819 1.6819 0.6819 a 0.6573 1.6573 0.6573 h 0.5918 1.5918 0.5918 g 0.5835 1.5835 0.5835  The boundary diagnostics are then Delta r(theta) = r(theta) - r_0, tangent(theta) = dr/dtheta, and curvature(theta) = d2r/dtheta2. In this example, e and o would create broad outward structure because they are both frequent and distributed, while g may create a sharper local ridge because its appearances cluster around symbolically loaded words. A simple tangent estimate between adjacent sampled phases can be approximated by the absolute radius difference. For example, |r_e - r_g| = |1.8049 - 1.5835| = 0.2214, while |r_o - r_t| = |1.6894 - 1.6819| = 0.0075. This suggests that the e-to-g r
+================================================================================

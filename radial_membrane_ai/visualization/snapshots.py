@@ -4,7 +4,7 @@ Data models and snapshots for the Mesh Visualization Layer.
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Tuple, Optional, TYPE_CHECKING
+from typing import List, Tuple, Optional, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 from radial_membrane_ai.workloads.workload import StabilityBand
 from radial_membrane_ai.kernel_regimes.regime import KernelRegimeType
 from radial_membrane_ai.workloads.engine import SAOEvent
+
+if TYPE_CHECKING:
+    from radial_membrane_ai.lde.models import LDEBoundaryGeometry, LDEVChannel, LDEString, LDEState
 
 
 @dataclass
@@ -54,6 +57,10 @@ class VisualizationFrame:
     coherence: float
     regime: KernelRegimeType
     rendered: Optional[Figure] = None
+    lde_boundary: Optional[LDEBoundaryGeometry] = None
+    lde_channels: Optional[List[LDEVChannel]] = None
+    lde_strings: Optional[Dict[str, LDEString]] = None
+    lde_state: Optional[LDEState] = None
 
 
 @dataclass

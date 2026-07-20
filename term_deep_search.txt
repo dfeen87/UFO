@@ -1,0 +1,53 @@
+*** BoundaryParticipation searches ***
+Context:  {p}         n_l ← n_l + 1  5.  For each symbol l:         a_l ← n_l / length(T_n)         s_l ← (max(P_l) - min(P_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Cohere
+---
+*** RepetitionPressure searches ***
+Context:  {p}         n_l ← n_l + 1  5.  For each symbol l:         a_l ← n_l / length(T_n)         s_l ← (max(P_l) - min(P_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Cohere
+---
+*** LocalTension searches ***
+Context:  {p}         n_l ← n_l + 1  5.  For each symbol l:         a_l ← n_l / length(T_n)         s_l ← (max(P_l) - min(P_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Cohere
+---
+*** Stiffness searches ***
+Context: mains inspectable after encoding. The core analogy comes from the U.F.O. Facet Layer. In that architecture, a facet or string is not a passive label. It is a governed unit with activation, depth, tension, stiffness, routing behavior, and cost. L.D.E. translates that idea into language. Each letter becomes a governed String: it has a location in the text, a phase position in the symbolic me
+---
+Context: es. It is a state-bearing unit that records how a symbol participates in the paragraph’s geometry, rhythm, reconstruction, and interpretive pressure. o activation or frequency, a_l o phase position, theta_l o position set, P_l o spread or distribution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)
+---
+Context:  cost constraints remain consistent across symbolic systems such as U.F.O. and L.D.E. o essential layer: exact symbol identities and positions
+
+ 5
+o structural layer: word boundaries, punctuation, casing, and spacing o geometric layer: depth, spread, tension, stiffness, and coherence o diagnostic layer: curvature, asymmetry, expressivity, and cost The reconstruction operator can be stated as Text = R(S, P, B), where S is the set of letter strings, P is the complete position map, and B is the boundary and formatting structure needed to restore spacing, punctuation, casing, and paragraph order. L.D.E. is fully reconstructable only when symbol identities, positions, ordering, spacing, punctuation, and casing are preserved. Depth and geometry
+---
+Context:  {p}         n_l ← n_l + 1  5.  For each symbol l:         a_l ← n_l / length(T_n)         s_l ← (max(P_l) - min(P_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Cohere
+---
+Context: shed, the analytic stream T_n enters the V-Channel analysis layer. This is where letters become governed Strings, and words become routing corridors. For each letter l, the system estimates activation a_l, spread s_l, tension tau_l, stiffness k_l, depth d_l, position set P_l, and phase position theta_l. For each ordered pair i to j, the system estimates adjacency pressure A_ij, phase alignment alpha_ij, coherence Q_ij, and cost-aware channel pressur
+---
+Context: iagnostic. 1. Essential Layer: symbol identities, positions, and ordering. 2. Structural Layer: spacing, punctuation, casing, and word boundaries. 3. Geometric Layer: depth, spread, tension, stiffness, and coherence. 4. Diagnostic Layer: curvature, asymmetry, expressivity, and cost. The Governor ensures T_raw = R(S, P, B) whenever full-reconstruction mode is requ
+---
+*** ReconstructionCost searches ***
+Context:  {p}         n_l ← n_l + 1  5.  For each symbol l:         a_l ← n_l / length(T_n)         s_l ← (max(P_l) - min(P_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Cohere
+---
+*** LocalTension searches ***
+Context:  {p}         n_l ← n_l + 1  5.  For each symbol l:         a_l ← n_l / length(T_n)         s_l ← (max(P_l) - min(P_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Cohere
+---
+*** Stiffness searches ***
+Context: mains inspectable after encoding. The core analogy comes from the U.F.O. Facet Layer. In that architecture, a facet or string is not a passive label. It is a governed unit with activation, depth, tension, stiffness, routing behavior, and cost. L.D.E. translates that idea into language. Each letter becomes a governed String: it has a location in the text, a phase position in the symbolic me
+---
+Context: es. It is a state-bearing unit that records how a symbol participates in the paragraph’s geometry, rhythm, reconstruction, and interpretive pressure. o activation or frequency, a_l o phase position, theta_l o position set, P_l o spread or distribution, s_l o letter-depth, d_l o local tension, tau_l o dynamic stiffness, k_l o coherence with neighboring strings, Q_ij
+
+ 3
+o local encoding or reconstruction cost, c_l A compact state form is: S_l(t) = (a_l(t), theta_l, P_l, s_l(t), d_l(t), tau_l(t), k_l(t), c_l(t)
+---
+Context:  cost constraints remain consistent across symbolic systems such as U.F.O. and L.D.E. o essential layer: exact symbol identities and positions
+
+ 5
+o structural layer: word boundaries, punctuation, casing, and spacing o geometric layer: depth, spread, tension, stiffness, and coherence o diagnostic layer: curvature, asymmetry, expressivity, and cost The reconstruction operator can be stated as Text = R(S, P, B), where S is the set of letter strings, P is the complete position map, and B is the boundary and formatting structure needed to restore spacing, punctuation, casing, and paragraph order. L.D.E. is fully reconstructable only when symbol identities, positions, ordering, spacing, punctuation, and casing are preserved. Depth and geometry
+---
+Context:  {p}         n_l ← n_l + 1  5.  For each symbol l:         a_l ← n_l / length(T_n)         s_l ← (max(P_l) - min(P_l)) / max(1, length(T_n) - 1)  6.  For each symbol l:         B_l ← BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Cohere
+---
+Context: shed, the analytic stream T_n enters the V-Channel analysis layer. This is where letters become governed Strings, and words become routing corridors. For each letter l, the system estimates activation a_l, spread s_l, tension tau_l, stiffness k_l, depth d_l, position set P_l, and phase position theta_l. For each ordered pair i to j, the system estimates adjacency pressure A_ij, phase alignment alpha_ij, coherence Q_ij, and cost-aware channel pressur
+---
+Context: iagnostic. 1. Essential Layer: symbol identities, positions, and ordering. 2. Structural Layer: spacing, punctuation, casing, and word boundaries. 3. Geometric Layer: depth, spread, tension, stiffness, and coherence. 4. Diagnostic Layer: curvature, asymmetry, expressivity, and cost. The Governor ensures T_raw = R(S, P, B) whenever full-reconstruction mode is requ
+---

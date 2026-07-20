@@ -1,0 +1,56 @@
+*** BoundaryParticipation ***
+BoundaryParticipation(P_l)         R_l ← RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the boundary signature exposes paragraph shape, and the reconstruction map preserves exact recoverability when required.
+10. Worked Example: The Flag Sentence
+Example input: “Read from left to right, the U.S. flag becomes a story — beginnings, grounding, and the horizon ahead.” The worked example below implements the L.D.E. pipeline on the sentence rather than merely describing it. Th
+==================================================
+*** RepetitionPressure ***
+RepetitionPressure(P_l)         tau_l ← LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the boundary signature exposes paragraph shape, and the reconstruction map preserves exact recoverability when required.
+10. Worked Example: The Flag Sentence
+Example input: “Read from left to right, the U.S. flag becomes a story — beginnings, grounding, and the horizon ahead.” The worked example below implements the L.D.E. pipeline on the sentence rather than merely describing it. The purpose is not to exhaustively compute
+==================================================
+*** LocalTension ***
+LocalTension(P_l)         k_l ← Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the boundary signature exposes paragraph shape, and the reconstruction map preserves exact recoverability when required.
+10. Worked Example: The Flag Sentence
+Example input: “Read from left to right, the U.S. flag becomes a story — beginnings, grounding, and the horizon ahead.” The worked example below implements the L.D.E. pipeline on the sentence rather than merely describing it. The purpose is not to exhaustively compute every symbol by hand, but to show how th
+==================================================
+*** Stiffness ***
+Stiffness(P_l)         c_l ← ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the boundary signature exposes paragraph shape, and the reconstruction map preserves exact recoverability when required.
+10. Worked Example: The Flag Sentence
+Example input: “Read from left to right, the U.S. flag becomes a story — beginnings, grounding, and the horizon ahead.” The worked example below implements the L.D.E. pipeline on the sentence rather than merely describing it. The purpose is not to exhaustively compute every symbol by hand, but to show how the model becomes operational: a s
+==================================================
+*** ReconstructionCost ***
+ReconstructionCost(l)  7.  For each ordered pair (i, j):         A_ij ← AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the boundary signature exposes paragraph shape, and the reconstruction map preserves exact recoverability when required.
+10. Worked Example: The Flag Sentence
+Example input: “Read from left to right, the U.S. flag becomes a story — beginnings, grounding, and the horizon ahead.” The worked example below implements the L.D.E. pipeline on the sentence rather than merely describing it. The purpose is not to exhaustively compute every symbol by hand, but to show how the model becomes operational: a sentence is normalized, indexe
+==================================================
+*** AdjacencyPressure ***
+AdjacencyPressure(i, j, T_n)         alpha_ij ← (1 + cos(theta_i - theta_j)) / 2         Q_ij ← Coherence(i, j, A_ij, n_i)  8.  For each symbol l:         d_l ← w_f*F_l + w_s*S_l + w_b*B_l + w_r*R_l + w_c*C_l  9.  For each ordered pair (i, j):         gamma_j ← 1 / (1 + c_j)         P_i_to_j ← sigmoid(a_j) * alpha_ij * Q_ij * gamma_j  10. Compute boundary geometry:         r(theta) ← r_0 + sum_l d_l phi_l(theta)         G ← {Delta r(theta), tangent(theta), curvature(theta), asymmetry}  11. Assemble letter strings:         S_l ← (a_l, theta_l, P_l, s_l, d_l, tau_l, k_l, c_l, links)  12. If rho requires full-reconstruction mode:         Verify R(S, P, B) = T_raw  13. Return L = (S, P, D, Q, G, B)
+
+ 8
+This algorithm clariﬁes the division of labor inside L.D.E.. The normalized stream supports analysis, the letter strings carry symbolic geometry, the V-channel matrix captures routing, the boundary signature exposes paragraph shape, and the reconstruction map preserves exact recoverability when required.
+10. Worked Example: The Flag Sentence
+Example input: “Read from left to right, the U.S. flag becomes a story — beginnings, grounding, and the horizon ahead.” The worked example below implements the L.D.E. pipeline on the sentence rather than merely describing it. The purpose is not to exhaustively compute every symbol by hand, but to show how the model becomes operational: a sentence is normalized, indexed, converted into letter strings, assigned depth, routed through V-chann
+==================================================
+*** Coherence ***
+Coherence matrix: Q = [Q_ij] o Position map: P = {P_a, P_b, ..., P_z} o Boundary signature: G(theta) = (Delta r, tangent, curvature, asymmetry) o Reconstruction state: R = (symbols, positions, order, spacing, punctuation, casing)
+
+ 6
+Together, these objects deﬁne the paragraph’s identity signature. The signature is richer than a word embedding because it remains inspectable at the symbolic level, but it is more structured than ordinary letter counts because it includes geometry, channels, depth, and reconstruction constraints.
+9. Algorithm 1: L.D.E. Pipeline
+The following pseudocode summarizes the full Letter-Depth Encoding procedure. It converts raw text into a layered representation containing symbolic identity, positions, depth, coherence, boundary geometry, and reconstruction metadata. Input: Raw text T_raw, alphabet or symbol set Sigma, phase map theta, depth weights W, basis functions phi_l, and reconstruction policy rho. Output: L.D.E. state L = (S, P, D, Q, G, B), where S is the set of letter strings, P is the position map, D is the depth vector, Q is the V-channel coherence matrix, G is the boundary signature, and B is the reconstruction map. The L.D.E. pipeline executes inside the I.D.E.’s governed runtime, which validates symbol identities, enforces reconstruction policy, and applies cost-aware routing rules. This ensures that the algorithm remains interpretable and consistent with the broader governed architecture. Algorithm 1 — Letter-Depth Encoding (L.D.E.
+==================================================
