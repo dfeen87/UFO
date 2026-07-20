@@ -40,6 +40,7 @@ The saucer‑like appearance is therefore not the origin of the name, nor a refe
 - [4. The Skin — Deformable Bidirectional Boundary](#4-the-skin--deformable-bidirectional-boundary)
 - [5. The Fuel Gauge — Cost Taxonomy](#5-the-fuel-gauge--cost-taxonomy)
 - [Governed Operator Stack: Architectural Expansions](#governed-operator-stack-architectural-expansions)
+- [Runtime Hardening Pass Stability Critical Release Preparation](#runtime-hardening-pass-stability-critical-release-preparation)
 - [Variable Reference](#variable-reference)
 - [Project Rainbow (Toy Simulation)](#project-rainbow-toy-simulation)
 - [Status & Validation](#status--validation)
@@ -418,6 +419,56 @@ L.D.E. provides an interpretable alternative to opaque token embeddings, support
 - symbolic interpretability for AI systems  
 
 It is intentionally lightweight, reversible, and mathematically structured, making it suitable for both standalone use and deep integration with governed architectures.
+
+---
+
+# Runtime Hardening Pass (Stability‑Critical Release Preparation)
+
+Before the final Full Integration Pass, the repository undergoes a **Runtime Hardening Pass**. This step ensures that the entire governed architecture — including U.F.O., L.D.E., the Mesh Visualizer, and the Diagnostic Dashboard — behaves **deterministically**, **reliably**, and **reproducibly** across machines and environments. The goal is to deliver a research‑grade system that is stable, inspectable, and suitable for public release.
+
+### **Objectives**
+The Runtime Hardening Pass focuses on strengthening the system’s execution guarantees:
+
+- **Deterministic Seeds**  
+  All randomness is centralized and seeded to ensure identical results across runs, machines, and environments.
+
+- **Reproducible Rendering**  
+  Visualization outputs (membrane geometry, V‑Channel routing, depth distributions, boundary signatures) use fixed backends, DPI, color palettes, and scaling rules to guarantee consistent figures.
+
+- **Strict Type Enforcement**  
+  All dataclasses, workloads, and geometry modules enforce strong typing and invariants, preventing silent drift or malformed states.
+
+- **Strict Error Handling**  
+  Workloads and visualizers fail gracefully, surface meaningful diagnostics, and never produce partial or corrupted frames.
+
+- **Reconstruction Guarantees**  
+  L.D.E. enforces full round‑trip reconstruction when required, ensuring that symbol identities, positions, spacing, punctuation, and casing remain recoverable.
+
+- **Workload Validation**  
+  All workloads validate inputs, configuration parameters, and trace integrity before execution, ensuring predictable behavior under governed runtime constraints.
+
+### **Why This Pass Matters**
+The hardening pass transforms the repository from a functional prototype into a **stable governed system**. It ensures that:
+
+- results are reproducible  
+- visualizations are consistent  
+- workloads behave predictably  
+- reconstruction is guaranteed  
+- integration is clean and reliable  
+- the system is ready for public use, citation, and long‑term maintenance  
+
+This step is performed **before** the Full Integration Pass so that all modules connect on a stable foundation.
+
+### **Outcome**
+After the Runtime Hardening Pass, the repository is prepared for:
+
+- the Full Integration Pass  
+- final documentation  
+- example notebooks  
+- release tagging  
+- public announcement  
+
+This ensures the final release is **tip‑top tier**, professionally engineered, and ready for researchers, developers, and collaborators.
 
 ---
 
