@@ -14,6 +14,7 @@ from radial_membrane_ai.lde.models import (
     LDEBoundaryGeometry,
     LDEState
 )
+from radial_membrane_ai.exceptions import ReconstructionError
 
 
 def lde_encode(text: str, config: Optional[LDEConfig] = None) -> LDEState:
@@ -203,12 +204,13 @@ def lde_encode(text: str, config: Optional[LDEConfig] = None) -> LDEState:
                 )
                 links[i][j] = P_i_to_j
 
-    # 8. Compute boundary geometry (100 sample angles)
+    # 8. Compute boundary geometry (configurable sample angles)
     # Basis function: phi_l(theta) = max(0, cos(angular_distance(theta, theta_l)))
     radius_map: List[float] = []
-    dtheta = (2.0 * math.pi) / 100.0
+    samples = config.geometry_samples
+    dtheta = (2.0 * math.pi) / samples
 
-    for k in range(100):
+    for k in range(samples):
         theta = k * dtheta
         r_val = config.r_0
         for l in sigma:
@@ -228,10 +230,10 @@ def lde_encode(text: str, config: Optional[LDEConfig] = None) -> LDEState:
     tangent_map: List[float] = []
     curvature_map: List[float] = []
 
-    for k in range(100):
+    for k in range(samples):
         r_k = radius_map[k]
-        r_prev = radius_map[(k - 1) % 100]
-        r_next = radius_map[(k + 1) % 100]
+        r_prev = radius_map[(k - 1) % samples]
+        r_next = radius_map[(k + 1) % samples]
 
         # tangent = (r_{k+1} - r_{k-1}) / (2 * dtheta)
         tangent_val = (r_next - r_prev) / (2.0 * dtheta)
@@ -290,7 +292,7 @@ def lde_encode(text: str, config: Optional[LDEConfig] = None) -> LDEState:
                 reconstructed.append(char)
         reconstructed_text = "".join(reconstructed)
         if reconstructed_text != text:
-            raise ValueError("Reconstruction verification failed!")
+            raise ReconstructionError("Reconstruction verification failed!")
 
     return LDEState(
         strings=strings,

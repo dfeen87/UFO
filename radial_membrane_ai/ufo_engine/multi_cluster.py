@@ -29,6 +29,7 @@ from radial_membrane_ai.collective_reasoning.coherence import global_mesh_cohere
 # Kernel Regime imports
 from radial_membrane_ai.kernel_regimes.manager import RegimeManager
 from radial_membrane_ai.kernel_regimes.regime import KernelRegimeType
+from radial_membrane_ai.utils import set_deterministic_env
 
 
 class MultiClusterEngine:
@@ -57,6 +58,9 @@ class MultiClusterEngine:
         self.c_global_history: List[float] = []
         self.global_band_history: List[str] = []
         self.interventions: List[str] = []
+
+        # Call deterministic environment seeding
+        set_deterministic_env()
 
         # Kernel Regime Expansion Layer components
         self.regime_manager = RegimeManager()
@@ -763,6 +767,22 @@ class MultiClusterEngine:
 
                 self.interventions.append(
                     f"Regime Stability Violation: Global Multi-Cluster Rollback triggered (band was '{band}')."
+                )
+
+            # Post-tick invariant assertions and near-violation warning logs
+            hard_tension_limit = 10.0
+            latest_tension = self.temporal_state.accumulated_tension if self.temporal_state is not None else 0.0
+
+            if latest_tension > hard_tension_limit:
+                from radial_membrane_ai.exceptions import GovernanceError
+                raise GovernanceError(
+                    f"Governed bound violated: Global mesh tension ({latest_tension:.4f}) "
+                    f"exceeded hard limit ({hard_tension_limit})."
+                )
+            elif latest_tension >= 0.95 * hard_tension_limit:
+                self.interventions.append(
+                    f"Near-violation warning: Global mesh tension ({latest_tension:.4f}) "
+                    f"is within 5% of hard limit ({hard_tension_limit})."
                 )
 
         finally:

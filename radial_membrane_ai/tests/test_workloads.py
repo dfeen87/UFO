@@ -279,7 +279,8 @@ def test_unsupported_simulation_target() -> None:
         stability_expectation=StabilityBand.GREEN,
         coherence_expectation=1.0,
         envelope_expectation=PolicyEnvelope(),
-        steps=[]
+        steps=[],
+        _bypass_validation=True
     )
     with pytest.raises(ValueError, match="Unknown target:"):
         engine.run(bad_workload)
@@ -422,7 +423,8 @@ def test_engine_coverage_booster() -> None:
         stability_expectation=StabilityBand.GREEN,
         coherence_expectation=1.1,  # mismatch to cover avg_coherence < expected (line 707)
         envelope_expectation=PolicyEnvelope(),
-        steps=sa_steps
+        steps=sa_steps,
+        _bypass_validation=True
     )
 
     # Monkeypatch semantic store to simulate a deletion right before step 2 execution
@@ -510,7 +512,8 @@ def test_engine_coverage_booster() -> None:
         stability_expectation=StabilityBand.GREEN,
         coherence_expectation=0.0,
         envelope_expectation=PolicyEnvelope(),
-        steps=ma_steps
+        steps=ma_steps,
+        _bypass_validation=True
     )
     _ = engine_ma.run(ma_workload)
 
@@ -580,7 +583,8 @@ def test_engine_coverage_booster() -> None:
         stability_expectation=StabilityBand.GREEN,
         coherence_expectation=0.0,
         envelope_expectation=PolicyEnvelope(),
-        steps=mc_steps
+        steps=mc_steps,
+        _bypass_validation=True
     )
 
     # Monkeypatch to release cluster and agent quarantine right before step 1.
