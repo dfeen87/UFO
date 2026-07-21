@@ -45,6 +45,7 @@ The saucer‑like appearance is therefore not the origin of the name, nor a refe
 - [Variable Reference](#variable-reference)
 - [Project Rainbow (Toy Simulation)](#project-rainbow-toy-simulation)
 - [Status & Validation](#status--validation)
+- [What’s Coming Next](#whats-coming-next)
 - [Citing This Work](#citing-this-work)
 - [A Note of Gratitude](#a-note-of-gratitude)
 - [Acknowledgments](#acknowledgments)
@@ -628,6 +629,23 @@ The U.F.O. has progressed far beyond a conceptual sketch. This repository now im
 The system is validated through controlled workloads, curvature‑weighted routing traces, kernel‑regime sweeps, SAO ascension tests, shard‑state transitions, and falsification‑preserving ledger updates. Comprehensive unit and integration tests (currently at 98% coverage) confirm that the operator stack behaves consistently across edge cases, including suppression events, stability‑band transitions, shard quarantine, and residual‑only SAO outcomes.
 
 While still a research artifact rather than a deployed production system, the U.F.O. has moved decisively into the governed‑simulation phase of its validation roadmap. Future work includes broader parameter sweeps, richer workload families, multi‑agent membrane coupling, federated mesh coherence studies, and ablations against static personalization, response‑length‑only control, no‑curvature routing, and no‑governor baselines. Treat this repository as a reproducible, inspectable, and falsifiable implementation of the architecture — a platform for critique, experimentation, and continued refinement.
+
+---
+
+## What’s Coming Next
+
+The U.F.O. runtime is now publicly released under the MIT License, and development continues. Upcoming work includes:
+
+- **Expanded Agent Models** — new cognitive membranes, governed personalities, and multi‑agent coordination behaviors.  
+- **Visualization Tools** — graphical dashboards for stability bands, Lyapunov energy, and membrane activation fields.  
+- **Governed Workloads** — structured tasks that demonstrate stability physics under real constraints.  
+- **Plugin Architecture** — allowing external modules to integrate with the UFO runtime.  
+- **Benchmark Suite** — deterministic performance and stability tests.  
+- **Documentation Expansion** — deeper guides, diagrams, and conceptual papers.  
+- **Community Contributions** — issues, extensions, and research collaborations.
+
+Development continues actively.  
+This is only the beginning.
 
 ---
 
