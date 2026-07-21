@@ -69,7 +69,7 @@ Whether you are exploring identity‑based AI behavior, governed reasoning, mult
 
 ---
 
-## **How to Implement the U.F.O. Architecture**
+# **How to Implement the U.F.O. Architecture**
 
 ### **1. Clone the Repository**
 Use Git to pull the full codebase locally:
@@ -91,8 +91,9 @@ pip install -e .
 ```
 This ensures `radial_membrane_ai` is discoverable by Python and allows the example scripts and CLI to run correctly.
 
-### **4. Explore the Core Modules**
+## **4. Explore the Core Modules**
 The architecture is organized into clear modules:
+
 - **radial_membrane_ai/core** — membrane geometry, behavioral strings, V‑Channels  
 - **radial_membrane_ai/governance** — admissibility gates, stability bands, cost‑taxonomy pressure  
 - **radial_membrane_ai/agents** — single‑agent and multi‑agent engines  
@@ -103,15 +104,13 @@ The architecture is organized into clear modules:
 
 Each module is documented and designed for extension.
 
----
-
 ## **5. Run the Example Simulation**
 A starter simulation is included:
 ```bash
 python examples/run_simulation.py
 ```
 
-If you prefer running the simulation modules directly, you can also use:
+You can also run the simulation modules directly:
 ```bash
 python -m radial_membrane_ai.simulation
 ```
@@ -122,43 +121,58 @@ python -m radial_membrane_ai.multi_agent.simulation
 
 These demonstrate membrane activation, agent interaction, stability‑metric enforcement, and basic governed reasoning flow.
 
----
 
-## **6. Run U.F.O. from the Terminal (CLI)**
-Once the CLI is merged, you can run governed simulations directly from the terminal:
+## **6. Run U.F.O. from the Terminal (CLI)**  
+The U.F.O. governed runtime includes a dynamic terminal interface for running simulations interactively.
 
+### **Basic Usage**
+Single‑agent mode:
 ```bash
 poetry run ufo --single
 ```
 
-Or multi‑agent mode:
-
+Multi‑agent mode:
 ```bash
 poetry run ufo --multi
 ```
 
-You can also customize execution:
-
+### **Custom Execution**
+You can customize governed runs with:
 ```bash
 poetry run ufo --steps 20 --excitation 0.3 --task-value 0.5 --visualize
 ```
 
-The CLI provides dynamic tick‑by‑tick output, governed halt banners, deterministic seeding, and optional visualization export.
+The CLI provides:
 
----
+- dynamic tick‑by‑tick governed output  
+- deterministic seed initialization  
+- stability‑metric reporting  
+- governed halt banners  
+- optional visualization export  
+
+### **Additional Modes**
+- `--quiet` — suppress tick output; print only the final governed summary  
+- `--verbose` — print full governed telemetry  
+- `--demo` — safe 5‑step demonstration  
+- `--demo-governance` — intentionally trigger a governed halt  
+
+Visualization artifacts are saved under:
+```
+logs/visualization/ufo_simulation_timeline.png
+```
 
 ## **Build Your Own Agents or Membrane Configurations**
 You can extend:
+
 - **UFOAgent** for custom behaviors  
 - **MultiAgentEngine** for multi‑agent environments  
 - **RadialMembrane** for new geometric or behavioral configurations  
 
 The architecture is intentionally modular so you can plug in new logic without rewriting the core.
 
----
-
 ## **Integrate Into Your Own Systems**
 U.F.O. can be embedded into:
+
 - research prototypes  
 - simulation environments  
 - AI reasoning engines  
