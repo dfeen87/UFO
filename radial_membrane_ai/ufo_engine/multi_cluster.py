@@ -40,7 +40,7 @@ class MultiClusterEngine:
     hierarchical Holistic Governor, supporting governed behavioral regimes.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, seed: int = 0) -> None:
         """
         Initializes the Multi-Cluster Simulation Engine.
         """
@@ -60,7 +60,7 @@ class MultiClusterEngine:
         self.interventions: List[str] = []
 
         # Call deterministic environment seeding
-        set_deterministic_env()
+        set_deterministic_env(seed)
 
         # Kernel Regime Expansion Layer components
         self.regime_manager = RegimeManager()
@@ -770,9 +770,28 @@ class MultiClusterEngine:
                 )
 
             # Post-tick invariant assertions and near-violation warning logs
+            hard_energy_limit = 15.0
             hard_tension_limit = 10.0
-            latest_tension = self.temporal_state.accumulated_tension if self.temporal_state is not None else 0.0
+            hard_stiffness_limit = 2.0
+            hard_curvature_limit = 50.0
+            hard_deviation_limit = 5.0
 
+            # Check Lyapunov energy
+            latest_energy = self.h_global_history[-1] if self.h_global_history else 0.0
+            if latest_energy > hard_energy_limit:
+                from radial_membrane_ai.exceptions import GovernanceError
+                raise GovernanceError(
+                    f"Governed bound violated: Multi-cluster energy ({latest_energy:.4f}) "
+                    f"exceeded hard limit ({hard_energy_limit})."
+                )
+            elif latest_energy >= 0.95 * hard_energy_limit:
+                self.interventions.append(
+                    f"Near-violation warning: Multi-cluster energy ({latest_energy:.4f}) "
+                    f"is within 5% of hard limit ({hard_energy_limit})."
+                )
+
+            # Check Tension
+            latest_tension = self.temporal_state.accumulated_tension if self.temporal_state is not None else 0.0
             if latest_tension > hard_tension_limit:
                 from radial_membrane_ai.exceptions import GovernanceError
                 raise GovernanceError(
@@ -783,6 +802,60 @@ class MultiClusterEngine:
                 self.interventions.append(
                     f"Near-violation warning: Global mesh tension ({latest_tension:.4f}) "
                     f"is within 5% of hard limit ({hard_tension_limit})."
+                )
+
+            # Check active clusters and agents within them
+            active_clusters = [c for c in self.clusters.values() if getattr(c, "quarantine_timer", 0) == 0]
+            active_agents = [a for c in active_clusters for a in c.agents if a.shard.state != ShardState.QUARANTINED]
+            if active_agents:
+                max_stiffness = float(max(s.stiffness for a in active_agents for s in a.membrane.strings))
+                if max_stiffness > hard_stiffness_limit:
+                    from radial_membrane_ai.exceptions import GovernanceError
+                    raise GovernanceError(
+                        f"Governed bound violated: Stiffness ({max_stiffness:.4f}) "
+                        f"exceeded hard limit ({hard_stiffness_limit})."
+                    )
+                elif max_stiffness >= 0.95 * hard_stiffness_limit:
+                    self.interventions.append(
+                        f"Near-violation warning: Stiffness ({max_stiffness:.4f}) "
+                        f"is within 5% of hard limit ({hard_stiffness_limit})."
+                    )
+
+                max_curvature = float(max(
+                    abs(a.boundary.curvature(s.theta)) for a in active_agents for s in a.membrane.strings
+                ))
+                if max_curvature > hard_curvature_limit:
+                    from radial_membrane_ai.exceptions import GovernanceError
+                    raise GovernanceError(
+                        f"Governed bound violated: Boundary curvature ({max_curvature:.4f}) "
+                        f"exceeded hard limit ({hard_curvature_limit})."
+                    )
+                elif max_curvature >= 0.95 * hard_curvature_limit:
+                    self.interventions.append(
+                        f"Near-violation warning: Boundary curvature ({max_curvature:.4f}) "
+                        f"is within 5% of hard limit ({hard_curvature_limit})."
+                    )
+
+                max_dev = float(max(abs(dev) for a in active_agents for dev in a.boundary.radius_deviation.values()))
+                if max_dev > hard_deviation_limit:
+                    from radial_membrane_ai.exceptions import GovernanceError
+                    raise GovernanceError(
+                        f"Governed bound violated: Radius deviation ({max_dev:.4f}) "
+                        f"exceeded hard limit ({hard_deviation_limit})."
+                    )
+                elif max_dev >= 0.95 * hard_deviation_limit:
+                    self.interventions.append(
+                        f"Near-violation warning: Radius deviation ({max_dev:.4f}) "
+                        f"is within 5% of hard limit ({hard_deviation_limit})."
+                    )
+
+            # Check Coherence
+            latest_coh = self.c_global_history[-1] if self.c_global_history else 1.0
+            if latest_coh < 0.0:
+                from radial_membrane_ai.exceptions import GovernanceError
+                raise GovernanceError(
+                    f"Governed bound violated: Coherence ({latest_coh:.4f}) "
+                    f"fell below lower limit (0.0)."
                 )
 
         finally:

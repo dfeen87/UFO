@@ -11,6 +11,7 @@ import math
 from dataclasses import dataclass
 import numpy as np
 from typing import TYPE_CHECKING
+from radial_membrane_ai.exceptions import ValidationError, GeometryValidationError
 
 if TYPE_CHECKING:
     from radial_membrane_ai.facet import FacetVector
@@ -18,6 +19,25 @@ if TYPE_CHECKING:
 
 @dataclass
 class BehavioralString:
+    def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
+        """Enforces strict invariants on BehavioralString."""
+        if self.radius < 0.0:
+            raise GeometryValidationError(f"Radius cannot be negative, got {self.radius}.")
+        if self.tension < 0.0:
+            raise GeometryValidationError(f"Tension cannot be negative, got {self.tension}.")
+        if self.stiffness < 0.0:
+            raise GeometryValidationError(f"Stiffness cannot be negative, got {self.stiffness}.")
+        if self.activation < 0.0:
+            raise ValidationError(f"Activation cannot be negative, got {self.activation}.")
+        if self.cost < 0.0:
+            raise ValidationError(f"Cost cannot be negative, got {self.cost}.")
+        if self.theta < -1e-5 or self.theta > 2.0 * math.pi + 1e-5:
+            raise GeometryValidationError(f"Angle theta must be in [0, 2pi], got {self.theta}.")
+        if not (1 <= self.index <= 12):
+            raise ValidationError(f"Index must be between 1 and 12, got {self.index}.")
     """
     A controllable dimension of behavior on the radial identity membrane.
 

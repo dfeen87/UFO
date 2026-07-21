@@ -13,10 +13,30 @@ import numpy as np
 from radial_membrane_ai.membrane import BehavioralString, RadialMembrane
 from radial_membrane_ai.channels import channel_coherence
 from radial_membrane_ai.admissibility import apply_lyapunov_dissipation, phase_smoothing
+from radial_membrane_ai.exceptions import ValidationError
 
 
 @dataclass
 class GovernorConfig:
+    def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
+        """Enforces strict invariants on Governor Configuration."""
+        weights = [
+            ("w_d", self.w_d), ("w_a", self.w_a), ("w_l", self.w_l),
+            ("w_c", self.w_c), ("w_T", self.w_T), ("w_K", self.w_K),
+            ("lyapunov_alpha", self.lyapunov_alpha), ("lyapunov_beta", self.lyapunov_beta),
+            ("lyapunov_gamma", self.lyapunov_gamma)
+        ]
+        for w_name, w_val in weights:
+            if w_val < 0.0:
+                raise ValidationError(f"Weight {w_name} must be non-negative, got {w_val}.")
+        if self.learning_rate <= 0.0:
+            raise ValidationError(f"learning_rate must be strictly positive, got {self.learning_rate}.")
+        if self.suppression_weight < 0.0:
+            raise ValidationError(f"suppression_weight must be non-negative, got {self.suppression_weight}.")
+
     """
     Configuration coefficients for the local cost function and stability control.
 
