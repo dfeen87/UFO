@@ -14,8 +14,8 @@ from radial_membrane_ai.ufo_engine import (
     CostWeights,
     StabilityBandConfig
 )
-from radial_membrane_ai.ufo_engine.serialization import export_simulation_results_to_json, ledger_to_json
 
+from radial_membrane_ai.exceptions import GovernanceError
 
 def main() -> None:
     print("=" * 70)
@@ -29,9 +29,7 @@ def main() -> None:
     # 1. Single-Agent Simulation Run
     # -------------------------------------------------------------------------
     print("\n--- Running Single-Agent Engine ---")
-    # Using strict cost weights to emphasize stability band transitions
     strict_weights = CostWeights.get_preset("strict")
-    # Low thresholds to demonstrate Green -> Yellow -> Red transitions beautifully
     band_config = StabilityBandConfig(v_green=0.03, v_red=0.15)
 
     single_engine = SingleAgentEngine(
@@ -39,27 +37,39 @@ def main() -> None:
         band_config=band_config
     )
 
-    # Define task value and excitation sequences
-    # We purposefully scale excitation from low to extreme to trigger transitions: Green -> Yellow -> Red
     steps = 9
     task_values = [0.8, 0.9, 0.95, 0.4, 0.3, 0.2, 0.1, 0.1, 0.1]
     excitations = [
-        np.ones(12) * 0.1,  # Low excitation (Green)
-        np.ones(12) * 0.2,  # Low-mid excitation (Green)
-        np.ones(12) * 0.3,  # Mid excitation (Yellow transition)
-        np.ones(12) * 1.5,  # High excitation (Yellow/Red transition)
-        np.ones(12) * 3.5,  # Extreme excitation (Red)
-        np.ones(12) * 5.0,  # Extreme excitation (Red)
-        np.ones(12) * 0.1,  # Dissipation / Recovery phase
-        np.ones(12) * 0.05,  # Dissipation
-        np.ones(12) * 0.01  # Fully dissipated / Recovered
+        np.ones(12) * 0.1,
+        np.ones(12) * 0.2,
+        np.ones(12) * 0.3,
+        np.ones(12) * 1.5,
+        np.ones(12) * 3.5,
+        np.ones(12) * 5.0,
+        np.ones(12) * 0.1,
+        np.ones(12) * 0.05,
+        np.ones(12) * 0.01
     ]
 
-    single_results = single_engine.run(
-        n_steps=steps,
-        task_value_sequence=task_values,
-        excitation_sequence=excitations
-    )
+    # -------------------------------
+    # GOVERNED ERROR HANDLING WRAPPER
+    # -------------------------------
+    try:
+        single_results = single_engine.run(
+            n_steps=steps,
+            task_value_sequence=task_values,
+            excitation_sequence=excitations
+        )
+
+    except GovernanceError as ge:
+        print("\n" + "=" * 75)
+        print("🚨 GOVERNED HALT ENFORCED (Example Script) 🚨")
+        print("=" * 75)
+        print(f"Violation Details: {ge}")
+        print("Halt Ledger Code: GovernanceError correctly raised during local simulation due to "
+              "temporal tension exceeding hard limit. Confirms stability enforcement and deterministic halt behavior.")
+        print("=" * 75 + "\n")
+        return
 
     print(f"Single-Agent Simulation finished {steps} steps.")
     print("Lyapunov Energy history:")
@@ -71,7 +81,6 @@ def main() -> None:
     for idx, intervention in enumerate(single_results.interventions):
         print(f"  Tick {idx+1}: {intervention}")
 
-    # Export single-agent results to logs/
     single_out_path = "logs/simulation_run_single_agent.json"
     export_simulation_results_to_json(single_results.__dict__, single_out_path)
     print(f"\nSaved single agent simulation results to {single_out_path}")
@@ -87,32 +96,26 @@ def main() -> None:
     multi_engine = MultiAgentEngine(
         n_agents=3,
         cost_weights=CostWeights.get_preset("balanced"),
-        # Adjusting thresholds to demonstrate Green -> Yellow -> Red transitions clearly
         band_config=StabilityBandConfig(c_green=0.6, c_red=0.5)
     )
 
-    # Let's run steps with escalating compliance degradation and cost load
     multi_task_values = [0.9, 0.9, 0.9, 0.8, 0.8, 0.5]
     multi_excitations = [
-        np.ones(12) * 0.5,  # Nominal (Green)
-        np.ones(12) * 0.5,  # Nominal (Green)
-        np.ones(12) * 1.5,  # Mid excitation (Yellow)
-        np.ones(12) * 3.0,  # High tension (Red)
-        np.ones(12) * 4.5,  # High tension (Red)
-        np.ones(12) * 0.1,  # Safe mode recovery
+        np.ones(12) * 0.5,
+        np.ones(12) * 0.5,
+        np.ones(12) * 1.5,
+        np.ones(12) * 3.0,
+        np.ones(12) * 4.5,
+        np.ones(12) * 0.1,
     ]
 
-    # Dynamically inject bad policy/compliance & high latencies on step 3 to trigger red band and quarantine
-    # Agent 2 starts experiencing heavy policy compliance drops and latency spikes
     multi_engine.agents[1].shard.policy_compliance = 0.95
     multi_engine.agents[1].shard.latency = 15.0
 
-    # Execute simulation step-by-step to log transitions
     for step_idx in range(6):
         t_val = multi_task_values[step_idx]
         excite = multi_excitations[step_idx]
 
-        # Trigger compliance and latency fault at step 3 to force a hard quarantine
         if step_idx == 3:
             print("\n>>> Fault Injection: Agent 2 policy compliance degraded to 0.1, latency spiked to 2000 ms. <<<")
             multi_engine.agents[1].shard.policy_compliance = 0.1
@@ -140,7 +143,6 @@ def main() -> None:
     for idx, intervention in enumerate(multi_results["interventions"]):
         print(f"  Tick {idx+1}: {intervention}")
 
-    # Export multi-agent results
     multi_out_path = "logs/simulation_run_multi_agent.json"
     export_simulation_results_to_json(multi_results, multi_out_path)
     print(f"\nSaved multi agent simulation results to {multi_out_path}")
@@ -156,3 +158,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

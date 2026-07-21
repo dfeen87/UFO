@@ -32,7 +32,7 @@ class RainbowSimulation:
     """
     Project Rainbow-Style Toy Simulator with Pythagorean Projection.
 
-    Ref: Section 6 & 8 of Feeney (2025) and Feeney (2026).
+    Ref: Section 6 & 8 of Feeney (2026).
     Simulates the interaction between task demand (excitation), radial activation,
     V-channel routing (reasoning depth), governor regulation, boundary deformation,
     and runtime costs over discrete time steps, unified around the Pythagorean invariant.
