@@ -124,10 +124,6 @@ You can also run the simulation modules directly:
 ```bash
 python -m radial_membrane_ai.simulation
 ```
-or
-```bash
-python -m radial_membrane_ai.multi_agent.simulation
-```
 
 These demonstrate membrane activation, agent interaction, stability‑metric enforcement, and basic governed reasoning flow.
 
