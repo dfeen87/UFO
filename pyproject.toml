@@ -22,6 +22,9 @@ dependencies = [
 where = ["."]
 include = ["radial_membrane_ai*"]
 
+[tool.poetry.scripts]
+ufo = "ufo_cli:main"
+
 [dependency-groups]
 dev = [
     "pytest (>=9.1.1,<10.0.0)",
