@@ -26,6 +26,11 @@ from radial_membrane_ai.holistic import compute_holistic_field, HolisticGovernor
 from radial_membrane_ai.envelope import BrimEnvelope
 from radial_membrane_ai.saopromotion import SAOPromotor
 from radial_membrane_ai.mesh import FederatedShardMesh, FederatedShard, ShardState
+from radial_membrane_ai.utils import set_deterministic_env
+from radial_membrane_ai.exceptions import GovernanceError
+import sys
+import time
+import os
 
 
 class RainbowSimulation:
@@ -428,3 +433,106 @@ class RainbowSimulation:
         for q in ["analytical", "contextual", "generative", "interpersonal"]:
             print(f"  {q.capitalize()}: {self.membrane.get_quadrant_activation(q):.4f}")
         print("======================================")
+
+
+# Color formatting constants
+ANSI_PURPLE = "\033[95m"
+ANSI_BLUE = "\033[94m"
+ANSI_GREEN = "\033[92m"
+ANSI_YELLOW = "\033[93m"
+ANSI_RED = "\033[91m"
+ANSI_CYAN = "\033[96m"
+ANSI_BOLD = "\033[1m"
+ANSI_RESET = "\033[0m"
+
+
+def print_banner(text: str, color: str = ANSI_CYAN) -> None:
+    border = "=" * 75
+    print(f"{color}{border}")
+    print(f"{ANSI_BOLD}{text.center(75)}{ANSI_RESET}{color}")
+    print(f"{border}{ANSI_RESET}\n")
+
+
+def run_governed_simulation() -> None:
+    """
+    Runs a deterministic, 10-tick governed simulation using RainbowSimulation.
+    Supports animated progression, color-coded metrics, and robust GovernanceError handling.
+    """
+    # 1. Deterministic Seeding Confirmation
+    set_deterministic_env(0)
+    print(f"{ANSI_GREEN}{ANSI_BOLD}[Deterministic Seed Initialized: 0]{ANSI_RESET}\n")
+
+    # 2. Cinematic Banner
+    print_banner("🛸 UFO SIMULATION MODULE EXECUTING 🛸", ANSI_PURPLE)
+
+    # 3. Instantiate
+    sim = RainbowSimulation()
+
+    steps = 1 if os.getenv("UFO_TEST_RUN") else 10
+    task_sequence = [
+        "technical_deep_analysis",
+        "supportive_concise_reply",
+        "planning"
+    ] * 4  # Cycles through available tasks (at least 12 steps, sliced to 10)
+
+    try:
+        for step_idx in range(steps):
+            tick_num = step_idx + 1
+
+            # Animated tick prefix
+            anim_chars = ["◐", "◓", "◑", "◒"]
+            anim = anim_chars[step_idx % len(anim_chars)]
+            print(f"{ANSI_BOLD}{ANSI_CYAN}{anim} Tick {tick_num}/{steps}...{ANSI_RESET}", end="\r")
+            sys.stdout.flush()
+            time.sleep(0.05)
+
+            # Run step
+            sim.run_step(task_sequence[step_idx])
+
+            # Extract and format metrics
+            curv = max([sim.boundary.curvature(s.theta) for s in sim.membrane.strings])
+            t_state = getattr(sim.membrane, "temporal_state", None)
+            tens = t_state.accumulated_tension if t_state is not None else 0.0
+            coh = sim.mesh_coherence_history[-1] if sim.mesh_coherence_history else 1.0
+            energy = sim.governor.energy_history[-1] if sim.governor.energy_history else 0.0
+
+            if energy <= 1.0:
+                band = "GREEN"
+                band_color = ANSI_GREEN
+            elif energy <= 2.0:
+                band = "YELLOW"
+                band_color = ANSI_YELLOW
+            else:
+                band = "RED"
+                band_color = ANSI_RED
+
+            # Color format strings
+            curv_str = f"curvature: {ANSI_PURPLE}{curv:.4f}{ANSI_RESET}"
+            tens_str = f"tension: {ANSI_BLUE}{tens:.4f}{ANSI_RESET}"
+            coh_str = f"coherence: {ANSI_GREEN}{coh:.4f}{ANSI_RESET}"
+            band_str = f"stability band: {band_color}{band}{ANSI_RESET}"
+
+            tick_p = f"[{ANSI_BOLD}Tick {tick_num:2d}/{steps:2d}{ANSI_RESET}]"
+            print(f"{tick_p} - {curv_str} | {tens_str} | {coh_str} | {band_str}                  ")
+
+        print()  # newline after steps complete
+        sim.render_summary()
+
+    except GovernanceError as e:
+        print("\n" + "=" * 75)
+        print(f"{ANSI_RED}{ANSI_BOLD}🚨 GOVERNED HALT ENFORCED 🚨{ANSI_RESET}")
+        print("=" * 75)
+        print(f"{ANSI_RED}{ANSI_BOLD}Violation Details:{ANSI_RESET} {e}")
+        print(
+            f"{ANSI_YELLOW}{ANSI_BOLD}Halt Ledger Code:{ANSI_RESET} "
+            "GovernanceError raised during simulation execution."
+        )
+        print("=" * 75 + "\n")
+        sim.render_summary()
+
+    print_banner("🛸 MODULE EXECUTION COMPLETE — RETURNING TO SHELL 🛸", ANSI_PURPLE)
+    input("Press Enter to exit...")
+
+
+if __name__ == "__main__":
+    run_governed_simulation()
