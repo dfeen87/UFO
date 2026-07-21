@@ -634,18 +634,29 @@ While still a research artifact rather than a deployed production system, the U.
 
 ## What’s Coming Next
 
-The U.F.O. runtime is now publicly released under the MIT License, and development continues. Upcoming work includes:
+### Extensions
+New modules and governed behaviors that expand the runtime’s capabilities.
 
-- **Expanded Agent Models** — new cognitive membranes, governed personalities, and multi‑agent coordination behaviors.  
-- **Visualization Tools** — graphical dashboards for stability bands, Lyapunov energy, and membrane activation fields.  
-- **Governed Workloads** — structured tasks that demonstrate stability physics under real constraints.  
-- **Plugin Architecture** — allowing external modules to integrate with the UFO runtime.  
-- **Benchmark Suite** — deterministic performance and stability tests.  
-- **Documentation Expansion** — deeper guides, diagrams, and conceptual papers.  
-- **Community Contributions** — issues, extensions, and research collaborations.
+### New Agents
+Additional agent types with unique membrane geometries, stability profiles, and reasoning patterns.
 
-Development continues actively.  
-This is only the beginning.
+### New Membranes
+Alternative membrane models for identity, tension, curvature, and quadrant activation dynamics.
+
+### Visualization Tools
+Dashboards and graphical interfaces for stability bands, Lyapunov energy, membrane fields, and multi‑agent coherence.
+
+### Governed Workloads
+Structured workloads that demonstrate stability physics under deterministic constraints.
+
+### Benchmarks
+Deterministic performance tests, stability evaluations, and reproducible workload metrics.
+
+### Plugins
+A plugin architecture allowing external modules to integrate with the UFO runtime.
+
+### Integrations
+Interfacing UFO with other systems, runtimes, or research tools.
 
 ---
 
