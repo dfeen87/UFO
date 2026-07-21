@@ -20,11 +20,15 @@ from radial_membrane_ai.kernel_regimes.regime import KernelRegimeType
 from radial_membrane_ai.workloads.engine import WorkloadTrace
 
 
-def extract_geom_and_vchannel(membrane: Any, boundary: Any) -> Tuple[MembraneGeometrySnapshot, VChannelSnapshot]:
+def extract_geom_and_vchannel(
+    membrane: Any,
+    boundary: Any,
+    samples: int = 100
+) -> Tuple[MembraneGeometrySnapshot, VChannelSnapshot]:
     """Helper to extract geometry and V-channel snapshots from any membrane & boundary."""
-    # Sample 100 angles for boundary coordinates
+    # Sample configured number of angles for boundary coordinates
     boundary_coords = []
-    for theta in np.linspace(0, 2 * math.pi, 100, endpoint=False):
+    for theta in np.linspace(0, 2 * math.pi, samples, endpoint=False):
         r = boundary.get_radius(theta) if hasattr(boundary, 'get_radius') else 1.0
         boundary_coords.append((r * math.cos(theta), r * math.sin(theta)))
 
@@ -85,6 +89,8 @@ class MeshVisualizer:
     Renders diagnostic dashboard frames and timelines across agents, clusters,
     and the global mesh.
     """
+    def __init__(self, samples_resolution: int = 100) -> None:
+        self.samples_resolution = samples_resolution
 
     def render_agent_state(self, agent_state: Any) -> VisualizationFrame:
         """Renders single agent state snapshot at a single timestep."""
@@ -99,7 +105,7 @@ class MeshVisualizer:
         if not (membrane and boundary):
             raise ValueError("State does not have valid membrane or boundary attributes.")
 
-        geom, vch = extract_geom_and_vchannel(membrane, boundary)
+        geom, vch = extract_geom_and_vchannel(membrane, boundary, samples=self.samples_resolution)
 
         # Base metrics
         curvature = float(max(geom.curvature_map)) if geom.curvature_map else 0.0

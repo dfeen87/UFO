@@ -64,7 +64,8 @@ class SingleAgentEngine:
         band_config: StabilityBandConfig | None = None,
         r_max: float = 2.0,
         r_growth_rate: float = 0.3,
-        r_relaxation: float = 0.2
+        r_relaxation: float = 0.2,
+        seed: int = 0
     ) -> None:
         """
         Initializes the single-agent engine.
@@ -97,7 +98,7 @@ class SingleAgentEngine:
         self.residual_history: List[float] = []
 
         # Call deterministic environment seeding
-        set_deterministic_env()
+        set_deterministic_env(seed)
 
         # Kernel Regime Expansion Layer components
         self.regime_manager = RegimeManager()
@@ -595,6 +596,9 @@ class SingleAgentEngine:
             # Post-tick invariant assertions and near-violation warning logs
             hard_energy_limit = 15.0
             hard_tension_limit = 10.0
+            hard_stiffness_limit = 2.0
+            hard_curvature_limit = 50.0
+            hard_deviation_limit = 5.0
 
             # Check Lyapunov energy
             latest_energy = self.v_history[-1] if self.v_history else 0.0
@@ -622,6 +626,66 @@ class SingleAgentEngine:
                 self.interventions.append(
                     f"Near-violation warning: Temporal tension ({latest_tension:.4f}) "
                     f"is within 5% of hard limit ({hard_tension_limit})."
+                )
+
+            # Check Stiffness
+            max_stiffness = (
+                float(max(s.stiffness for s in self.membrane.strings))
+                if self.membrane.strings else 0.0
+            )
+            if max_stiffness > hard_stiffness_limit:
+                from radial_membrane_ai.exceptions import GovernanceError
+                raise GovernanceError(
+                    f"Governed bound violated: Stiffness ({max_stiffness:.4f}) "
+                    f"exceeded hard limit ({hard_stiffness_limit})."
+                )
+            elif max_stiffness >= 0.95 * hard_stiffness_limit:
+                self.interventions.append(
+                    f"Near-violation warning: Stiffness ({max_stiffness:.4f}) "
+                    f"is within 5% of hard limit ({hard_stiffness_limit})."
+                )
+
+            # Check Channel Coherence
+            min_coherence = self.compute_local_coherence()
+            if min_coherence < 0.0:
+                from radial_membrane_ai.exceptions import GovernanceError
+                raise GovernanceError(
+                    f"Governed bound violated: Channel coherence ({min_coherence:.4f}) "
+                    f"fell below lower limit (0.0)."
+                )
+
+            # Check Boundary Curvature
+            max_curvature = (
+                float(max(abs(self.boundary.curvature(s.theta)) for s in self.membrane.strings))
+                if self.membrane.strings else 0.0
+            )
+            if max_curvature > hard_curvature_limit:
+                from radial_membrane_ai.exceptions import GovernanceError
+                raise GovernanceError(
+                    f"Governed bound violated: Boundary curvature ({max_curvature:.4f}) "
+                    f"exceeded hard limit ({hard_curvature_limit})."
+                )
+            elif max_curvature >= 0.95 * hard_curvature_limit:
+                self.interventions.append(
+                    f"Near-violation warning: Boundary curvature ({max_curvature:.4f}) "
+                    f"is within 5% of hard limit ({hard_curvature_limit})."
+                )
+
+            # Check Radius Deviation
+            max_dev = (
+                float(max(abs(dev) for dev in self.boundary.radius_deviation.values()))
+                if self.boundary.radius_deviation else 0.0
+            )
+            if max_dev > hard_deviation_limit:
+                from radial_membrane_ai.exceptions import GovernanceError
+                raise GovernanceError(
+                    f"Governed bound violated: Radius deviation ({max_dev:.4f}) "
+                    f"exceeded hard limit ({hard_deviation_limit})."
+                )
+            elif max_dev >= 0.95 * hard_deviation_limit:
+                self.interventions.append(
+                    f"Near-violation warning: Radius deviation ({max_dev:.4f}) "
+                    f"is within 5% of hard limit ({hard_deviation_limit})."
                 )
 
             self._record_state()

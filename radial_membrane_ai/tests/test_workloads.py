@@ -606,3 +606,36 @@ def test_engine_coverage_booster() -> None:
 
     setattr(engine_mc_any, "_apply_actions", mc_custom_apply)
     _ = engine_mc.run(mc_workload)
+
+
+def test_invalid_workload_validation_error() -> None:
+    """
+    Tests that a workload with a non-existent agent/cluster ID causes
+    WorkloadConfigurationError to be raised when executed.
+    """
+    from radial_membrane_ai.exceptions import WorkloadConfigurationError
+
+    # We define a workload targeting a non-existent entity and verify validation catches it.
+    invalid_step = WorkloadStep(
+        agent_actions={
+            "bad_action": Action.change_regime("non_existent_agent_99", "STOCHASTIC")
+        }
+    )
+    invalid_workload = Workload(
+        name="Invalid Workload Test",
+        description="Should fail validation",
+        target=SimulationTarget.MULTI_AGENT,
+        regime_expectation=KernelRegimeType.BALANCED,
+        stability_expectation=StabilityBand.GREEN,
+        coherence_expectation=0.5,
+        envelope_expectation=PolicyEnvelope(),
+        steps=[invalid_step]
+    )
+
+    engine = WorkloadEngine()
+    with pytest.raises(WorkloadConfigurationError, match="references invalid entity"):
+        engine.run(invalid_workload)
+
+    # Test run_trace also runs the same validation
+    with pytest.raises(WorkloadConfigurationError, match="references invalid entity"):
+        engine.run_trace(invalid_workload)

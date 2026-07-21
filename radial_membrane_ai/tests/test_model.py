@@ -58,6 +58,29 @@ def test_membrane_initialization() -> None:
     with pytest.raises(ValueError):
         membrane.get_quadrant_activation("invalid_quadrant")
 
+    # Test BehavioralString strict validation
+    from radial_membrane_ai.exceptions import ValidationError, GeometryValidationError
+    with pytest.raises(GeometryValidationError, match="Radius cannot be negative"):
+        BehavioralString("err", 1, 0.0, 0.5, -1.0, 0.0, 0.0, 0.0)
+
+    with pytest.raises(GeometryValidationError, match="Tension cannot be negative"):
+        BehavioralString("err", 1, 0.0, 0.5, 1.0, 0.0, -0.1, 0.0)
+
+    with pytest.raises(GeometryValidationError, match="Stiffness cannot be negative"):
+        BehavioralString("err", 1, 0.0, 0.5, 1.0, 0.0, 0.0, -0.5)
+
+    with pytest.raises(ValidationError, match="Activation cannot be negative"):
+        BehavioralString("err", 1, 0.0, -0.5, 1.0, 0.0, 0.0, 0.0)
+
+    with pytest.raises(ValidationError, match="Cost cannot be negative"):
+        BehavioralString("err", 1, 0.0, 0.5, 1.0, -2.0, 0.0, 0.0)
+
+    with pytest.raises(GeometryValidationError, match="Angle theta must be in"):
+        BehavioralString("err", 1, -1.0, 0.5, 1.0, 0.0, 0.0, 0.0)
+
+    with pytest.raises(ValidationError, match="Index must be between"):
+        BehavioralString("err", 15, 0.0, 0.5, 1.0, 0.0, 0.0, 0.0)
+
 
 def test_membrane_activation_updates_and_field() -> None:
     """
@@ -227,6 +250,17 @@ def test_governor_costs_and_stability() -> None:
 
     gov.energy_history = [1.0, 2.0, 3.0, 4.0, 5.0]
     assert not gov.is_stable()  # growing and unstable
+
+    # Test GovernorConfig validation
+    from radial_membrane_ai.exceptions import ValidationError
+    with pytest.raises(ValidationError, match="Weight w_d must be non-negative"):
+        GovernorConfig(w_d=-0.1)
+
+    with pytest.raises(ValidationError, match="learning_rate must be strictly positive"):
+        GovernorConfig(learning_rate=0.0)
+
+    with pytest.raises(ValidationError, match="suppression_weight must be non-negative"):
+        GovernorConfig(suppression_weight=-1.5)
 
 
 def test_boundary_geometry() -> None:

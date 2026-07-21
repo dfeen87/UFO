@@ -4,6 +4,7 @@ Achieving 100% line coverage.
 """
 
 from __future__ import annotations
+import pytest
 import numpy as np
 
 from radial_membrane_ai.ufo_engine import (
@@ -219,3 +220,44 @@ def test_serialization_and_exports(tmp_path) -> None:
     }
     export_simulation_results_to_json(dummy_results, str(results_file))
     assert results_file.exists()
+
+
+def test_stability_metrics_post_tick_violations() -> None:
+    """
+    Tests that post-tick verification on stability metrics (Lyapunov energy,
+    tension, stiffness, curvature, deviation) correctly raises GovernanceError on violations.
+    """
+    from radial_membrane_ai.exceptions import GovernanceError
+
+    # 1. Test Lyapunov energy violation
+    engine_sa = SingleAgentEngine()
+    engine_sa.membrane.strings[0].tension = 20.0  # Exceeds hard_energy_limit of 15.0 through computed energy
+    with pytest.raises(GovernanceError, match="Lyapunov energy.*exceeded hard limit"):
+        engine_sa.tick(task_value=0.5, excitation=np.ones(12) * 0.5)
+
+    # 2. Test Tension violation
+    engine_sa2 = SingleAgentEngine()
+    if hasattr(engine_sa2.membrane, "temporal_state") and engine_sa2.membrane.temporal_state:
+        engine_sa2.membrane.temporal_state.accumulated_tension = 100.0  # Exceeds hard_tension_limit of 10.0
+    with pytest.raises(GovernanceError, match="Temporal tension.*exceeded hard limit"):
+        engine_sa2.tick(task_value=0.5, excitation=np.ones(12) * 0.5)
+
+    # 3. Test Stiffness violation
+    engine_sa3 = SingleAgentEngine()
+    # Artificially modify a string stiffness to exceed 2.0
+    engine_sa3.membrane.strings[0].stiffness = 5.0
+    with pytest.raises(GovernanceError, match="Stiffness.*exceeded hard limit"):
+        engine_sa3.tick(task_value=0.5, excitation=np.ones(12) * 0.5)
+
+    # 4. Test Curvature violation
+    engine_sa4 = SingleAgentEngine()
+    setattr(engine_sa4.boundary, "curvature", lambda theta, **kwargs: 100.0)
+    with pytest.raises(GovernanceError, match="Boundary curvature.*exceeded hard limit"):
+        engine_sa4.tick(task_value=0.5, excitation=np.ones(12) * 0.5)
+
+    # 5. Test Radius Deviation violation
+    engine_sa5 = SingleAgentEngine()
+    setattr(engine_sa5.boundary, "update_boundary", lambda *args, **kwargs: None)
+    engine_sa5.boundary.radius_deviation[1] = 100.0
+    with pytest.raises(GovernanceError, match="Radius deviation.*exceeded hard limit"):
+        engine_sa5.tick(task_value=0.5, excitation=np.ones(12) * 0.5)
