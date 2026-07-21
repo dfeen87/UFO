@@ -121,12 +121,28 @@ python -m radial_membrane_ai.multi_agent.simulation
 
 These demonstrate membrane activation, agent interaction, stability‑metric enforcement, and basic governed reasoning flow.
 
+## **6. Install Poetry (Required for CLI Execution)**  
+U.F.O. uses Poetry to expose the `ufo` command‑line interface.  
+Install Poetry using the official installer:
 
-## **6. Run U.F.O. from the Terminal (CLI)**  
-The U.F.O. governed runtime includes a dynamic terminal interface for running simulations interactively.
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
 
-### **Basic Usage**
-Single‑agent mode:
+After installation, ensure Poetry is on your PATH:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then verify:
+
+```bash
+poetry --version
+```
+
+Once Poetry is available, the U.F.O. CLI can be run with:
+
 ```bash
 poetry run ufo --single
 ```
