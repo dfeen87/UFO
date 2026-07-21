@@ -84,24 +84,43 @@ Install the required Python packages:
 pip install -r requirements.txt
 ```
 
-### **3. Explore the Core Modules**
+### **3. Install the U.F.O. Package (Required for Examples)**
+Because the architecture is a structured Python package, install it in editable mode:
+```bash
+pip install -e .
+```
+This ensures `radial_membrane_ai` is discoverable by Python and allows the example scripts to run correctly.
+
+### **4. Explore the Core Modules**
 The architecture is organized into clear modules:
 - **radial_membrane_ai/core/** — membrane geometry, behavioral strings, V‑Channels  
 - **radial_membrane_ai/governance/** — admissibility gates, stability bands, cost‑taxonomy pressure  
 - **radial_membrane_ai/agents/** — single‑agent and multi‑agent engines  
 - **radial_membrane_ai/memory/** — semantic memory scaffolding and mesh‑level coordination  
 - **radial_membrane_ai/kernels/** — projection operators, routing logic, shard isolation  
+- **radial_membrane_ai/simulation.py** — single‑agent simulation module  
+- **radial_membrane_ai/multi_agent/simulation.py** — multi‑agent simulation module  
 
 Each module is documented and designed for extension.
 
-### **4. Run the Example Simulation**
+### **5. Run the Example Simulation**
 A starter simulation is included:
 ```bash
 python examples/run_simulation.py
 ```
-This demonstrates membrane activation, agent interaction, and basic governed reasoning flow.
 
-### **5. Build Your Own Agents or Membrane Configurations**
+If you prefer running the simulation modules directly, you can also use:
+```bash
+python -m radial_membrane_ai.simulation
+```
+or
+```bash
+python -m radial_membrane_ai.multi_agent.simulation
+```
+
+These demonstrate membrane activation, agent interaction, stability‑metric enforcement, and basic governed reasoning flow.
+
+### **Build Your Own Agents or Membrane Configurations**
 You can extend:
 - **UFOAgent** for custom behaviors  
 - **MultiAgentEngine** for multi‑agent environments  
@@ -109,7 +128,7 @@ You can extend:
 
 The architecture is intentionally modular so you can plug in new logic without rewriting the core.
 
-### **6. Integrate Into Your Own Systems**
+### **Integrate Into Your Own Systems**
 U.F.O. can be embedded into:
 - research prototypes  
 - simulation environments  
