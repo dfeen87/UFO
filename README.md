@@ -72,26 +72,33 @@ Whether you are exploring identity‑based AI behavior, governed reasoning, mult
 # **How to Implement the U.F.O. Architecture**
 
 ### **1. Clone the Repository**
+
 Use Git to pull the full codebase locally:
+
 ```bash
 git clone https://github.com/dfeen87/ufo.git
 cd ufo
 ```
 
 ### **2. Install Dependencies**
+
 Install the required Python packages:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### **3. Install the U.F.O. Package (Required for Examples & CLI)**
+
 Because the architecture is a structured Python package, install it in editable mode:
+
 ```bash
 pip install -e .
 ```
 This ensures `radial_membrane_ai` is discoverable by Python and allows the example scripts and CLI to run correctly.
 
 ## **4. Explore the Core Modules**
+
 The architecture is organized into clear modules:
 
 - **radial_membrane_ai/core** — membrane geometry, behavioral strings, V‑Channels  
@@ -105,12 +112,15 @@ The architecture is organized into clear modules:
 Each module is documented and designed for extension.
 
 ## **5. Run the Example Simulation**
+
 A starter simulation is included:
+
 ```bash
 python examples/run_simulation.py
 ```
 
 You can also run the simulation modules directly:
+
 ```bash
 python -m radial_membrane_ai.simulation
 ```
@@ -121,23 +131,48 @@ python -m radial_membrane_ai.multi_agent.simulation
 
 These demonstrate membrane activation, agent interaction, stability‑metric enforcement, and basic governed reasoning flow.
 
+## **6. Install Poetry (Required for CLI Execution)** 
 
-## **6. Run U.F.O. from the Terminal (CLI)**  
-The U.F.O. governed runtime includes a dynamic terminal interface for running simulations interactively.
+U.F.O. uses Poetry to expose the `ufo` command‑line interface.
 
-### **Basic Usage**
-Single‑agent mode:
+Install Poetry using the official installer:
+
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+After installation, ensure Poetry is on your PATH:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then verify:
+
+```bash
+poetry --version
+```
+Install the project inside Poetry’s virtual environment:
+
+```bash
+poetry install
+```
+Once Poetry is installed, the U.F.O. CLI can be run with:
+
 ```bash
 poetry run ufo --single
 ```
 
 Multi‑agent mode:
+
 ```bash
 poetry run ufo --multi
 ```
 
 ### **Custom Execution**
+
 You can customize governed runs with:
+
 ```bash
 poetry run ufo --steps 20 --excitation 0.3 --task-value 0.5 --visualize
 ```
