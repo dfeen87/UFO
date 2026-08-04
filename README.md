@@ -3,7 +3,7 @@
 **A compute-aware AI personalization architecture that treats behavior as a living, saucer-shaped control surface — not a static personality preset.**
 
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21401979-blue)](https://doi.org/10.5281/zenodo.21401979)
-[![Status](https://img.shields.io/badge/status-MIT%20research%20grade-orange)](#status--validation)
+[![Status](https://img.shields.io/badge/status-PolyForm Noncommercial%20research%20grade-orange)](#status--validation)
 [![Status](https://img.shields.io/badge/simulation-governed%20model-purple)](#status--validation)
 [![Python 3.9+](https://img.shields.io/badge/python-3.10%2B-pink.svg)](https://www.python.org/downloads/)
 [![CI](https://github.com/dfeen87/UFO/actions/workflows/ci.yml/badge.svg)](https://github.com/dfeen87/UFO/actions/workflows/ci.yml)
@@ -709,3 +709,8 @@ The U.F.O. architecture is built in that same spirit. It is governed, discipline
 May this work serve as a reminder that strength is not given — it is built; and that every breakthrough, every insight, and every step forward is possible through His guidance, as this system is designed to endure, to innovate, and to rise.
 
 > God bless and peace to you always. In God We Trust. 🇺🇸
+
+
+## License
+
+Licensed under the PolyForm Noncommercial License 1.0.0. This project may be used for non-commercial purposes only; commercial use requires a separate license from the copyright holder.
