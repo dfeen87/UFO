@@ -3,7 +3,7 @@
 **A compute-aware AI personalization architecture that treats behavior as a living, saucer-shaped control surface — not a static personality preset.**
 
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21401979-blue)](https://doi.org/10.5281/zenodo.21401979)
-[![Status](https://img.shields.io/badge/status-PolyForm Noncommercial%20research%20grade-orange)](#status--validation)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0)
 [![Status](https://img.shields.io/badge/simulation-governed%20model-purple)](#status--validation)
 [![Python 3.9+](https://img.shields.io/badge/python-3.10%2B-pink.svg)](https://www.python.org/downloads/)
 [![CI](https://github.com/dfeen87/UFO/actions/workflows/ci.yml/badge.svg)](https://github.com/dfeen87/UFO/actions/workflows/ci.yml)
