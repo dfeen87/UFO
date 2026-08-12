@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Integration helper functions binding Policy-Bound Semantic Memory to simulation engines.
 """

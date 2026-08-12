@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Unit and integration tests for the UFO Temporal Governance Layer.
 Validates hysteresis, tension accumulation, temporal SAO promotion gates,

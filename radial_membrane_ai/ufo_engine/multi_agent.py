@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Multi-Agent Governed Simulation Engine for the U.F.O. architecture.
 """

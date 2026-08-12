@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Demonstration script executing the complete governed simulation engine for the U.F.O. architecture.
 Shows Single-Agent and Multi-Agent simulations driving through Green -> Yellow -> Red stability transitions.

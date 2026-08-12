@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Cross-agent collective admissibility constraints for U.F.O. collective reasoning.
 """

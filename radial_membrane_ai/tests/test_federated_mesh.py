@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Unit and integration tests for Federated Shard Mesh, routing, and residuals.
 """

@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Workload Execution Engine and Metrics tracing for Governed Stress-Testing Suite in U.F.O.
 """

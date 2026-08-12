@@ -14,12 +14,12 @@ doi: "10.5281/zenodo.21401979"
 version: "v3.0"
 date-released: "2026-07-18"
 url: "https://doi.org/10.5281/zenodo.21401979"
-license: "PolyForm Noncommercial 1.0.0"
+license: "MIT"
 preferred-citation:
   type: article
   authors:
-    - family-names: "Feeney"
-      given-names: "Don Michael Jr."
+    - family-names: "Feeney Jr."
+      given-names: "Don Michael"
       orcid: "https://orcid.org/0009-0003-1350-4160"
   title: "A Governed Deformable Radial Membrane for Compute-Aware AI Personalization"
   journal: "Dynamic Radial Membrane v2.6 research artifact"

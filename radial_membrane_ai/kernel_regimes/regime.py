@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Kernel Regime classes and definitions for the U.F.O. Kernel Regime Expansion Layer.
 """

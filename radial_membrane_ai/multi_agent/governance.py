@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Federated shard mesh governance, mesh coherence score, and SAO promotion logic.
 """

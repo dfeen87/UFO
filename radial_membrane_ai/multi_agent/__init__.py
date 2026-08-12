@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Multi-Agent Membrane Coupling and Holistic Mesh Governance package.
 """

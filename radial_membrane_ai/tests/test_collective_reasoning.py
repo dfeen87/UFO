@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Comprehensive Unit Tests for Policy-Bound Collective Reasoning Governance Layer.
 """

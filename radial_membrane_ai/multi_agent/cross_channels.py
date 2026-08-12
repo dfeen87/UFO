@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Cross-Cluster V-Channels and Policy Envelopes for multi-cluster UFO communication.
 """
