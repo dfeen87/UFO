@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Comprehensive unit and integration tests for Governed Stress-Testing Workload Family Design.
 """

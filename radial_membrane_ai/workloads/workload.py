@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Workload representation and core classes for Governed Stress-Testing Workload Family Design in U.F.O.
 """

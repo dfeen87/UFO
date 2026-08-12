@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Comprehensive unit tests for the U.F.O. Governed Simulation Engine (ufo_engine).
 Achieving 100% line coverage.

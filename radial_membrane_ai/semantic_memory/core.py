@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Core data structures and APIs for Policy-Bound Semantic Memory.
 """

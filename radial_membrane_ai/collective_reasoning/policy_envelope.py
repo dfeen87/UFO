@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Shared Policy Envelopes for U.F.O. collective reasoning.
 Defines global, cluster, and local policy envelopes, intersection rules,

@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Multi-Agent Simulation environment exploring coupled membranes and mesh governance.
 """

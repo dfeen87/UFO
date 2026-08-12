@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Dedicated pre-launch validation sweep script for the U.F.O. framework.
 Executes deep programmatic testing across deterministic initialization, invariant sweeps,

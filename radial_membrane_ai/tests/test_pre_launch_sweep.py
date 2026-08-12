@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Integration and Unit Tests for the Pre-Launch Sweep Release Readiness.
 Ensures CI/CD automation of deterministic seeding, model invariants,

@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Policy definitions and admissibility/policy checking for Policy-Bound Semantic Memory.
 """

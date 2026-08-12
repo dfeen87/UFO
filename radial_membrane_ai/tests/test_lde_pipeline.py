@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Unit tests for the L.D.E. Pipeline (Algorithm 1).
 """

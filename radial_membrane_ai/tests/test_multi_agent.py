@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Comprehensive tests for multi-agent membrane coupling and mesh governance.
 """

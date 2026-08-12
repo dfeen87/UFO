@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Angular Decomposition, Dynamic Capacity, Stability Pipeline, and Kernel-Based Leg Evolution module.
 

@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Data models and configuration for the Letter‑Depth Encoding (L.D.E.) subsystem.
 """

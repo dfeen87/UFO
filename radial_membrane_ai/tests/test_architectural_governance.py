@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Comprehensive architecture tests covering quarantined shard execution,
 stability band transitions, ledger update correctness, SAO residual-only outcomes,

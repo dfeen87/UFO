@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 UFOCluster abstraction representing a governed cluster-level entity on top of agents.
 """

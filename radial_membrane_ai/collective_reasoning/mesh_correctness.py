@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Mesh-level correctness guarantees and state rollback logic for U.F.O. collective reasoning.
 """

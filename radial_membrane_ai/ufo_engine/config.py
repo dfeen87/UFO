@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Configuration, presets, and weights for the U.F.O. Simulation Engine.
 """

@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Pipeline for Letter‑Depth Encoding (L.D.E.) converting raw text to a governed symbolic state.
 """

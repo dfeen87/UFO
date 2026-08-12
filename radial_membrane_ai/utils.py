@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Centralized Utilities for the UFO Governed Deformable Radial Membrane framework.
 """

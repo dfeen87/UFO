@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Unified multi-panel dashboard and individual component rendering using Matplotlib.
 All rendering is deterministic, reproducible, and governed.

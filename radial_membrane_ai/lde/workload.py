@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 LDEWorkload integrates the Letter‑Depth Encoding (L.D.E.) subsystem as a workload family.
 """

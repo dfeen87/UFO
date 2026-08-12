@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Visualizer for the Letter‑Depth Encoding (L.D.E.) subsystem.
 All plots are deterministic, reproducible, and Agg-backend compliant.

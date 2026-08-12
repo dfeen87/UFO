@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Dynamic Terminal Execution Interface for the U.F.O. Governed Runtime.
 """

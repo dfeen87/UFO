@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 Tests for the dynamic terminal execution CLI of U.F.O.
 """

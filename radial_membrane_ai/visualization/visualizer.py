@@ -1,3 +1,6 @@
+# Copyright (c) Don Michael Feeney Jr.
+# Licensed under the MIT License.
+
 """
 MeshVisualizer coordinates snapshot conversion and rendering across all architectural levels.
 """
