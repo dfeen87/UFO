@@ -127,58 +127,72 @@ def handshake(
         - "soft": Normalizes inputs and retries handshake once before flagging quarantine.
         - "simulation": Logs status and permits continuation marked as legacy-unsafe.
     """
-    l_a, l_b = normalize_to_unity(legacy.a, legacy.b, legacy.c)
-    a_a, a_b = normalize_to_unity(ai.a, ai.b, ai.c)
+    # 1. Raw Invariant Evaluation
+    i_legacy_raw = invariant(legacy.a, legacy.b, legacy.c)
+    i_ai_raw = invariant(ai.a, tensor_stress(ai), ai.c)
 
-    i_legacy = invariant(l_a, l_b, legacy.c)
-    i_ai = invariant(a_a, a_b + ai.conversion, ai.c)
-
-    legacy_stable = is_stable(i_legacy, tol)
-    ai_stable = is_stable(i_ai, tol)
-    allowed = legacy_stable and ai_stable
+    legacy_raw_stable = is_stable(i_legacy_raw, tol)
+    ai_raw_stable = is_stable(i_ai_raw, tol)
 
     details: Dict[str, Any] = {
-        "legacy_raw": {"a": legacy.a, "b": legacy.b, "c": legacy.c},
-        "ai_raw": {"a": ai.a, "b": ai.b, "c": ai.c, "conversion": ai.conversion},
-        "legacy_normalized": {"a": l_a, "b": l_b},
-        "ai_normalized": {"a": a_a, "b": a_b},
-        "retry_attempted": False,
+        "legacy_raw": {
+            "a": legacy.a, "b": legacy.b, "c": legacy.c, "i": i_legacy_raw, "stable": legacy_raw_stable
+        },
+        "ai_raw": {
+            "a": ai.a, "b": ai.b, "c": ai.c, "conversion": ai.conversion, "i": i_ai_raw, "stable": ai_raw_stable
+        },
+        "contracted": False,
+        "legacy_normalized": {"a": legacy.a, "b": legacy.b},
+        "ai_normalized": {"a": ai.a, "b": ai.b},
         "quarantined": False,
         "legacy_unsafe": False,
     }
+
+    # If raw inputs are already stable, handshake is allowed directly
+    if legacy_raw_stable and ai_raw_stable:
+        return HandshakeStatus(
+            iLegacy=i_legacy_raw,
+            iAI=i_ai_raw,
+            legacyStable=True,
+            aiStable=True,
+            handshakeAllowed=True,
+            mode=mode,
+            details=details,
+        )
+
+    # 2. Geometric Contraction Pass (Delta AG -> Delta v)
+    details["contracted"] = True
+    l_a, l_b = normalize_to_unity(legacy.a, legacy.b, legacy.c)
+    a_a, a_b = normalize_to_unity(ai.a, ai.b, ai.c)
+
+    details["legacy_normalized"] = {"a": l_a, "b": l_b}
+    details["ai_normalized"] = {"a": a_a, "b": a_b}
+
+    i_legacy_norm = invariant(l_a, l_b, legacy.c)
+    i_ai_norm = invariant(a_a, a_b + ai.conversion, ai.c)
+
+    legacy_norm_stable = is_stable(i_legacy_norm, tol)
+    ai_norm_stable = is_stable(i_ai_norm, tol)
+    allowed = legacy_norm_stable and ai_norm_stable
 
     if not allowed:
         if mode == "strict":
             msg = (
                 f"Invariant Handshake Rejected [mode={mode}]: "
-                f"Legacy invariant={i_legacy:.4f} (stable={legacy_stable}), "
-                f"AI invariant={i_ai:.4f} (stable={ai_stable}), tol={tol}."
+                f"Legacy invariant={i_legacy_norm:.4f} (raw={i_legacy_raw:.4f}, stable={legacy_norm_stable}), "
+                f"AI invariant={i_ai_norm:.4f} (raw={i_ai_raw:.4f}, stable={ai_norm_stable}), tol={tol}."
             )
             raise GovernanceError(msg)
         elif mode == "soft":
-            details["retry_attempted"] = True
-            # Secondary contraction pass: contract total strain (including conversion) onto capacity manifold
-            l_a2, l_b2 = normalize_to_unity(l_a, l_b, legacy.c)
-            a_a2, a_b2 = normalize_to_unity(a_a, a_b + ai.conversion, ai.c)
-
-            i_legacy2 = invariant(l_a2, l_b2, legacy.c)
-            i_ai2 = invariant(a_a2, a_b2, ai.c)
-            retry_allowed = is_stable(i_legacy2, tol) and is_stable(i_ai2, tol)
-
-            if retry_allowed:
-                allowed = True
-                i_legacy, i_ai = i_legacy2, i_ai2
-                legacy_stable, ai_stable = True, True
-            else:
-                details["quarantined"] = True
+            details["quarantined"] = True
         elif mode == "simulation":
             details["legacy_unsafe"] = True
 
     return HandshakeStatus(
-        iLegacy=i_legacy,
-        iAI=i_ai,
-        legacyStable=legacy_stable,
-        aiStable=ai_stable,
+        iLegacy=i_legacy_norm,
+        iAI=i_ai_norm,
+        legacyStable=legacy_norm_stable,
+        aiStable=ai_norm_stable,
         handshakeAllowed=allowed,
         mode=mode,
         details=details,
@@ -190,7 +204,7 @@ def map_ufo_state_to_handshake_inputs(
     compute_cost: float,
     lyapunov_energy: float,
     v_channel_pressure: float,
-    conversion_cost: float = 0.05,
+    conversion_cost: float = 0.0,
 ) -> Tuple[LegacyInput, AIInput]:
     """
     Maps UFO internal dynamic state variables into LegacyInput and AIInput.
@@ -210,20 +224,15 @@ def map_ufo_state_to_handshake_inputs(
     activations_arr = np.array(string_activations, dtype=float)
     act_norm = float(np.linalg.norm(activations_arr))
 
-    # Shared capacity bound, ensuring non-zero denominator
+    leg_a = max(0.001, act_norm)
+    leg_b = max(0.001, float(compute_cost))
+
+    ai_a = max(0.001, float(lyapunov_energy))
+    ai_b = max(0.001, act_norm)
+
     c_capacity = max(1e-9, float(v_channel_pressure))
 
-    legacy_in = LegacyInput(
-        a=max(0.001, act_norm),
-        b=max(0.001, float(compute_cost)),
-        c=c_capacity,
-    )
-
-    ai_in = AIInput(
-        a=max(0.001, float(lyapunov_energy)),
-        b=max(0.001, act_norm),
-        c=c_capacity,
-        conversion=float(conversion_cost),
-    )
+    legacy_in = LegacyInput(a=leg_a, b=leg_b, c=c_capacity)
+    ai_in = AIInput(a=ai_a, b=ai_b, c=c_capacity, conversion=float(conversion_cost))
 
     return legacy_in, ai_in

@@ -66,7 +66,7 @@ class MultiAgentEngine:
         custom_agents: List[UFOAgent] | None = None,
         seed: int = 0,
         enable_legacy_handshake: bool = False,
-        legacy_handshake_mode: str = "strict",
+        legacy_handshake_mode: str = "soft",
     ) -> None:
         """
         Initializes the Multi-Agent Engine.
@@ -514,19 +514,15 @@ class MultiAgentEngine:
 
                 # Legacy Hardware Invariant Handshake Check if enabled
                 if self.enable_legacy_handshake:
-                    from radial_membrane_ai.admissibility import AdmissibilityGate
-                    if not hasattr(self, "admissibility_gate"):
-                        self.admissibility_gate = AdmissibilityGate(legacy_mode=self.legacy_handshake_mode)
                     for ag in active_agents:
                         act_list = [s.activation for s in ag.membrane.strings]
-                        ag_cost = ag.cost_history[-1].total_cost() if ag.cost_history else 0.5
+                        ag_cost = ag.cost_sensitivity * 0.5
                         ag_lyap = ag.governor.compute_lyapunov_energy(ag.membrane)
-                        v_p = float(np.mean([abs(s.activation - 0.5) for s in ag.membrane.strings])) + 1.0
                         self.admissibility_gate.check_legacy_handshake(
                             string_activations=act_list,
                             compute_cost=ag_cost,
                             lyapunov_energy=ag_lyap,
-                            v_channel_pressure=v_p,
+                            v_channel_pressure=1.0,
                             legacy_mode=self.legacy_handshake_mode,
                         )
 

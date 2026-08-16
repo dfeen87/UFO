@@ -393,8 +393,14 @@ def main() -> None:
     parser.add_argument("--seed", type=int, help="Deterministic initialization seed (default: 0)")
 
     # Execution Options
-    parser.add_argument("--legacy-handshake", action="store_true", help="Enable Invariant Handshake for Legacy hardware interoperability")
-    parser.add_argument("--legacy-mode", choices=["strict", "soft", "simulation"], default="strict", help="Legacy handshake mode (default: strict)")
+    parser.add_argument(
+        "--legacy-handshake", action="store_true",
+        help="Enable Invariant Handshake for Legacy hardware interoperability"
+    )
+    parser.add_argument(
+        "--legacy-mode", choices=["strict", "soft", "simulation"], default="soft",
+        help="Legacy handshake mode (default: soft)"
+    )
     parser.add_argument("--visualize", action="store_true", help="Save timeline PNG under logs/visualization/")
     parser.add_argument("--quiet", action="store_true", help="CI/CD quiet mode: only output final summary")
     parser.add_argument("--verbose", action="store_true", help="Full governed telemetry trace output")

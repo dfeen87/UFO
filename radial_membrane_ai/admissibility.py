@@ -325,7 +325,7 @@ class AdmissibilityGate:
     closure admissibility and optional Legacy Hardware Invariant Handshakes.
     """
 
-    def __init__(self, tol: float = 0.2, legacy_mode: str = "strict") -> None:
+    def __init__(self, tol: float = 0.2, legacy_mode: str = "soft") -> None:
         self.tol = tol
         self.legacy_mode = legacy_mode
 

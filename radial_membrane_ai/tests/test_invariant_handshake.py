@@ -5,14 +5,12 @@
 Unit tests for the Invariant Handshake Legacy Hardware Adapter module.
 """
 
-import math
 import pytest
 import numpy as np
 
 from radial_membrane_ai.adapters.invariant_handshake import (
     LegacyInput,
     AIInput,
-    HandshakeStatus,
     invariant,
     is_stable,
     normalize_to_unity,
@@ -55,44 +53,57 @@ def test_tensor_stress() -> None:
 
 
 def test_handshake_strict_mode_pass_and_fail() -> None:
-    legacy = LegacyInput(a=0.4, b=0.9, c=1.0)
-    ai = AIInput(a=0.4, b=0.9, c=1.0, conversion=0.0)
+    # Stable input ((0.6^2 + 0.8^2) / 1.0 = 1.0)
+    legacy = LegacyInput(a=0.6, b=0.8, c=1.0)
+    ai = AIInput(a=0.6, b=0.8, c=1.0, conversion=0.0)
 
     status = handshake(legacy, ai, tol=0.2, mode="strict")
     assert status.handshakeAllowed is True
     assert status.legacyStable is True
     assert status.aiStable is True
 
+    # Unstable raw legacy input is contracted onto capacity surface
+    legacy_unstable = LegacyInput(a=5.0, b=10.0, c=0.5)
+    status_contracted = handshake(legacy_unstable, ai, tol=0.2, mode="strict")
+    assert status_contracted.handshakeAllowed is True
+    assert status_contracted.details["contracted"] is True
+
     # High conversion cost causes failure in strict mode
-    ai_unstable = AIInput(a=0.4, b=0.9, c=1.0, conversion=5.0)
+    ai_unstable = AIInput(a=0.6, b=0.8, c=1.0, conversion=5.0)
     with pytest.raises(GovernanceError) as exc_info:
         handshake(legacy, ai_unstable, tol=0.2, mode="strict")
     assert "Invariant Handshake Rejected" in str(exc_info.value)
 
+    # Degenerate geometry raises GovernanceError in strict mode
+    legacy_degen = LegacyInput(a=0.0, b=0.0, c=0.0)
+    with pytest.raises(GovernanceError) as exc_info:
+        handshake(legacy_degen, ai, tol=0.2, mode="strict")
+    assert "Invariant Handshake Rejected" in str(exc_info.value)
+
 
 def test_handshake_soft_mode() -> None:
-    legacy = LegacyInput(a=0.4, b=0.9, c=1.0)
-    ai = AIInput(a=0.4, b=0.9, c=1.0, conversion=0.0)
+    legacy = LegacyInput(a=0.6, b=0.8, c=1.0)
+    ai = AIInput(a=0.6, b=0.8, c=1.0, conversion=0.0)
 
     status = handshake(legacy, ai, tol=0.2, mode="soft")
     assert status.handshakeAllowed is True
 
-    # High conversion cost recovers via soft mode secondary contraction pass
-    ai_unstable = AIInput(a=0.4, b=0.9, c=1.0, conversion=5.0)
-    status_soft = handshake(legacy, ai_unstable, tol=0.2, mode="soft")
+    # Raw unstable input recovers via soft mode contraction pass
+    legacy_unstable = LegacyInput(a=2.0, b=3.0, c=1.0)
+    status_soft = handshake(legacy_unstable, ai, tol=0.2, mode="soft")
     assert status_soft.handshakeAllowed is True
-    assert status_soft.details["retry_attempted"] is True
+    assert status_soft.details["contracted"] is True
 
     # Degenerate geometry fails soft mode retry and triggers quarantine
     legacy_degen = LegacyInput(a=0.0, b=0.0, c=0.0)
-    status_quarantine = handshake(legacy_degen, ai_unstable, tol=0.2, mode="soft")
+    status_quarantine = handshake(legacy_degen, ai, tol=0.2, mode="soft")
     assert status_quarantine.handshakeAllowed is False
     assert status_quarantine.details["quarantined"] is True
 
 
 def test_handshake_simulation_mode() -> None:
-    legacy = LegacyInput(a=0.4, b=0.9, c=1.0)
-    ai_unstable = AIInput(a=0.4, b=0.9, c=1.0, conversion=5.0)
+    legacy = LegacyInput(a=0.6, b=0.8, c=1.0)
+    ai_unstable = AIInput(a=0.6, b=0.8, c=1.0, conversion=5.0)
 
     status = handshake(legacy, ai_unstable, tol=0.2, mode="simulation")
     assert status.handshakeAllowed is False

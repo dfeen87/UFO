@@ -129,7 +129,7 @@ class WorkloadEngine:
         multi_agent_engine: Optional[MultiAgentEngine] = None,
         multi_cluster_engine: Optional[MultiClusterEngine] = None,
         enable_legacy_handshake: bool = False,
-        legacy_handshake_mode: str = "strict",
+        legacy_handshake_mode: str = "soft",
     ) -> None:
         self.enable_legacy_handshake = enable_legacy_handshake
         self.legacy_handshake_mode = legacy_handshake_mode

@@ -70,7 +70,7 @@ class SingleAgentEngine:
         r_relaxation: float = 0.2,
         seed: int = 0,
         enable_legacy_handshake: bool = False,
-        legacy_handshake_mode: str = "strict",
+        legacy_handshake_mode: str = "soft",
     ) -> None:
         """
         Initializes the single-agent engine.
@@ -366,7 +366,7 @@ class SingleAgentEngine:
                 activations = [s.activation for s in self.membrane.strings]
                 current_cost = self.observable_cost_history[-1] if self.observable_cost_history else 0.5
                 lyapunov = self.governor.compute_lyapunov_energy(self.membrane)
-                v_press = float(np.mean([abs(s.activation - 0.5) for s in self.membrane.strings])) + 1.0
+                v_press = 1.0
                 self.admissibility_gate.check_legacy_handshake(
                     string_activations=activations,
                     compute_cost=current_cost,

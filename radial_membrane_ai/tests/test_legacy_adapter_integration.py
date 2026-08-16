@@ -5,7 +5,6 @@
 Integration tests for the Legacy Hardware Invariant Handshake Adapter.
 """
 
-import pytest
 import numpy as np
 import argparse
 

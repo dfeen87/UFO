@@ -50,7 +50,7 @@ def main() -> None:
     activations = [0.2, 0.5, 0.8, 0.3, 0.1, 0.4, 0.6, 0.2, 0.9, 0.3, 0.1, 0.2]
     compute_cost = 0.45
     lyapunov_energy = 0.95
-    v_channel_pressure = 1.2
+    v_channel_pressure = 1.85
     conversion_cost = 0.05
 
     leg_mapped, ai_mapped = map_ufo_state_to_handshake_inputs(
