@@ -113,14 +113,26 @@ def run_simulation(args: argparse.Namespace) -> None:
     engine_sa: SingleAgentEngine | None = None
     engine_ma: MultiAgentEngine | None = None
 
+    legacy_hs = getattr(args, "legacy_handshake", False)
+    legacy_m = getattr(args, "legacy_mode", "strict") or "strict"
+
     if mode == "single":
         if not args.quiet:
             print_banner("🛸 UFO GOVERNED SINGLE-AGENT SIMULATION RUNTIME 🛸", ANSI_PURPLE)
-        engine_sa = SingleAgentEngine(seed=seed)
+        engine_sa = SingleAgentEngine(
+            seed=seed,
+            enable_legacy_handshake=legacy_hs,
+            legacy_handshake_mode=legacy_m,
+        )
     else:
         if not args.quiet:
             print_banner("🛸 UFO GOVERNED MULTI-AGENT SIMULATION RUNTIME 🛸", ANSI_BLUE)
-        engine_ma = MultiAgentEngine(n_agents=3, seed=seed)
+        engine_ma = MultiAgentEngine(
+            n_agents=3,
+            seed=seed,
+            enable_legacy_handshake=legacy_hs,
+            legacy_handshake_mode=legacy_m,
+        )
 
     # Summary metric trackers
     max_curvature_observed = 0.0
@@ -381,6 +393,14 @@ def main() -> None:
     parser.add_argument("--seed", type=int, help="Deterministic initialization seed (default: 0)")
 
     # Execution Options
+    parser.add_argument(
+        "--legacy-handshake", action="store_true",
+        help="Enable Invariant Handshake for Legacy hardware interoperability"
+    )
+    parser.add_argument(
+        "--legacy-mode", choices=["strict", "soft", "simulation"], default="soft",
+        help="Legacy handshake mode (default: soft)"
+    )
     parser.add_argument("--visualize", action="store_true", help="Save timeline PNG under logs/visualization/")
     parser.add_argument("--quiet", action="store_true", help="CI/CD quiet mode: only output final summary")
     parser.add_argument("--verbose", action="store_true", help="Full governed telemetry trace output")

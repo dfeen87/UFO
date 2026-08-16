@@ -24,7 +24,7 @@ from radial_membrane_ai.projection import (
     project_to_admissible,
     residual_deformation
 )
-from radial_membrane_ai.admissibility import angular_decomposition
+from radial_membrane_ai.admissibility import angular_decomposition, AdmissibilityGate
 from radial_membrane_ai.facet import FacetVector, TensionAutomaton, TensionState
 from radial_membrane_ai.coherence import closure_coherence
 from radial_membrane_ai.ufo_engine.config import CostWeights, StabilityBandConfig
@@ -68,7 +68,9 @@ class SingleAgentEngine:
         r_max: float = 2.0,
         r_growth_rate: float = 0.3,
         r_relaxation: float = 0.2,
-        seed: int = 0
+        seed: int = 0,
+        enable_legacy_handshake: bool = False,
+        legacy_handshake_mode: str = "soft",
     ) -> None:
         """
         Initializes the single-agent engine.
@@ -82,6 +84,9 @@ class SingleAgentEngine:
         self.r_max = r_max
         self.r_growth_rate = r_growth_rate
         self.r_relaxation = r_relaxation
+        self.enable_legacy_handshake = enable_legacy_handshake
+        self.legacy_handshake_mode = legacy_handshake_mode
+        self.admissibility_gate = AdmissibilityGate(legacy_mode=legacy_handshake_mode)
 
         self.envelope = BrimEnvelope(energy_threshold=1.5)
         self.sao_promotor = SAOPromotor(promotion_threshold=0.4)
@@ -355,6 +360,20 @@ class SingleAgentEngine:
                 membrane=self.membrane,
                 task_value=task_value
             )
+
+            # Evaluate Legacy Hardware Invariant Handshake if enabled
+            if self.enable_legacy_handshake:
+                activations = [s.activation for s in self.membrane.strings]
+                current_cost = self.observable_cost_history[-1] if self.observable_cost_history else 0.5
+                lyapunov = self.governor.compute_lyapunov_energy(self.membrane)
+                v_press = 1.0
+                self.admissibility_gate.check_legacy_handshake(
+                    string_activations=activations,
+                    compute_cost=current_cost,
+                    lyapunov_energy=lyapunov,
+                    v_channel_pressure=v_press,
+                    legacy_mode=self.legacy_handshake_mode,
+                )
 
             # 5. Collective Admissibility (None for Single-Agent)
 

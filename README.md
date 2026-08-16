@@ -505,6 +505,15 @@ L.D.E. maps directly onto the U.F.O. architecture:
 
 This makes L.D.E. a natural symbolic subsystem within the broader governed mesh.
 
+## **11. Legacy Hardware Invariant Handshake Adapter**
+
+The **Invariant Handshake Adapter** integrates legacy binary execution environments with modern UFO agentic tensor fields through geometric normalization, implementing the $i = \frac{a^2 + b^2}{c^2} \approx 1$ admissibility condition. Features include:
+
+- **Legacy & AI Inputs:** Dataclass mappings (`LegacyInput`, `AIInput`) bridging scalar binary execution and high-bandwidth tensor flows.
+- **Normalization:** $\Delta AG \to \Delta v$ contraction pulling stresses onto the invariant manifold.
+- **Admissibility Gate:** Integrated into `AdmissibilityGate` for permissioned workload execution.
+- **Governance Enforcement Modes:** Supporting `strict` (raises `GovernanceError`), `soft` (re-normalization and quarantine), and `simulation` (legacy-unsafe trace marking).
+
 ### **Research Value**
 L.D.E. provides an interpretable alternative to opaque token embeddings, supporting:
 - authorship and style signatures  

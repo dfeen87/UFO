@@ -43,11 +43,20 @@ class MultiClusterEngine:
     hierarchical Holistic Governor, supporting governed behavioral regimes.
     """
 
-    def __init__(self, seed: int = 0) -> None:
+    def __init__(
+        self,
+        seed: int = 0,
+        enable_legacy_handshake: bool = False,
+        legacy_handshake_mode: str = "soft",
+    ) -> None:
         """
         Initializes the Multi-Cluster Simulation Engine.
         """
         self.clusters: Dict[str, UFOCluster] = {}
+        self.enable_legacy_handshake = enable_legacy_handshake
+        self.legacy_handshake_mode = legacy_handshake_mode
+        from radial_membrane_ai.admissibility import AdmissibilityGate
+        self.admissibility_gate = AdmissibilityGate(legacy_mode=legacy_handshake_mode)
         self.cross_channels: List[CrossClusterVChannel] = []
         self.cluster_coupling_channels: Dict[str, List[InterAgentVChannel]] = {}
 
@@ -588,6 +597,20 @@ class MultiClusterEngine:
                     used_tags=used_tags,
                     used_fields=used_fields
                 )
+
+                # Legacy Hardware Invariant Handshake Check if enabled
+                if self.enable_legacy_handshake:
+                    for ag in all_agents:
+                        act_list = [s.activation for s in ag.membrane.strings]
+                        ag_cost = ag.cost_sensitivity * 0.5
+                        ag_lyap = ag.governor.compute_lyapunov_energy(ag.membrane)
+                        self.admissibility_gate.check_legacy_handshake(
+                            string_activations=act_list,
+                            compute_cost=ag_cost,
+                            lyapunov_energy=ag_lyap,
+                            v_channel_pressure=1.0,
+                            legacy_mode=self.legacy_handshake_mode,
+                        )
 
                 # A. Collective admissibility check (cluster + global)
                 is_admissible = collective_admissibility(

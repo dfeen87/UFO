@@ -127,11 +127,24 @@ class WorkloadEngine:
         self,
         single_agent_engine: Optional[SingleAgentEngine] = None,
         multi_agent_engine: Optional[MultiAgentEngine] = None,
-        multi_cluster_engine: Optional[MultiClusterEngine] = None
+        multi_cluster_engine: Optional[MultiClusterEngine] = None,
+        enable_legacy_handshake: bool = False,
+        legacy_handshake_mode: str = "soft",
     ) -> None:
-        self.single_agent_engine = single_agent_engine or SingleAgentEngine()
-        self.multi_agent_engine = multi_agent_engine or MultiAgentEngine()
-        self.multi_cluster_engine = multi_cluster_engine or MultiClusterEngine()
+        self.enable_legacy_handshake = enable_legacy_handshake
+        self.legacy_handshake_mode = legacy_handshake_mode
+        self.single_agent_engine = single_agent_engine or SingleAgentEngine(
+            enable_legacy_handshake=enable_legacy_handshake,
+            legacy_handshake_mode=legacy_handshake_mode,
+        )
+        self.multi_agent_engine = multi_agent_engine or MultiAgentEngine(
+            enable_legacy_handshake=enable_legacy_handshake,
+            legacy_handshake_mode=legacy_handshake_mode,
+        )
+        self.multi_cluster_engine = multi_cluster_engine or MultiClusterEngine(
+            enable_legacy_handshake=enable_legacy_handshake,
+            legacy_handshake_mode=legacy_handshake_mode,
+        )
 
     def validate_workload(self, workload: Workload) -> None:
         """
