@@ -11,12 +11,13 @@ stability pipeline, kernel leg evolution, and boundary loop trace as described i
 from __future__ import annotations
 import math
 import numpy as np
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 if TYPE_CHECKING:
     from radial_membrane_ai.membrane import RadialMembrane
     from radial_membrane_ai.governor import Governor
     from radial_membrane_ai.boundary import BoundaryGeometry
+    from radial_membrane_ai.adapters.invariant_handshake import HandshakeStatus
 
 from radial_membrane_ai.projection import closure_ratio, admissibility_test
 
@@ -316,3 +317,52 @@ def global_closure_aggregation(
         "max_ratio": float(np.max(ratios)),
         "is_admissible": all_admissible
     }
+
+
+class AdmissibilityGate:
+    """
+    Governs permission boundaries for workloads and actions, evaluating local membrane
+    closure admissibility and optional Legacy Hardware Invariant Handshakes.
+    """
+
+    def __init__(self, tol: float = 0.2, legacy_mode: str = "strict") -> None:
+        self.tol = tol
+        self.legacy_mode = legacy_mode
+
+    def evaluate_closure(
+        self,
+        membrane: RadialMembrane,
+        boundary: BoundaryGeometry,
+        samples: int = 32
+    ) -> dict[str, float | bool]:
+        """
+        Evaluates local membrane closure admissibility across the entire membrane.
+        """
+        return global_closure_aggregation(membrane, boundary, samples=samples)
+
+    def check_legacy_handshake(
+        self,
+        string_activations: Sequence[float] | np.ndarray,
+        compute_cost: float,
+        lyapunov_energy: float,
+        v_channel_pressure: float,
+        conversion_cost: float = 0.05,
+        legacy_mode: str | None = None,
+    ) -> HandshakeStatus:
+        """
+        Evaluates the Invariant Handshake for Legacy hardware interoperability.
+        """
+        from radial_membrane_ai.adapters.invariant_handshake import (
+            handshake,
+            map_ufo_state_to_handshake_inputs,
+        )
+
+        mode = legacy_mode if legacy_mode is not None else self.legacy_mode
+        legacy_in, ai_in = map_ufo_state_to_handshake_inputs(
+            string_activations=string_activations,
+            compute_cost=compute_cost,
+            lyapunov_energy=lyapunov_energy,
+            v_channel_pressure=v_channel_pressure,
+            conversion_cost=conversion_cost,
+        )
+        return handshake(legacy_in, ai_in, tol=self.tol, mode=mode)
