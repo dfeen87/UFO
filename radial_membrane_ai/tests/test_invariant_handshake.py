@@ -134,3 +134,53 @@ def test_map_ufo_state_to_handshake_inputs() -> None:
     assert ai.b == pytest.approx(expected_norm)
     assert ai.c == 1.2
     assert ai.conversion == 0.05
+
+
+def test_handshake_invalid_mode() -> None:
+    legacy = LegacyInput(a=0.6, b=0.8, c=1.0)
+    ai = AIInput(a=0.6, b=0.8, c=1.0, conversion=0.0)
+    with pytest.raises(GovernanceError) as exc_info:
+        handshake(legacy, ai, tol=0.2, mode="invalid_mode")
+    assert "Invalid handshake governance mode" in str(exc_info.value)
+
+
+def test_is_stable_boundary_and_non_finite() -> None:
+    # Boundary points should be stable under inclusive comparison
+    assert is_stable(0.8, tol=0.2) is True
+    assert is_stable(1.2, tol=0.2) is True
+
+    # Non-finite values return False
+    assert is_stable(float("nan"), tol=0.2) is False
+    assert is_stable(float("inf"), tol=0.2) is False
+    assert is_stable(1.0, tol=float("nan")) is False
+
+
+def test_handshake_non_finite_and_edge_inputs() -> None:
+    # Non-finite invariant evaluations collapse cleanly to 0.0
+    assert invariant(float("nan"), 1.0, 1.0) == 0.0
+    assert invariant(1.0, float("inf"), 1.0) == 0.0
+    assert invariant(1.0, 1.0, float("nan")) == 0.0
+
+    # Non-finite normalization
+    a_nan, b_nan = normalize_to_unity(float("nan"), 1.0, 1.0)
+    assert a_nan == 0.0 and b_nan == 0.0
+
+    # Non-finite tensor stress
+    ai_nan = AIInput(a=1.0, b=float("nan"), c=1.0, conversion=float("inf"))
+    assert tensor_stress(ai_nan) == 0.0
+
+    # Non-finite map_ufo_state_to_handshake_inputs
+    activations = [float("nan"), float("inf"), -1.0]
+    leg, ai = map_ufo_state_to_handshake_inputs(
+        string_activations=activations,
+        compute_cost=float("nan"),
+        lyapunov_energy=float("inf"),
+        v_channel_pressure=-0.5,
+        conversion_cost=float("nan"),
+    )
+    assert leg.a > 0.0
+    assert leg.b == 0.001
+    assert leg.c == 0.5
+    assert ai.a == 0.001
+    assert ai.c == 0.5
+    assert ai.conversion == 0.0

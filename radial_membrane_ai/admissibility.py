@@ -365,4 +365,5 @@ class AdmissibilityGate:
             v_channel_pressure=v_channel_pressure,
             conversion_cost=conversion_cost,
         )
-        return handshake(legacy_in, ai_in, tol=self.tol, mode=mode)
+        tol_val = float(self.tol) if math.isfinite(float(self.tol)) else 0.2
+        return handshake(legacy_in, ai_in, tol=max(0.0, tol_val), mode=mode)
