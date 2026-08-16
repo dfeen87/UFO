@@ -76,7 +76,9 @@ def tensor_stress(ai_input: AIInput) -> float:
     """
     Calculates total tensor-side stress including representation conversion cost.
     """
-    return ai_input.b + ai_input.conversion
+    b_val = float(ai_input.b) if math.isfinite(float(ai_input.b)) else 0.0
+    conv_val = float(ai_input.conversion) if math.isfinite(float(ai_input.conversion)) else 0.0
+    return b_val + conv_val
 
 
 def invariant(a: float, b: float, c: float) -> float:
@@ -84,21 +86,27 @@ def invariant(a: float, b: float, c: float) -> float:
     Executable form of the geometric invariant:
         i = (a^2 + b^2) / c^2
 
-    If c == 0, degenerate geometry collapses to 0.0.
+    If c == 0 or non-finite inputs are encountered, degenerate geometry collapses to 0.0.
     """
-    den = c * c
-    if den == 0.0:
+    if not (math.isfinite(a) and math.isfinite(b) and math.isfinite(c)):
         return 0.0
-    return (a * a + b * b) / den
+    den = c * c
+    if den <= 0.0:
+        return 0.0
+    res = (a * a + b * b) / den
+    return res if math.isfinite(res) else 0.0
 
 
 def is_stable(i: float, tol: float = 0.2) -> bool:
     """
     Checks if invariant 'i' lies within stability band [1 - tol, 1 + tol].
     """
-    lower = 1.0 - tol
-    upper = 1.0 + tol
-    return lower < i < upper
+    if not (math.isfinite(i) and math.isfinite(tol)):
+        return False
+    tol_val = max(0.0, tol)
+    lower = 1.0 - tol_val
+    upper = 1.0 + tol_val
+    return lower <= i <= upper
 
 
 def normalize_to_unity(a: float, b: float, c: float) -> Tuple[float, float]:
@@ -106,10 +114,14 @@ def normalize_to_unity(a: float, b: float, c: float) -> Tuple[float, float]:
     Contraction operator: Delta AG -> Delta v collapse toward the invariant surface.
     Scales (a, b) such that (a^2 + b^2) / c^2 -> 1.0 if i > 0.
     """
+    if not (math.isfinite(a) and math.isfinite(b) and math.isfinite(c)):
+        return 0.0, 0.0
     i_val = invariant(a, b, c)
-    if i_val == 0.0:
+    if i_val <= 0.0 or not math.isfinite(i_val):
         return a, b
     scale = 1.0 / math.sqrt(i_val)
+    if not math.isfinite(scale):
+        return a, b
     return a * scale, b * scale
 
 
@@ -127,6 +139,12 @@ def handshake(
         - "soft": Normalizes inputs and retries handshake once before flagging quarantine.
         - "simulation": Logs status and permits continuation marked as legacy-unsafe.
     """
+    valid_modes = {"strict", "soft", "simulation"}
+    if mode not in valid_modes:
+        raise GovernanceError(
+            f"Invalid handshake governance mode: '{mode}'. Must be one of {sorted(valid_modes)}."
+        )
+
     # 1. Raw Invariant Evaluation
     i_legacy_raw = invariant(legacy.a, legacy.b, legacy.c)
     i_ai_raw = invariant(ai.a, tensor_stress(ai), ai.c)
@@ -221,18 +239,31 @@ def map_ufo_state_to_handshake_inputs(
             c = v_channel_pressure + 1e-9 (shared channel capacity)
             conversion = conversion_cost
     """
-    activations_arr = np.array(string_activations, dtype=float)
-    act_norm = float(np.linalg.norm(activations_arr))
+    try:
+        activations_arr = np.nan_to_num(
+            np.array(string_activations, dtype=float), nan=0.0, posinf=0.0, neginf=0.0
+        )
+        act_norm = float(np.linalg.norm(activations_arr))
+    except Exception:
+        act_norm = 0.001
+
+    if not math.isfinite(act_norm):
+        act_norm = 0.001
+
+    c_cost = float(compute_cost) if math.isfinite(float(compute_cost)) else 0.001
+    lyap = float(lyapunov_energy) if math.isfinite(float(lyapunov_energy)) else 0.001
+    v_press = float(v_channel_pressure) if math.isfinite(float(v_channel_pressure)) else 1e-9
+    conv_cost = float(conversion_cost) if math.isfinite(float(conversion_cost)) else 0.0
 
     leg_a = max(0.001, act_norm)
-    leg_b = max(0.001, float(compute_cost))
+    leg_b = max(0.001, c_cost)
 
-    ai_a = max(0.001, float(lyapunov_energy))
+    ai_a = max(0.001, lyap)
     ai_b = max(0.001, act_norm)
 
-    c_capacity = max(1e-9, float(v_channel_pressure))
+    c_capacity = max(1e-9, abs(v_press))
 
     legacy_in = LegacyInput(a=leg_a, b=leg_b, c=c_capacity)
-    ai_in = AIInput(a=ai_a, b=ai_b, c=c_capacity, conversion=float(conversion_cost))
+    ai_in = AIInput(a=ai_a, b=ai_b, c=c_capacity, conversion=max(0.0, conv_cost))
 
     return legacy_in, ai_in

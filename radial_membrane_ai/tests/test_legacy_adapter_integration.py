@@ -8,7 +8,9 @@ Integration tests for the Legacy Hardware Invariant Handshake Adapter.
 import numpy as np
 import argparse
 
+import pytest
 from radial_membrane_ai.admissibility import AdmissibilityGate
+from radial_membrane_ai.exceptions import GovernanceError
 from radial_membrane_ai.ufo_engine.single_agent import SingleAgentEngine
 from radial_membrane_ai.ufo_engine.multi_agent import MultiAgentEngine
 from radial_membrane_ai.ufo_engine.multi_cluster import MultiClusterEngine
@@ -27,6 +29,32 @@ def test_admissibility_gate_handshake() -> None:
         conversion_cost=0.01,
     )
     assert status.handshakeAllowed is True
+
+
+def test_admissibility_gate_invalid_mode() -> None:
+    gate = AdmissibilityGate(tol=0.2, legacy_mode="invalid")
+    activations = [0.2] * 12
+    with pytest.raises(GovernanceError) as exc_info:
+        gate.check_legacy_handshake(
+            string_activations=activations,
+            compute_cost=0.3,
+            lyapunov_energy=0.8,
+            v_channel_pressure=1.0,
+        )
+    assert "Invalid handshake governance mode" in str(exc_info.value)
+
+
+def test_admissibility_gate_non_finite_tol() -> None:
+    gate = AdmissibilityGate(tol=float("nan"), legacy_mode="strict")
+    activations = [0.2] * 12
+    status = gate.check_legacy_handshake(
+        string_activations=activations,
+        compute_cost=0.3,
+        lyapunov_energy=0.8,
+        v_channel_pressure=1.0,
+        conversion_cost=0.0,
+    )
+    assert status.mode == "strict"
 
 
 def test_single_agent_engine_legacy_handshake() -> None:

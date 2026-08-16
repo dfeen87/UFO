@@ -10,4 +10,4 @@ This package implements the mathematical and geometric model described in:
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "2.0.0"
