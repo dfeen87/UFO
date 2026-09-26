@@ -19,6 +19,14 @@ This repository implements the full operator stack: membrane geometry, V‑Chann
 
 ---
 
+## Repository Guide
+
+- [`radial_membrane_ai/`](radial_membrane_ai/) — Python package and runtime implementation
+- [`examples/`](examples/) — runnable simulations and release-readiness checks
+- [`docs/`](docs/) — architecture notes and the [paper library](docs/README.md)
+- [`research/`](research/) — supporting research extractions and analysis artifacts
+- [`logs/`](logs/) — checked-in simulation ledgers and visualization output
+
 ## Why "The U.F.O."?
 
 The name U.F.O. **(User‑Formed Optimization)** originates from the architecture’s core principle: durable behavioral adaptation should emerge only from coherent, admissible patterns formed by the user. The geometric representation came later as a natural way to visualize this principle.
