@@ -1,5 +1,8 @@
 __pycache__/
 *.pyc
+.coverage
+.coverage.*
+htmlcov/
 .mypy_cache/
 .pytest_cache/
 build/
