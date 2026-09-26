@@ -36,7 +36,8 @@ class UFOAgent:
         state: ShardState = ShardState.IDLE,
         trust_score: float = 1.0,
         policy_compliance: float = 1.0,
-        latency: float = 10.0
+        latency: float = 10.0,
+        capabilities: list[str] | None = None,
     ) -> None:
         """
         Initializes the UFOAgent.
@@ -53,6 +54,7 @@ class UFOAgent:
         self.agent_id = agent_id
         self.cost_sensitivity = cost_sensitivity
         self.kernel_regime = kernel_regime
+        self.capabilities = list(capabilities) if capabilities is not None else ["general"]
 
         # Core local components
         self.membrane = RadialMembrane()

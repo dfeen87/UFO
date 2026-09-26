@@ -23,6 +23,7 @@ from radial_membrane_ai.workloads.workload import (
     create_asymmetric_workload,
     create_global_mesh_workload
 )
+from radial_membrane_ai.workloads.agentic_workload import create_agentic_workload
 
 from radial_membrane_ai.workloads.engine import (
     RegimeTransition,
@@ -52,6 +53,7 @@ __all__ = [
     "create_policy_tension_workload",
     "create_asymmetric_workload",
     "create_global_mesh_workload",
+    "create_agentic_workload",
     "RegimeTransition",
     "SAOEvent",
     "StabilityBandEvent",

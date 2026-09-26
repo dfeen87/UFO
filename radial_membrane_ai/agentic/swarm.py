@@ -1,0 +1,134 @@
+# Copyright (c) 2026 Don Michael Feeney Jr.
+# Standard MIT License applies.
+
+"""
+Multi-agent swarm contract bidding and auction negotiation for Version 3 Agentic AI.
+Agents bid based on quantitative membrane state, stability margins, and capability roles.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Sequence
+
+
+@dataclass
+class AgentBid:
+    """A bid submitted by a UFO agent for a swarm task contract."""
+
+    agent_id: str
+    contract_id: str
+    bid_score: float
+    estimated_cost: float
+    estimated_tension: float
+    agent_capabilities: List[str] = field(default_factory=list)
+    membrane_stability_margin: float = 1.0
+
+
+@dataclass
+class SwarmContract:
+    """A contract task requiring multi-agent auction negotiation."""
+
+    contract_id: str
+    goal: str
+    required_capabilities: List[str] = field(default_factory=list)
+    max_budget: float = 10.0
+    assigned_agent_id: Optional[str] = None
+    status: str = "OPEN"  # OPEN, AWARDED, FAILED, COMPLETED
+    winning_bid: Optional[AgentBid] = None
+
+
+class SwarmAuctioneer:
+    """Manages contract bidding, auction evaluation, and swarm role assignments."""
+
+    def __init__(self) -> None:
+        self.contracts: Dict[str, SwarmContract] = {}
+        self.auction_history: List[Dict[str, Any]] = []
+
+    def create_contract(
+        self,
+        contract_id: str,
+        goal: str,
+        required_capabilities: Sequence[str],
+        max_budget: float = 10.0,
+    ) -> SwarmContract:
+        """Creates and registers a new open swarm task contract."""
+        contract = SwarmContract(
+            contract_id=contract_id,
+            goal=goal,
+            required_capabilities=list(required_capabilities),
+            max_budget=max_budget,
+            status="OPEN",
+        )
+        self.contracts[contract_id] = contract
+        return contract
+
+    def calculate_agent_bid(
+        self,
+        agent_id: str,
+        contract: SwarmContract,
+        agent_capabilities: Sequence[str],
+        current_tension: float,
+        stability_band_margin: float,
+        cost_weight: float = 0.5,
+    ) -> Optional[AgentBid]:
+        """Calculates a quantitative bid for an agent based on membrane state and capabilities."""
+        # Capability overlap check
+        matched = [cap for cap in contract.required_capabilities if cap in agent_capabilities]
+        if not matched and contract.required_capabilities:
+            return None  # Ineligible bid
+
+        cap_ratio = len(matched) / max(1, len(contract.required_capabilities))
+
+        # Base estimated cost and tension
+        est_cost = (1.0 - cap_ratio * 0.5) * 2.0
+        est_tension = current_tension + 0.2
+
+        if est_cost > contract.max_budget or stability_band_margin <= 0.0:
+            return None  # Exceeds contract budget or unstable
+
+        # Higher score is better: favors capability ratio & stability margin, penalizes high tension & cost
+        bid_score = (
+            (cap_ratio * 4.0) + (stability_band_margin * 3.0) - (current_tension * 0.5) - (est_cost * cost_weight)
+        )
+
+        return AgentBid(
+            agent_id=agent_id,
+            contract_id=contract.contract_id,
+            bid_score=max(0.01, bid_score),
+            estimated_cost=est_cost,
+            estimated_tension=est_tension,
+            agent_capabilities=list(agent_capabilities),
+            membrane_stability_margin=stability_band_margin,
+        )
+
+    def run_auction(
+        self,
+        contract_id: str,
+        bids: Sequence[AgentBid],
+    ) -> Optional[SwarmContract]:
+        """Evaluates bids and awards the contract to the highest-scoring admissible agent."""
+        if contract_id not in self.contracts:
+            raise KeyError(f"Contract '{contract_id}' not found.")
+
+        contract = self.contracts[contract_id]
+        if not bids:
+            contract.status = "FAILED"
+            return contract
+
+        # Sort by bid score descending
+        sorted_bids = sorted(bids, key=lambda b: b.bid_score, reverse=True)
+        winning_bid = sorted_bids[0]
+
+        contract.assigned_agent_id = winning_bid.agent_id
+        contract.winning_bid = winning_bid
+        contract.status = "AWARDED"
+
+        self.auction_history.append({
+            "contract_id": contract_id,
+            "winner": winning_bid.agent_id,
+            "bid_score": winning_bid.bid_score,
+            "bids_count": len(bids),
+        })
+
+        return contract

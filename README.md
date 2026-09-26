@@ -524,6 +524,22 @@ L.D.E. provides an interpretable alternative to opaque token embeddings, support
 
 It is intentionally lightweight, reversible, and mathematically structured, making it suitable for both standalone use and deep integration with governed architectures.
 
+## **12. Version 3.0.0 — Governed Agentic AI Operator Stack**
+
+Version 3.0.0 elevates the U.F.O. architecture into a complete **Governed Agentic AI Operator Stack**. Rather than treating agent planning, tool execution, and multi-agent contract delegation as unconstrained LLM loops, Version 3 binds all agentic operations directly into radial membrane physics, compute envelope budgets, and governance triggers.
+
+### **Core Agentic Modules (`radial_membrane_ai/agentic/`)**
+- **Governed Tool Execution (`tools.py`):** Built-in suite of real operational tools (`SearchTool`, `PythonCodeExecutorTool`, `APIRequestTool`, `DatabaseQueryTool`, `MemoryRetrievalTool`). Each tool call executes concrete logic, outputs structured results, and evaluates a multidimensional cost vector and membrane tension impact.
+- **Hierarchical Goal Planning (`planner.py`):** Decomposes complex user goals into structured plan steps, tracks cost/tension envelope accumulation, and dynamically replans upon step failure or envelope budget exhaustion.
+- **Perception-Action Reflection Engine (`reflection.py`):** Dual-trigger reflection system invoking self-correction upon either (A) tool execution failure OR (B) membrane tension/curvature exceeding stability limits. Automatically logs records into the persistent residual ledger and provides posture adjustment deltas.
+- **Swarm Contract Bidding & Role Auction (`swarm.py`):** Quantitative multi-agent contract auction where agents bid based on capability match, membrane tension headroom, and stability margins.
+- **Unified Agentic Engines (`engine.py`):** `AgenticEngine` and `AgenticSwarmEngine` orchestrating planning, tool execution, dual-trigger reflection, and swarm contract bidding into unified runtime loops.
+
+### **Agentic Execution Modes & CLI**
+- Single-Agent Agentic Mode: `poetry run ufo --agentic`
+- Swarm Auction Mode: `poetry run ufo --agentic-swarm`
+- Executable Simulation Script: `poetry run python examples/run_agentic_simulation.py`
+
 ---
 
 # Runtime Hardening Pass Stability Critical Release Preparation

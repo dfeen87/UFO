@@ -18,6 +18,7 @@ from typing import List, Any
 from radial_membrane_ai.utils import set_deterministic_env
 from radial_membrane_ai.exceptions import GovernanceError
 from radial_membrane_ai.ufo_engine import SingleAgentEngine, MultiAgentEngine
+from radial_membrane_ai.agentic.engine import AgenticEngine, AgenticSwarmEngine
 from radial_membrane_ai.shard import ShardState
 from radial_membrane_ai.visualization.visualizer import MeshVisualizer
 from radial_membrane_ai.workloads.workload import StabilityBand, SAOLevel, EnvelopeState
@@ -56,6 +57,53 @@ def append_to_halt_log(message: str) -> None:
     os.makedirs("logs", exist_ok=True)
     with open("logs/governance_halts.log", "a", encoding="utf-8") as f:
         f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {message}\n")
+
+
+def run_agentic_cli(args: argparse.Namespace) -> None:
+    if not args.quiet:
+        print_banner("🛸 UFO VERSION 3 AGENTIC AI RUNTIME 🛸", ANSI_CYAN)
+
+    agentic_engine = AgenticEngine()
+    goal = "Execute code calculation and search knowledge base for UFO architecture"
+    res = agentic_engine.run_goal(goal=goal, max_steps=args.steps or 10)
+
+    if not args.quiet:
+        print(f"{ANSI_BOLD}Goal:{ANSI_RESET} {res.plan.goal}")
+        print(f"{ANSI_BOLD}Plan Status:{ANSI_RESET} {res.plan.status}")
+        print(f"{ANSI_BOLD}Total Plan Cost:{ANSI_RESET} {res.plan.total_cost:.4f}")
+        print(f"{ANSI_BOLD}Total Plan Tension:{ANSI_RESET} {res.plan.total_tension:.4f}")
+        print(f"{ANSI_BOLD}Reflections Triggered:{ANSI_RESET} {len(res.reflections)}")
+        for i, step in enumerate(res.plan.steps, 1):
+            print(f"  [{i}] {step.description} -> Completed: {step.completed} | Tool: {step.tool_name}")
+            if step.result:
+                print(f"      Out: {step.result.output[:80]}...")
+
+
+def run_agentic_swarm_cli(args: argparse.Namespace) -> None:
+    if not args.quiet:
+        print_banner("🛸 UFO VERSION 3 AGENTIC SWARM RUNTIME 🛸", ANSI_PURPLE)
+
+    swarm_engine = AgenticSwarmEngine()
+    goals = [
+        {"goal": "Calculate factorial series with python code", "required_capabilities": ["code"], "max_budget": 8.0},
+        {
+            "goal": "Search UFO architecture docs and retrieve memory",
+            "required_capabilities": ["search"],
+            "max_budget": 5.0,
+        },
+    ]
+
+    swarm_res = swarm_engine.run_swarm_goals(goals, ticks_per_contract=5)
+
+    if not args.quiet:
+        print(f"{ANSI_BOLD}Swarm Contracts Awarded:{ANSI_RESET} {len(swarm_res.contracts)}")
+        for contract in swarm_res.contracts:
+            winner = contract.assigned_agent_id
+            score = contract.winning_bid.bid_score if contract.winning_bid else 0.0
+            print(
+                f"  • Contract [{contract.contract_id}]: {contract.goal[:40]}... -> "
+                f"Awarded To: {winner} (Score: {score:.2f})"
+            )
 
 
 def run_simulation(args: argparse.Namespace) -> None:
@@ -384,7 +432,11 @@ def main() -> None:
     # Simulation modes
     parser.add_argument("--single", action="store_true", help="Run in Single-Agent Mode (Default)")
     parser.add_argument("--multi", action="store_true", help="Run in Multi-Agent Mode")
-    parser.add_argument("--mode", choices=["single", "multi"], help="Select Simulation Mode")
+    parser.add_argument("--agentic", action="store_true", help="Run in Version 3 Agentic AI Mode")
+    parser.add_argument("--agentic-swarm", action="store_true", help="Run in Version 3 Agentic Swarm Mode")
+    parser.add_argument(
+        "--mode", choices=["single", "multi", "agentic", "agentic-swarm"], help="Select Simulation Mode"
+    )
 
     # Parameters
     parser.add_argument("--steps", type=int, help="Number of ticks / execution steps")
@@ -413,7 +465,12 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        run_simulation(args)
+        if args.agentic or args.mode == "agentic":
+            run_agentic_cli(args)
+        elif args.agentic_swarm or args.mode == "agentic-swarm":
+            run_agentic_swarm_cli(args)
+        else:
+            run_simulation(args)
     except KeyboardInterrupt:
         print(f"\n{ANSI_YELLOW}Execution interrupted by user. Exiting cleanly...{ANSI_RESET}")
         sys.exit(0)
