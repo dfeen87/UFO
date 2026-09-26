@@ -149,7 +149,7 @@ class SwarmAuctioneer:
         self,
         contract_id: str,
         bids: Sequence[AgentBid],
-    ) -> Optional[SwarmContract]:
+    ) -> SwarmContract:
         """Evaluates bids and awards the contract to the highest-scoring admissible agent."""
         if contract_id not in self.contracts:
             raise KeyError(f"Contract '{contract_id}' not found.")
