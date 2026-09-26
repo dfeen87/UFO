@@ -21,8 +21,9 @@ from radial_membrane_ai.agentic.tools import (
     MemoryRetrievalTool,
 )
 from radial_membrane_ai.agentic.planner import GoalPlanner, Plan, PlanStep
-from radial_membrane_ai.agentic.reflection import ReflectionEngine
-from radial_membrane_ai.agentic.swarm import SwarmAuctioneer
+from radial_membrane_ai.agentic.reflection import ReflectionEngine, ReflectionRecord
+from radial_membrane_ai.agentic.swarm import SwarmAuctioneer, AgentBid, SwarmContract
+from radial_membrane_ai.exceptions import ValidationError
 from radial_membrane_ai.agentic.engine import AgenticEngine, AgenticSwarmEngine
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.workloads.agentic_workload import create_agentic_workload
@@ -31,16 +32,16 @@ from ufo_cli import run_agentic_cli, run_agentic_swarm_cli
 
 class DummyTool(BaseTool):
     name = "DummyTool"
-    description = "Dummy tool for abstract class testing."
+    description = "Dummy tool for testing."
 
     def execute(self, params: dict) -> ToolCallResult:
-        return super().execute(params)  # Calls ABC method pass
+        return ToolCallResult("DummyTool", True, "ok")
 
 
 def test_tools_coverage() -> None:
     dummy = DummyTool()
     res_dummy = dummy.execute({})
-    assert res_dummy is None
+    assert res_dummy.success is True
 
     search = SearchTool()
     res1 = search.execute({"query": "ufo architecture"})
@@ -50,6 +51,7 @@ def test_tools_coverage() -> None:
     res_empty = search.execute({"query": ""})
     assert res_empty.success is False
     assert search.execute({}).success is False
+    assert search.execute({"query": "   "}).success is False
 
     res_nomatch = search.execute({"query": "nonexistent_xyz_term"})
     assert res_nomatch.success is True
@@ -156,7 +158,15 @@ def test_swarm_auctioneer_coverage() -> None:
     assert bid is not None
 
     # Auction run
-    assert auctioneer.run_auction("C1", []).status == "FAILED"
+    res_nobids = auctioneer.run_auction("C1", [])
+    assert res_nobids is not None
+    assert res_nobids.status == "FAILED"
+
+    # Inadmissible bid due to high cost
+    bid_expensive = AgentBid("A1", "C1", bid_score=1.0, estimated_cost=100.0, estimated_tension=0.1)
+    res_inadmissible = auctioneer.run_auction("C1", [bid_expensive])
+    assert res_inadmissible is not None and res_inadmissible.status == "FAILED"
+
     awarded = auctioneer.run_auction("C1", [bid])
     assert awarded is not None and awarded.status == "AWARDED"
 
@@ -178,8 +188,11 @@ def test_agentic_engine_coverage() -> None:
     assert res_finished is not None
 
     # Run goal with empty plan steps
-    eng_empty = AgenticEngine()
-    eng_empty.planner.create_plan = lambda goal: Plan(goal=goal, steps=[])
+    class EmptyPlanner(GoalPlanner):
+        def create_plan(self, goal: str) -> Plan:
+            return Plan(goal=goal, steps=[])
+
+    eng_empty = AgenticEngine(planner=EmptyPlanner())
     res_empty = eng_empty.run_goal("No steps", max_steps=5)
     assert res_empty is not None
 
@@ -195,6 +208,52 @@ def test_agentic_swarm_engine_coverage() -> None:
     ]
     res = swarm_eng.run_swarm_goals(goals, ticks_per_contract=2)
     assert len(res.contracts) == 1
+
+
+def test_agentic_validation_invariants() -> None:
+    # ToolCallResult invariants
+    with pytest.raises(ValidationError):
+        ToolCallResult("T", True, "o", side_effect_rating=1.5)
+    with pytest.raises(ValidationError):
+        ToolCallResult("T", True, "o", tension_delta=-0.1)
+    with pytest.raises(ValidationError):
+        ToolCallResult("T", True, "o", cost_vector=[0.1] * 7)
+    with pytest.raises(ValidationError):
+        ToolCallResult("T", True, "o", cost_vector=[0.1] * 7 + [-0.1])
+
+    # PlanStep and Plan invariants
+    with pytest.raises(ValidationError):
+        PlanStep(step_id=1, description="D", cost_impact=-1.0)
+    with pytest.raises(ValidationError):
+        PlanStep(step_id=1, description="D", tension_impact=-1.0)
+    with pytest.raises(ValidationError):
+        Plan("Goal", total_cost=-1.0)
+    with pytest.raises(ValidationError):
+        Plan("Goal", total_tension=-1.0)
+    with pytest.raises(ValidationError):
+        GoalPlanner(max_cost_limit=-5.0)
+
+    # AgentBid and SwarmContract invariants
+    with pytest.raises(ValidationError):
+        AgentBid("A", "C", bid_score=-1.0, estimated_cost=1.0, estimated_tension=0.1)
+    with pytest.raises(ValidationError):
+        AgentBid("A", "C", bid_score=1.0, estimated_cost=-1.0, estimated_tension=0.1)
+    with pytest.raises(ValidationError):
+        AgentBid("A", "C", bid_score=1.0, estimated_cost=1.0, estimated_tension=-0.1)
+    with pytest.raises(ValidationError):
+        AgentBid("A", "C", bid_score=1.0, estimated_cost=1.0, estimated_tension=0.1, membrane_stability_margin=-0.1)
+    with pytest.raises(ValidationError):
+        SwarmContract("C", "Goal", max_budget=-1.0)
+
+    # ReflectionRecord and ReflectionEngine invariants
+    with pytest.raises(ValidationError):
+        ReflectionRecord("T", "S", True, "O", tension=-1.0, curvature=1.0, reflection_text="R", action_taken="A")
+    with pytest.raises(ValidationError):
+        ReflectionRecord("T", "S", True, "O", tension=1.0, curvature=-1.0, reflection_text="R", action_taken="A")
+    with pytest.raises(ValidationError):
+        ReflectionEngine(tension_threshold=-1.0)
+    with pytest.raises(ValidationError):
+        ReflectionEngine(curvature_threshold=-1.0)
 
 
 def test_agentic_workload_and_cli() -> None:

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence
+import numpy as np
 
 from radial_membrane_ai.agentic.planner import GoalPlanner, Plan
 from radial_membrane_ai.agentic.reflection import ReflectionEngine, ReflectionRecord
@@ -62,7 +63,6 @@ class AgenticEngine:
             if not current_step:
                 break
 
-            import numpy as np
             # Tick membrane state
             self.engine.tick(task_value=0.5, excitation=np.ones(12) * 0.2)
 
@@ -70,6 +70,9 @@ class AgenticEngine:
             cur_curvature = float(
                 sum(abs(self.engine.boundary.curvature(s.theta)) for s in self.engine.membrane.strings)
             )
+
+            # Validate admissibility gate closure invariants prior to executing tool step
+            self.engine.admissibility_gate.evaluate_closure(self.engine.membrane, self.engine.boundary)
 
             # Execute plan step tool call
             tool_res = self.planner.execute_next_step(plan, current_membrane_tension=cur_tension)
@@ -147,7 +150,6 @@ class AgenticSwarmEngine:
         agent_results: Dict[str, AgenticRunResult] = {}
 
         # 1. Multi-agent tick cycle to establish baseline membrane states
-        import numpy as np
         for _ in range(2):
             self.multi_engine.tick(task_value=0.5, excitation=np.ones(12) * 0.15)
 

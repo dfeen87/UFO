@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from radial_membrane_ai.agentic.tools import ToolCallResult
+from radial_membrane_ai.exceptions import ValidationError
 from radial_membrane_ai.residuals import ResidualLedger
 
 
@@ -30,6 +31,16 @@ class ReflectionRecord:
     action_taken: str
     timestamp: float = field(default_factory=time.time)
 
+    def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
+        """Enforces reflection record metrics invariants."""
+        if self.tension < 0.0:
+            raise ValidationError(f"tension cannot be negative, got {self.tension}.")
+        if self.curvature < 0.0:
+            raise ValidationError(f"curvature cannot be negative, got {self.curvature}.")
+
 
 class ReflectionEngine:
     """Monitors agent execution and membrane physics to trigger self-correction and logging."""
@@ -40,6 +51,11 @@ class ReflectionEngine:
         curvature_threshold: float = 8.0,
         residual_ledger: Optional[ResidualLedger] = None,
     ) -> None:
+        if tension_threshold <= 0.0:
+            raise ValidationError(f"tension_threshold must be positive, got {tension_threshold}.")
+        if curvature_threshold <= 0.0:
+            raise ValidationError(f"curvature_threshold must be positive, got {curvature_threshold}.")
+
         self.tension_threshold = tension_threshold
         self.curvature_threshold = curvature_threshold
         self.residual_ledger = residual_ledger or ResidualLedger()

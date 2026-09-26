@@ -14,6 +14,7 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+from radial_membrane_ai.exceptions import ValidationError
 
 
 @dataclass
@@ -28,6 +29,26 @@ class ToolCallResult:
     side_effect_rating: float = 0.0
     tension_delta: float = 0.1
     execution_time_ms: float = 0.0
+
+    def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
+        """Enforces membrane-bounded execution invariants on ToolCallResult."""
+        if not (0.0 <= self.side_effect_rating <= 1.0):
+            raise ValidationError(
+                f"side_effect_rating must be in range [0.0, 1.0], got {self.side_effect_rating}."
+            )
+        if self.tension_delta < 0.0:
+            raise ValidationError(
+                f"tension_delta cannot be negative, got {self.tension_delta}."
+            )
+        if len(self.cost_vector) != 8:
+            raise ValidationError(
+                f"cost_vector must contain exactly 8 dimensions, got length {len(self.cost_vector)}."
+            )
+        if any(c < 0.0 for c in self.cost_vector):
+            raise ValidationError("All elements in cost_vector must be non-negative.")
 
 
 class BaseTool(ABC):
@@ -58,7 +79,7 @@ class SearchTool(BaseTool):
 
     def execute(self, params: Dict[str, Any]) -> ToolCallResult:
         start = time.perf_counter()
-        query = str(params.get("query", "")).lower()
+        query = str(params.get("query", "")).strip().lower()
         if not query:
             return ToolCallResult(
                 tool_name=self.name,

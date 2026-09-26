@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence
+from radial_membrane_ai.exceptions import ValidationError
 
 
 @dataclass
@@ -24,6 +25,22 @@ class AgentBid:
     agent_capabilities: List[str] = field(default_factory=list)
     membrane_stability_margin: float = 1.0
 
+    def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
+        """Enforces bid metrics invariants."""
+        if self.bid_score < 0.0:
+            raise ValidationError(f"bid_score cannot be negative, got {self.bid_score}.")
+        if self.estimated_cost < 0.0:
+            raise ValidationError(f"estimated_cost cannot be negative, got {self.estimated_cost}.")
+        if self.estimated_tension < 0.0:
+            raise ValidationError(f"estimated_tension cannot be negative, got {self.estimated_tension}.")
+        if self.membrane_stability_margin < 0.0:
+            raise ValidationError(
+                f"membrane_stability_margin cannot be negative, got {self.membrane_stability_margin}."
+            )
+
 
 @dataclass
 class SwarmContract:
@@ -36,6 +53,14 @@ class SwarmContract:
     assigned_agent_id: Optional[str] = None
     status: str = "OPEN"  # OPEN, AWARDED, FAILED, COMPLETED
     winning_bid: Optional[AgentBid] = None
+
+    def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
+        """Enforces swarm contract invariants."""
+        if self.max_budget <= 0.0:
+            raise ValidationError(f"max_budget must be positive, got {self.max_budget}.")
 
 
 class SwarmAuctioneer:
@@ -116,8 +141,15 @@ class SwarmAuctioneer:
             contract.status = "FAILED"
             return contract
 
-        # Sort by bid score descending
-        sorted_bids = sorted(bids, key=lambda b: b.bid_score, reverse=True)
+        # Filter admissible bids (cost <= budget, positive stability margin) and sort deterministically
+        admissible_bids = [
+            b for b in bids if b.estimated_cost <= contract.max_budget and b.membrane_stability_margin > 0.0
+        ]
+        if not admissible_bids:
+            contract.status = "FAILED"
+            return contract
+
+        sorted_bids = sorted(admissible_bids, key=lambda b: (-b.bid_score, b.agent_id))
         winning_bid = sorted_bids[0]
 
         contract.assigned_agent_id = winning_bid.agent_id

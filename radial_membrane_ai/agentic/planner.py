@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from radial_membrane_ai.agentic.tools import ToolCallResult, ToolRegistry
+from radial_membrane_ai.exceptions import ValidationError
 
 
 @dataclass
@@ -27,6 +28,16 @@ class PlanStep:
     cost_impact: float = 0.0
     tension_impact: float = 0.0
 
+    def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
+        """Enforces plan step metrics invariants."""
+        if self.cost_impact < 0.0:
+            raise ValidationError(f"cost_impact cannot be negative, got {self.cost_impact}.")
+        if self.tension_impact < 0.0:
+            raise ValidationError(f"tension_impact cannot be negative, got {self.tension_impact}.")
+
 
 @dataclass
 class Plan:
@@ -37,6 +48,16 @@ class Plan:
     status: str = "PENDING"  # PENDING, IN_PROGRESS, COMPLETED, REPLANNING, FAILED
     total_cost: float = 0.0
     total_tension: float = 0.0
+
+    def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
+        """Enforces plan totals invariants."""
+        if self.total_cost < 0.0:
+            raise ValidationError(f"total_cost cannot be negative, got {self.total_cost}.")
+        if self.total_tension < 0.0:
+            raise ValidationError(f"total_tension cannot be negative, got {self.total_tension}.")
 
     def current_step(self) -> Optional[PlanStep]:
         """Returns the next incomplete step in the plan."""
@@ -54,6 +75,8 @@ class GoalPlanner:
     """Decomposes goals into governed plan steps and manages adaptive plan execution."""
 
     def __init__(self, tool_registry: Optional[ToolRegistry] = None, max_cost_limit: float = 10.0) -> None:
+        if max_cost_limit <= 0.0:
+            raise ValidationError(f"max_cost_limit must be positive, got {max_cost_limit}.")
         self.tool_registry = tool_registry or ToolRegistry()
         self.max_cost_limit = max_cost_limit
 
