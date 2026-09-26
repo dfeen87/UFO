@@ -67,7 +67,12 @@ class RuntimeCostVector:
         """
         if not math.isfinite(quality_signal) or not 0.0 <= quality_signal <= 1.0:
             raise ValidationError("quality_signal must be finite and in [0, 1].")
-        if any(not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0.0 for value in weights.values()):
+        if any(
+            not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or value < 0.0
+            for value in weights.values()
+        ):
             raise ValidationError("cost weights must be finite and non-negative.")
         # Define fields that are "quality-improving" (productive/useful) vs "overhead" (waste/inefficiency)
         productive_fields = {"depth", "retrievals", "tool_calls", "context"}

@@ -25,7 +25,10 @@ def test_plan_graph_recovery_is_ordered_and_bounded() -> None:
     registry = ToolRegistry()
     registry.register(ExplodingTool())
     planner = GoalPlanner(registry)
-    plan = Plan("recover", [PlanStep(1, "failure", "ExplodingTool"), PlanStep(2, "next", "SearchTool", {"query": "ufo"})])
+    plan = Plan(
+        "recover",
+        [PlanStep(1, "failure", "ExplodingTool"), PlanStep(2, "next", "SearchTool", {"query": "ufo"})],
+    )
     result = planner.execute_next_step(plan)
     assert result is not None and not result.success and result.data["instrumented"]
     assert plan.steps[1].tool_params["_recovery"] is True
