@@ -1,2 +1,3 @@
-[2026-08-16 15:16:58] Test Halt Message
-[2026-08-16 15:17:39] GovernanceError correctly raised during local simulation due to temporal tension exceeding hard limit. Confirms stability enforcement and deterministic halt behavior.
+[2026-09-26 21:34:40] Test Halt Message
+[2026-09-26 21:35:25] GovernanceError correctly raised during local simulation due to temporal tension exceeding hard limit. Confirms stability enforcement and deterministic halt behavior.
+[2026-09-26 21:44:20] GovernanceError correctly raised during local simulation due to temporal tension exceeding hard limit. Confirms stability enforcement and deterministic halt behavior.
