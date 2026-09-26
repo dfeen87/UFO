@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import ast
 import json
+import math
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -35,6 +36,9 @@ class ToolCallResult:
 
     def validate(self) -> None:
         """Enforces membrane-bounded execution invariants on ToolCallResult."""
+        numeric_values = [self.side_effect_rating, self.tension_delta, self.execution_time_ms, *self.cost_vector]
+        if not all(isinstance(value, (int, float)) and math.isfinite(value) for value in numeric_values):
+            raise ValidationError("Tool result metrics must be finite numeric values.")
         if not (0.0 <= self.side_effect_rating <= 1.0):
             raise ValidationError(
                 f"side_effect_rating must be in range [0.0, 1.0], got {self.side_effect_rating}."
@@ -49,6 +53,8 @@ class ToolCallResult:
             )
         if any(c < 0.0 for c in self.cost_vector):
             raise ValidationError("All elements in cost_vector must be non-negative.")
+        if self.execution_time_ms < 0.0:
+            raise ValidationError("execution_time_ms cannot be negative.")
 
 
 class BaseTool(ABC):
@@ -118,6 +124,12 @@ class PythonCodeExecutorTool(BaseTool):
     name = "PythonCodeExecutorTool"
     description = "Executes Python expressions and algorithms in a governed, restricted environment."
 
+    _forbidden_nodes = (
+        ast.Import, ast.ImportFrom, ast.Attribute, ast.Global, ast.Nonlocal,
+        ast.With, ast.AsyncWith, ast.Try, ast.Raise, ast.ClassDef,
+        ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda,
+    )
+
     def execute(self, params: Dict[str, Any]) -> ToolCallResult:
         start = time.perf_counter()
         code = str(params.get("code", ""))
@@ -146,8 +158,29 @@ class PythonCodeExecutorTool(BaseTool):
                 execution_time_ms=(time.perf_counter() - start) * 1000,
             )
 
+        forbidden = next((node for node in ast.walk(parsed) if isinstance(node, self._forbidden_nodes)), None)
+        forbidden_names = {"__import__", "eval", "exec", "open", "compile", "globals", "locals", "vars", "input"}
+        unsafe_name = next(
+            (node.id for node in ast.walk(parsed) if isinstance(node, ast.Name) and node.id in forbidden_names),
+            None,
+        )
+        if forbidden is not None or unsafe_name is not None:
+            reason = type(forbidden).__name__ if forbidden is not None else unsafe_name
+            return ToolCallResult(
+                tool_name=self.name,
+                success=False,
+                output=f"SecurityError: forbidden construct '{reason}'.",
+                cost_vector=[0.1, 0.1, 0.0, 0.0, 0.1, 0.0, 0.3, 0.1],
+                side_effect_rating=0.0,
+                tension_delta=0.2,
+                execution_time_ms=(time.perf_counter() - start) * 1000,
+            )
+
         # Restricted execution globals/locals
-        safe_globals = {"abs": abs, "min": min, "max": max, "sum": sum, "len": len, "range": range, "list": list}
+        safe_globals = {
+            "__builtins__": {}, "abs": abs, "min": min, "max": max, "sum": sum,
+            "len": len, "range": range, "list": list,
+        }
         local_vars: Dict[str, Any] = {}
 
         try:
@@ -280,7 +313,7 @@ class MemoryRetrievalTool(BaseTool):
             "type": memory_type,
             "tag": tag,
             "entries": [
-                f"Memory record [{memory_type}] with tag '{tag}' retrieved at step {int(time.time())}.",
+                f"Memory record [{memory_type}] with tag '{tag}' retrieved.",
                 "Prior governed reflection confirmed stable Lyapunov energy balance.",
             ],
         }
@@ -314,6 +347,8 @@ class ToolRegistry:
 
     def register(self, tool: BaseTool) -> None:
         """Registers a tool instance."""
+        if not isinstance(tool, BaseTool) or not getattr(tool, "name", ""):
+            raise ValidationError("Registered tools must be named BaseTool instances.")
         self._tools[tool.name] = tool
 
     def get_tool(self, name: str) -> BaseTool:
@@ -324,9 +359,33 @@ class ToolRegistry:
 
     def list_tools(self) -> List[Dict[str, str]]:
         """Returns descriptions of all registered tools."""
-        return [{"name": t.name, "description": t.description} for t in self._tools.values()]
+        return [
+            {"name": self._tools[name].name, "description": self._tools[name].description}
+            for name in sorted(self._tools)
+        ]
 
     def execute_tool(self, name: str, params: Dict[str, Any]) -> ToolCallResult:
         """Executes a named tool with provided parameters."""
-        tool = self.get_tool(name)
-        return tool.execute(params)
+        if not isinstance(params, dict):
+            raise ValidationError("Tool parameters must be a dictionary.")
+        start = time.perf_counter()
+        try:
+            tool = self.get_tool(name)
+            result = tool.execute(dict(params))
+            if not isinstance(result, ToolCallResult):
+                raise TypeError("tool returned an invalid result type")
+            if result.tool_name != name:
+                raise ValueError(f"tool result identity mismatch: {result.tool_name!r}")
+            return result
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception as exc:
+            return ToolCallResult(
+                tool_name=name,
+                success=False,
+                output=f"ToolExecutionError: {type(exc).__name__}: {exc}",
+                data={"error_type": type(exc).__name__, "instrumented": True},
+                cost_vector=[0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.5, 0.2],
+                tension_delta=0.3,
+                execution_time_ms=(time.perf_counter() - start) * 1000,
+            )

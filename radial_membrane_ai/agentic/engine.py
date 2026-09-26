@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence
+import math
 import numpy as np
 
 from radial_membrane_ai.agentic.planner import GoalPlanner, Plan
@@ -52,6 +53,8 @@ class AgenticEngine:
 
     def run_goal(self, goal: str, max_steps: int = 10) -> AgenticRunResult:
         """Executes an agentic goal plan step-by-step with membrane updates and reflection."""
+        if not isinstance(max_steps, int) or isinstance(max_steps, bool) or max_steps < 0:
+            raise ValueError("max_steps must be a non-negative integer.")
         plan = self.planner.create_plan(goal)
         reflections: List[ReflectionRecord] = []
         last_single_result: Optional[SingleAgentRunResult] = None
@@ -146,6 +149,8 @@ class AgenticSwarmEngine:
         ticks_per_contract: int = 5,
     ) -> AgenticSwarmRunResult:
         """Executes a set of contract goals via swarm bidding and governed agent execution."""
+        if not isinstance(ticks_per_contract, int) or isinstance(ticks_per_contract, bool) or ticks_per_contract < 0:
+            raise ValueError("ticks_per_contract must be a non-negative integer.")
         contracts: List[SwarmContract] = []
         agent_results: Dict[str, AgenticRunResult] = {}
 
@@ -158,6 +163,8 @@ class AgenticSwarmEngine:
             goal_text = str(g_info.get("goal", "Execute swarm task"))
             caps = g_info.get("required_capabilities", ["general"])
             budget = float(g_info.get("max_budget", 10.0))
+            if not math.isfinite(budget):
+                raise ValueError("contract budget must be finite.")
 
             contract = self.auctioneer.create_contract(
                 contract_id=c_id,
@@ -184,8 +191,9 @@ class AgenticSwarmEngine:
 
             # Run auction
             awarded_contract = self.auctioneer.run_auction(c_id, bids)
-            if awarded_contract and awarded_contract.assigned_agent_id:
+            if awarded_contract is not None:
                 contracts.append(awarded_contract)
+            if awarded_contract and awarded_contract.assigned_agent_id:
                 # Find winning agent and run goal
                 winning_agent = next(a for a in self.agents if a.agent_id == awarded_contract.assigned_agent_id)
                 single_eng = SingleAgentEngine(membrane=winning_agent.membrane)
