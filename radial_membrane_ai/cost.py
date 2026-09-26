@@ -10,6 +10,9 @@ reduction described in Section 7 of Feeney (2025).
 
 from __future__ import annotations
 from dataclasses import dataclass
+import math
+
+from radial_membrane_ai.exceptions import ValidationError
 
 
 @dataclass(frozen=True)
@@ -39,6 +42,13 @@ class RuntimeCostVector:
     corrections: float
     recovery: float
 
+    def __post_init__(self) -> None:
+        values = tuple(getattr(self, name) for name in self.__dataclass_fields__)
+        if not all(isinstance(value, (int, float)) and math.isfinite(value) for value in values):
+            raise ValidationError("runtime cost dimensions must be finite numeric values.")
+        if any(value < 0.0 for value in values):
+            raise ValidationError("runtime cost dimensions cannot be negative.")
+
     def weighted_cost(self, weights: dict[str, float], quality_signal: float = 0.0) -> float:
         """
         Projects the cost vector into a single scalar observable cost.
@@ -55,6 +65,10 @@ class RuntimeCostVector:
         Returns:
             The projected scalar cost.
         """
+        if not math.isfinite(quality_signal) or not 0.0 <= quality_signal <= 1.0:
+            raise ValidationError("quality_signal must be finite and in [0, 1].")
+        if any(not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0.0 for value in weights.values()):
+            raise ValidationError("cost weights must be finite and non-negative.")
         # Define fields that are "quality-improving" (productive/useful) vs "overhead" (waste/inefficiency)
         productive_fields = {"depth", "retrievals", "tool_calls", "context"}
 
@@ -110,6 +124,10 @@ def reduce_avoidable_cost(
     Returns:
         A new RuntimeCostVector with suppressed avoidable costs.
     """
+    if not math.isfinite(quality_signal):
+        raise ValidationError("quality_signal must be finite.")
+    if not math.isfinite(min_retention) or not 0.0 <= min_retention <= 1.0:
+        raise ValidationError("min_retention must be finite and in [0, 1].")
     # Clamp quality_signal to [0.0, 1.0]
     q = max(0.0, min(1.0, quality_signal))
 

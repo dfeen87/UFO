@@ -12,7 +12,10 @@ and drift/decay/recovery dynamics.
 from __future__ import annotations
 from collections import deque
 from typing import Any, List, Tuple
+import math
 import numpy as np
+
+from radial_membrane_ai.exceptions import ValidationError
 
 
 class TemporalMembraneState:
@@ -31,6 +34,10 @@ class TemporalMembraneState:
     """
 
     def __init__(self, short_horizon: int = 5, long_horizon: int = 20) -> None:
+        if not isinstance(short_horizon, int) or not isinstance(long_horizon, int):
+            raise ValidationError("temporal horizons must be integers.")
+        if short_horizon <= 0 or long_horizon < short_horizon:
+            raise ValidationError("temporal horizons must satisfy 0 < short_horizon <= long_horizon.")
         self.short_horizon = short_horizon
         self.long_horizon = long_horizon
 
@@ -63,6 +70,9 @@ class TemporalMembraneState:
         """
         Updates queues with the current tick metrics.
         """
+        values = (max_curvature, max_tension, max_closure_ratio)
+        if not all(math.isfinite(value) and value >= 0.0 for value in values):
+            raise ValidationError("temporal history metrics must be finite and non-negative.")
         self.prior_curvature = max_curvature
         self.prior_tension = max_tension
 
@@ -82,6 +92,8 @@ class TemporalMembraneState:
         Formula:
             avg(t) = eta * avg(t-1) + (1 - eta) * val(t)
         """
+        if not math.isfinite(eta) or not 0.0 <= eta <= 1.0:
+            raise ValidationError("eta must be finite and in [0, 1].")
         if not self.admissibility_history:
             return 0.0, 0.0
 
@@ -126,6 +138,12 @@ class TemporalMembraneState:
         Updates and returns the mathematically accumulated temporal tension:
         T_acc(t+1) = gamma * T_acc(t) + w_v * L_v + w_c * C + w_s * P_sao + w_m * W_m
         """
+        inputs = (v_channel_load, cost_taxonomy_contrib, sao_promotions_intensity, mem_writes_norm)
+        coefficients = (gamma, w_v, w_c, w_s, w_m)
+        if not all(math.isfinite(value) and value >= 0.0 for value in inputs + coefficients):
+            raise ValidationError("tension inputs and coefficients must be finite and non-negative.")
+        if gamma > 1.0:
+            raise ValidationError("gamma must not exceed 1.0.")
         stimulus = (
             w_v * v_channel_load +
             w_c * cost_taxonomy_contrib +
@@ -139,6 +157,8 @@ class TemporalMembraneState:
         """
         Tracks green band ticks and returns active relaxation scaling (or mu adjustment).
         """
+        if not math.isfinite(mu) or not 0.0 <= mu <= 1.0:
+            raise ValidationError("mu must be finite and in [0, 1].")
         if is_green:
             self.green_ticks_count += 1
         else:
@@ -152,6 +172,8 @@ class TemporalMembraneState:
         Enforces tension decay when workload/load drops:
         T(t+1) = rho * T(t)
         """
+        if not math.isfinite(rho) or not 0.0 <= rho <= 1.0:
+            raise ValidationError("rho must be finite and in [0, 1].")
         if low_load and self.tension_history:
             # Decay both accumulated tension and last history items
             self.accumulated_tension *= rho
@@ -171,6 +193,8 @@ class TemporalMembraneState:
         We smoothly relax each boundary string's deviation back towards zero:
             deviation(t+1) = deviation(t) + mu * (0.0 - deviation(t))
         """
+        if not math.isfinite(mu) or not 0.0 <= mu <= 1.0:
+            raise ValidationError("mu must be finite and in [0, 1].")
         for i in range(1, 13):
             dev = boundary.radius_deviation[i]
             boundary.radius_deviation[i] = dev + mu * (0.0 - dev)

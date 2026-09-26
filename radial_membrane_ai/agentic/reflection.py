@@ -9,6 +9,7 @@ Provides dual-trigger reflection on tool failures and membrane instability thres
 from __future__ import annotations
 
 import time
+import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -36,6 +37,8 @@ class ReflectionRecord:
 
     def validate(self) -> None:
         """Enforces reflection record metrics invariants."""
+        if not all(math.isfinite(value) for value in (self.tension, self.curvature, self.timestamp)):
+            raise ValidationError("reflection metrics and timestamp must be finite.")
         if self.tension < 0.0:
             raise ValidationError(f"tension cannot be negative, got {self.tension}.")
         if self.curvature < 0.0:
@@ -70,8 +73,10 @@ class ReflectionEngine:
     ) -> Optional[ReflectionRecord]:
         """Evaluates tool outcomes and membrane metrics for reflection triggers."""
 
+        if not all(math.isfinite(value) and value >= 0.0 for value in (current_tension, current_curvature)):
+            raise ValidationError("current tension and curvature must be finite and non-negative.")
         tool_failed = tool_result is not None and not tool_result.success
-        high_instability = (current_tension > self.tension_threshold) or (current_curvature > self.curvature_threshold)
+        high_instability = (current_tension >= self.tension_threshold) or (current_curvature >= self.curvature_threshold)
 
         if not tool_failed and not high_instability:
             return None  # No reflection trigger active
@@ -104,13 +109,14 @@ class ReflectionEngine:
             curvature=current_curvature,
             reflection_text=reflection_text,
             action_taken=action_taken,
+            timestamp=float(len(self.reflection_history) + 1),
         )
 
         self.reflection_history.append(record)
 
         # Log into residual ledger for persistent preservation
         self.residual_ledger.log_failure(
-            record_id=f"REFL_{int(record.timestamp)}",
+            record_id=f"REFL_{len(self.reflection_history):08d}",
             error_type=f"Reflection_{trigger_type}",
             shard_id="agentic_reflection",
             severity="MEDIUM" if trigger_type == "TOOL_FAILURE" else "HIGH",

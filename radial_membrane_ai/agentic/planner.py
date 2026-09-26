@@ -9,6 +9,7 @@ Integrates goal breakdown, tool mapping, cost envelope monitoring, and adaptive 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 from typing import Any, Dict, List, Optional
 
 from radial_membrane_ai.agentic.tools import ToolCallResult, ToolRegistry
@@ -33,9 +34,13 @@ class PlanStep:
 
     def validate(self) -> None:
         """Enforces plan step metrics invariants."""
-        if self.cost_impact < 0.0:
+        if not isinstance(self.step_id, int) or isinstance(self.step_id, bool) or self.step_id <= 0:
+            raise ValidationError("step_id must be a positive integer.")
+        if not isinstance(self.description, str) or not self.description.strip():
+            raise ValidationError("step description cannot be empty.")
+        if not math.isfinite(self.cost_impact) or self.cost_impact < 0.0:
             raise ValidationError(f"cost_impact cannot be negative, got {self.cost_impact}.")
-        if self.tension_impact < 0.0:
+        if not math.isfinite(self.tension_impact) or self.tension_impact < 0.0:
             raise ValidationError(f"tension_impact cannot be negative, got {self.tension_impact}.")
 
 
@@ -54,9 +59,16 @@ class Plan:
 
     def validate(self) -> None:
         """Enforces plan totals invariants."""
-        if self.total_cost < 0.0:
+        if not isinstance(self.goal, str) or not self.goal.strip():
+            raise ValidationError("plan goal cannot be empty.")
+        if self.status not in {"PENDING", "IN_PROGRESS", "COMPLETED", "REPLANNING", "FAILED"}:
+            raise ValidationError(f"invalid plan status: {self.status}.")
+        step_ids = [step.step_id for step in self.steps]
+        if len(step_ids) != len(set(step_ids)):
+            raise ValidationError("plan step IDs must be unique.")
+        if not math.isfinite(self.total_cost) or self.total_cost < 0.0:
             raise ValidationError(f"total_cost cannot be negative, got {self.total_cost}.")
-        if self.total_tension < 0.0:
+        if not math.isfinite(self.total_tension) or self.total_tension < 0.0:
             raise ValidationError(f"total_tension cannot be negative, got {self.total_tension}.")
 
     def current_step(self) -> Optional[PlanStep]:
@@ -82,6 +94,8 @@ class GoalPlanner:
 
     def create_plan(self, goal: str) -> Plan:
         """Decomposes a goal into a structured, executable Plan."""
+        if not isinstance(goal, str) or not goal.strip():
+            raise ValidationError("goal must be a non-empty string.")
         steps: List[PlanStep] = []
         goal_lower = goal.lower()
 
@@ -179,6 +193,9 @@ class GoalPlanner:
 
             # Check for replanning triggers
             if not result.success or (plan.total_cost + current_membrane_tension > self.max_cost_limit):
+                if step.tool_params.get("_recovery"):
+                    plan.status = "FAILED"
+                    return result
                 self.replan(plan, reason=f"Step {step.step_id} failure or cost limit exceeded.")
                 return result
 
@@ -195,16 +212,20 @@ class GoalPlanner:
     def replan(self, plan: Plan, reason: str) -> None:
         """Adjusts remaining steps in response to execution failures or envelope pressure."""
         plan.status = "REPLANNING"
+        if any(s.tool_params.get("_recovery") for s in plan.steps if not s.completed):
+            plan.status = "FAILED"
+            return
         remaining_steps = [s for s in plan.steps if not s.completed]
 
         # Insert a recovery / memory retrieval step before remaining steps
         recovery_step = PlanStep(
-            step_id=len(plan.steps) + 1,
+            step_id=max((s.step_id for s in plan.steps), default=0) + 1,
             description=f"Recovery reflection step due to: {reason}",
             tool_name="MemoryRetrievalTool",
-            tool_params={"type": "recovery_log", "tag": reason[:20]},
+            tool_params={"type": "recovery_log", "tag": reason[:20], "_recovery": True},
         )
-        plan.steps.append(recovery_step)
+        completed_steps = [s for s in plan.steps if s.completed]
+        plan.steps = completed_steps + [recovery_step] + remaining_steps
 
         # Simplify or substitute failed steps if any
         for step in remaining_steps:

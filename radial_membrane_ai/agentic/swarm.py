@@ -9,6 +9,7 @@ Agents bid based on quantitative membrane state, stability margins, and capabili
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 from typing import Any, Dict, List, Optional, Sequence
 from radial_membrane_ai.exceptions import ValidationError
 
@@ -30,6 +31,11 @@ class AgentBid:
 
     def validate(self) -> None:
         """Enforces bid metrics invariants."""
+        metrics = (self.bid_score, self.estimated_cost, self.estimated_tension, self.membrane_stability_margin)
+        if not all(isinstance(value, (int, float)) and math.isfinite(value) for value in metrics):
+            raise ValidationError("bid metrics must be finite numeric values.")
+        if not self.agent_id or not self.contract_id:
+            raise ValidationError("agent_id and contract_id cannot be empty.")
         if self.bid_score < 0.0:
             raise ValidationError(f"bid_score cannot be negative, got {self.bid_score}.")
         if self.estimated_cost < 0.0:
@@ -59,8 +65,10 @@ class SwarmContract:
 
     def validate(self) -> None:
         """Enforces swarm contract invariants."""
-        if self.max_budget <= 0.0:
+        if not isinstance(self.max_budget, (int, float)) or not math.isfinite(self.max_budget) or self.max_budget <= 0.0:
             raise ValidationError(f"max_budget must be positive, got {self.max_budget}.")
+        if not self.contract_id or not self.goal:
+            raise ValidationError("contract_id and goal cannot be empty.")
 
 
 class SwarmAuctioneer:
@@ -78,6 +86,8 @@ class SwarmAuctioneer:
         max_budget: float = 10.0,
     ) -> SwarmContract:
         """Creates and registers a new open swarm task contract."""
+        if contract_id in self.contracts:
+            raise ValidationError(f"Contract '{contract_id}' already exists.")
         contract = SwarmContract(
             contract_id=contract_id,
             goal=goal,
@@ -98,6 +108,10 @@ class SwarmAuctioneer:
         cost_weight: float = 0.5,
     ) -> Optional[AgentBid]:
         """Calculates a quantitative bid for an agent based on membrane state and capabilities."""
+        if not all(math.isfinite(v) for v in (current_tension, stability_band_margin, cost_weight)):
+            raise ValidationError("bid inputs must be finite.")
+        if current_tension < 0.0 or cost_weight < 0.0:
+            raise ValidationError("current_tension and cost_weight cannot be negative.")
         # Capability overlap check
         matched = [cap for cap in contract.required_capabilities if cap in agent_capabilities]
         if not matched and contract.required_capabilities:
@@ -143,7 +157,11 @@ class SwarmAuctioneer:
 
         # Filter admissible bids (cost <= budget, positive stability margin) and sort deterministically
         admissible_bids = [
-            b for b in bids if b.estimated_cost <= contract.max_budget and b.membrane_stability_margin > 0.0
+            b for b in bids
+            if b.contract_id == contract_id
+            and set(contract.required_capabilities).issubset(set(b.agent_capabilities))
+            and b.estimated_cost <= contract.max_budget
+            and b.membrane_stability_margin > 0.0
         ]
         if not admissible_bids:
             contract.status = "FAILED"

@@ -41,6 +41,10 @@ def angular_decomposition(
     Returns:
         A tuple (a, b) of orthogonal legs.
     """
+    if not isinstance(samples, int) or isinstance(samples, bool) or samples <= 0:
+        raise ValueError("samples must be a positive integer.")
+    if not math.isfinite(theta):
+        raise ValueError("theta must be finite.")
     integral_cos = 0.0
     integral_sin = 0.0
 
@@ -299,6 +303,8 @@ def global_closure_aggregation(
     Samples angles uniformly and computes the average ratio, max ratio,
     and a global admissibility flag (True if all sampled points are admissible).
     """
+    if not isinstance(samples, int) or isinstance(samples, bool) or samples <= 0:
+        raise ValueError("samples must be a positive integer.")
     ratios = []
     dtheta = (2.0 * math.pi) / samples
     all_admissible = True
@@ -326,6 +332,10 @@ class AdmissibilityGate:
     """
 
     def __init__(self, tol: float = 0.2, legacy_mode: str = "soft") -> None:
+        if not math.isfinite(tol) or tol < 0.0:
+            raise ValueError("tol must be finite and non-negative.")
+        if legacy_mode not in {"soft", "hard"}:
+            raise ValueError("legacy_mode must be 'soft' or 'hard'.")
         self.tol = tol
         self.legacy_mode = legacy_mode
 
