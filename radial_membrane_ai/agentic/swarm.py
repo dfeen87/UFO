@@ -65,7 +65,11 @@ class SwarmContract:
 
     def validate(self) -> None:
         """Enforces swarm contract invariants."""
-        if not isinstance(self.max_budget, (int, float)) or not math.isfinite(self.max_budget) or self.max_budget <= 0.0:
+        if (
+            not isinstance(self.max_budget, (int, float))
+            or not math.isfinite(self.max_budget)
+            or self.max_budget <= 0.0
+        ):
             raise ValidationError(f"max_budget must be positive, got {self.max_budget}.")
         if not self.contract_id or not self.goal:
             raise ValidationError("contract_id and goal cannot be empty.")

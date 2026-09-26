@@ -76,7 +76,10 @@ class ReflectionEngine:
         if not all(math.isfinite(value) and value >= 0.0 for value in (current_tension, current_curvature)):
             raise ValidationError("current tension and curvature must be finite and non-negative.")
         tool_failed = tool_result is not None and not tool_result.success
-        high_instability = (current_tension >= self.tension_threshold) or (current_curvature >= self.curvature_threshold)
+        high_instability = (
+            current_tension >= self.tension_threshold
+            or current_curvature >= self.curvature_threshold
+        )
 
         if not tool_failed and not high_instability:
             return None  # No reflection trigger active
