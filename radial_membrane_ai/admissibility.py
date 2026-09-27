@@ -332,10 +332,10 @@ class AdmissibilityGate:
     """
 
     def __init__(self, tol: float = 0.2, legacy_mode: str = "soft") -> None:
-        if not math.isfinite(tol) or tol < 0.0:
-            raise ValueError("tol must be finite and non-negative.")
-        if legacy_mode not in {"soft", "hard"}:
-            raise ValueError("legacy_mode must be 'soft' or 'hard'.")
+        # Keep construction permissive so configuration errors are reported by
+        # the handshake's governance boundary.  ``check_legacy_handshake``
+        # already supplies a safe tolerance for non-finite values, while the
+        # adapter turns unknown modes into the domain-specific GovernanceError.
         self.tol = tol
         self.legacy_mode = legacy_mode
 
