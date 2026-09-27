@@ -465,9 +465,9 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        if args.agentic or args.mode == "agentic":
+        if getattr(args, "agentic", False) or getattr(args, "mode", None) == "agentic":
             run_agentic_cli(args)
-        elif args.agentic_swarm or args.mode == "agentic-swarm":
+        elif getattr(args, "agentic_swarm", False) or getattr(args, "mode", None) == "agentic-swarm":
             run_agentic_swarm_cli(args)
         else:
             run_simulation(args)
