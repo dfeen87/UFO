@@ -449,8 +449,12 @@ class MultiClusterEngine:
                             max_t = float(np.max([ts.accumulated_tension for ts in agent_t_states]))
                             cluster_tension = mean_t + 0.1 * max_t
 
+                            # Curvature is a magnitude for temporal-history purposes.  Averaging
+                            # the signed finite-difference values can otherwise produce a tiny
+                            # negative value for a flat boundary because of floating-point noise.
                             cluster_curv_drift = float(np.mean([
-                                cluster.boundary.curvature(s.theta) for s in cluster.membrane.strings
+                                abs(cluster.boundary.curvature(s.theta))
+                                for s in cluster.membrane.strings
                             ]))
 
                             cluster_cl = float(np.mean([s.activation for s in cluster.membrane.strings]))
