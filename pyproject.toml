@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "radial_membrane_ai"
-version = "3.0.0"
+version = "4.0.0"
 description = "A governed deformable radial membrane model for compute-aware AI personalization"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,12 +18,15 @@ dependencies = [
     "matplotlib"
 ]
 
+[project.scripts]
+ufo = "ufo_cli:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["radial_membrane_ai*"]
 
-[tool.poetry.scripts]
-ufo = "ufo_cli:main"
+[tool.setuptools]
+py-modules = ["ufo_cli"]
 
 [dependency-groups]
 dev = [

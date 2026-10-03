@@ -27,6 +27,17 @@ class BehavioralString:
 
     def validate(self) -> None:
         """Enforces strict invariants on BehavioralString."""
+        numeric_fields = {
+            "theta": self.theta,
+            "activation": self.activation,
+            "radius": self.radius,
+            "cost": self.cost,
+            "tension": self.tension,
+            "stiffness": self.stiffness,
+        }
+        for name, value in numeric_fields.items():
+            if not isinstance(value, (int, float, np.number)) or not math.isfinite(float(value)):
+                raise ValidationError(f"{name} must be a finite number, got {value!r}.")
         if self.radius < 0.0:
             raise GeometryValidationError(f"Radius cannot be negative, got {self.radius}.")
         if self.tension < 0.0:
@@ -84,6 +95,10 @@ class RadialMembrane:
             c_baseline: Configurable baseline cost for each string.
             basis_sigma: Standard deviation for the Gaussian basis functions.
         """
+        if not math.isfinite(c_baseline) or c_baseline < 0.0:
+            raise ValidationError("c_baseline must be finite and non-negative.")
+        if not math.isfinite(basis_sigma) or basis_sigma <= 0.0:
+            raise GeometryValidationError("basis_sigma must be finite and strictly positive.")
         self.c_baseline = c_baseline
         self.basis_sigma = basis_sigma
 
@@ -141,11 +156,14 @@ class RadialMembrane:
         Args:
             delta: numpy array of shape (12,) containing delta activation values.
         """
-        if len(delta) != 12:
+        candidate = np.asarray(delta, dtype=np.float64)
+        if candidate.shape != (12,):
             raise ValueError("Delta vector must have length 12.")
+        if not np.all(np.isfinite(candidate)):
+            raise ValidationError("Delta vector must contain only finite values.")
 
         for idx, s in enumerate(self.strings):
-            new_activation = s.activation + float(delta[idx])
+            new_activation = s.activation + float(candidate[idx])
             # Clamp activation between 0.0 and 1.0
             s.activation = max(0.0, min(1.0, new_activation))
 

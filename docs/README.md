@@ -9,6 +9,10 @@ one place.
 - [Legacy compute bridge](legacy_compute_bridge.md)
 - [Multi-agent design](multi-agent-design.md)
 
+## Releases
+
+- [Version 4.0.0 — BEDROCK engineering baseline](releases/4.0.0.md)
+
 ## Papers
 
 The complete set of project papers is available in [`papers/`](papers/):
