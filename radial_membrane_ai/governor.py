@@ -33,10 +33,16 @@ class GovernorConfig:
             ("lyapunov_gamma", self.lyapunov_gamma)
         ]
         for w_name, w_val in weights:
+            if not math.isfinite(w_val):
+                raise ValidationError(f"Weight {w_name} must be finite, got {w_val}.")
             if w_val < 0.0:
                 raise ValidationError(f"Weight {w_name} must be non-negative, got {w_val}.")
+        if not math.isfinite(self.learning_rate):
+            raise ValidationError(f"learning_rate must be finite, got {self.learning_rate}.")
         if self.learning_rate <= 0.0:
             raise ValidationError(f"learning_rate must be strictly positive, got {self.learning_rate}.")
+        if not math.isfinite(self.suppression_weight):
+            raise ValidationError(f"suppression_weight must be finite, got {self.suppression_weight}.")
         if self.suppression_weight < 0.0:
             raise ValidationError(f"suppression_weight must be non-negative, got {self.suppression_weight}.")
 

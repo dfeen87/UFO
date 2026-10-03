@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Don Michael Feeney Jr.
 # Standard MIT License applies.
 
-"""Agentic AI subsystem for Version 3.0.0 U.F.O. architecture."""
+"""Agentic AI subsystem for the Version 4.0.0 U.F.O. runtime."""
 
 from radial_membrane_ai.agentic.tools import (
     BaseTool,

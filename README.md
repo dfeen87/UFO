@@ -1,11 +1,16 @@
 # 🛸 The U.F.O. (User‑Formed Optimization) — Governed Deformable Radial Membrane
 
+**Current release: 4.0.0 (BEDROCK engineering baseline).** Version 4 preserves
+the governed membrane architecture while making finite numerical state,
+atomic activation updates, and fail-closed shard admission explicit contracts.
+See the [Version 4 release notes](docs/releases/4.0.0.md).
+
 **A compute-aware AI personalization architecture that treats behavior as a living, saucer-shaped control surface — not a static personality preset.**
 
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21401979-blue)](https://doi.org/10.5281/zenodo.21401979)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Status](https://img.shields.io/badge/simulation-governed%20model-purple)](#status--validation)
-[![Python 3.9+](https://img.shields.io/badge/python-3.10%2B-pink.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-pink.svg)](https://www.python.org/downloads/)
 [![CI](https://github.com/dfeen87/UFO/actions/workflows/ci.yml/badge.svg)](https://github.com/dfeen87/UFO/actions/workflows/ci.yml)
 
 

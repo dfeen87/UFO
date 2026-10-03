@@ -16,6 +16,7 @@ from typing import List, Any
 
 # Import package components
 from radial_membrane_ai.utils import set_deterministic_env
+from radial_membrane_ai import __version__
 from radial_membrane_ai.exceptions import GovernanceError
 from radial_membrane_ai.ufo_engine import SingleAgentEngine, MultiAgentEngine
 from radial_membrane_ai.agentic.engine import AgenticEngine, AgenticSwarmEngine
@@ -61,7 +62,7 @@ def append_to_halt_log(message: str) -> None:
 
 def run_agentic_cli(args: argparse.Namespace) -> None:
     if not args.quiet:
-        print_banner("🛸 UFO VERSION 3 AGENTIC AI RUNTIME 🛸", ANSI_CYAN)
+        print_banner(f"🛸 UFO VERSION {__version__} AGENTIC AI RUNTIME 🛸", ANSI_CYAN)
 
     agentic_engine = AgenticEngine()
     goal = "Execute code calculation and search knowledge base for UFO architecture"
@@ -81,7 +82,7 @@ def run_agentic_cli(args: argparse.Namespace) -> None:
 
 def run_agentic_swarm_cli(args: argparse.Namespace) -> None:
     if not args.quiet:
-        print_banner("🛸 UFO VERSION 3 AGENTIC SWARM RUNTIME 🛸", ANSI_PURPLE)
+        print_banner(f"🛸 UFO VERSION {__version__} AGENTIC SWARM RUNTIME 🛸", ANSI_PURPLE)
 
     swarm_engine = AgenticSwarmEngine()
     goals = [
@@ -428,12 +429,13 @@ def main() -> None:
         description="Dynamic Terminal Interface for the U.F.O. Governed Runtime.",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
+    parser.add_argument("--version", action="version", version=f"UFO {__version__}")
 
     # Simulation modes
     parser.add_argument("--single", action="store_true", help="Run in Single-Agent Mode (Default)")
     parser.add_argument("--multi", action="store_true", help="Run in Multi-Agent Mode")
-    parser.add_argument("--agentic", action="store_true", help="Run in Version 3 Agentic AI Mode")
-    parser.add_argument("--agentic-swarm", action="store_true", help="Run in Version 3 Agentic Swarm Mode")
+    parser.add_argument("--agentic", action="store_true", help="Run in Version 4 Agentic AI Mode")
+    parser.add_argument("--agentic-swarm", action="store_true", help="Run in Version 4 Agentic Swarm Mode")
     parser.add_argument(
         "--mode", choices=["single", "multi", "agentic", "agentic-swarm"], help="Select Simulation Mode"
     )

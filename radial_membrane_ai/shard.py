@@ -9,6 +9,7 @@ Quarantined, Revoked, Expired.
 """
 
 from __future__ import annotations
+import math
 from enum import Enum, auto
 from dataclasses import dataclass
 from typing import Dict, Any
@@ -49,10 +50,48 @@ class FederatedShard:
         if self.state in (ShardState.QUARANTINED, ShardState.REVOKED, ShardState.EXPIRED):
             return False
 
+        # This method is a trust boundary. Unknown keys, booleans, non-numeric
+        # values, and non-finite evidence are rejected rather than relying on
+        # comparisons whose NaN semantics can silently fail open.
+        allowed_keys = {"capacity", "privacy", "latency", "cost"}
+        if not isinstance(workload, dict) or not set(workload).issubset(allowed_keys):
+            return False
+        if not isinstance(self.state, ShardState) or not isinstance(self.consent_granted, bool):
+            return False
+
+        shard_evidence = (
+            self.capacity, self.privacy_level, self.latency, self.cost_factor,
+            self.trust_score, self.policy_compliance, self.quality_score,
+        )
+        if any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            for value in shard_evidence
+        ):
+            return False
+        if any(value < 0.0 for value in shard_evidence):
+            return False
+        normalized_evidence = (
+            self.trust_score, self.policy_compliance, self.privacy_level, self.quality_score,
+        )
+        if any(value > 1.0 for value in normalized_evidence):
+            return False
+
         required_capacity = workload.get("capacity", 0.1)
         required_privacy = workload.get("privacy", 0.5)
         max_latency = workload.get("latency", 100.0)
         max_cost = workload.get("cost", 5.0)
+
+        requirements = (required_capacity, required_privacy, max_latency, max_cost)
+        if any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            or value < 0.0
+            for value in requirements
+        ):
+            return False
 
         if not self.consent_granted:
             return False
