@@ -14,7 +14,7 @@ from radial_membrane_ai.channels import (
     activation_weight, channel_coherence, inverse_cost_weight,
     max_field_activation, phase_alignment, update_radius_along_channel,
 )
-from radial_membrane_ai.exceptions import GeometryValidationError, ValidationError
+from radial_membrane_ai.exceptions import ValidationError
 from radial_membrane_ai.facet import FacetVector, TensionState
 from radial_membrane_ai.governor import Governor
 from radial_membrane_ai.holistic import HolisticGovernorField, compute_holistic_field
