@@ -813,6 +813,23 @@ class TransitionSignature:
             raise ValidationError("transition plan evidence must be typed evidence.")
         if self.plan_transition_digest != stable_digest(self.plan_transition):
             raise ValidationError("transition plan identity mismatch.")
+        if (self.verification.proposal_digest != self.proposal_digest
+                or self.residual.proposal_digest != self.proposal_digest
+                or self.plan_transition.proposal_digest != self.proposal_digest):
+            raise ValidationError("transition proposal provenance mismatch.")
+        if self.plan_transition.action_id != self.action_id:
+            raise ValidationError("transition action provenance mismatch.")
+        if (self.plan_transition.prior_plan_revision != self.source_plan_revision
+                or self.plan_transition.resulting_plan_revision != self.resulting_plan_revision):
+            raise ValidationError("transition plan revision provenance mismatch.")
+        candidate = self.memory_evidence.candidate
+        if candidate is not None and (
+            candidate.intent_digest != self.intent_digest
+            or candidate.plan_revision != self.source_plan_revision
+            or candidate.proposal_digest != self.proposal_digest
+            or candidate.verification_digest != self.verification_digest
+        ):
+            raise ValidationError("transition memory candidate provenance mismatch.")
         if not isinstance(self.closure, ClosureResult):
             raise ValidationError("transition closure must be typed evidence.")
         if self.closure_digest != stable_digest(self.closure):
