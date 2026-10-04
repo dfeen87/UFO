@@ -15,7 +15,7 @@ from radial_membrane_ai.agentic.contracts import GovernedRunResult, IntentContra
 from radial_membrane_ai.exceptions import ValidationError
 
 
-@dataclass
+@dataclass(frozen=True)
 class AgentBid:
     """A bid submitted by a UFO agent for a swarm task contract."""
 
@@ -24,10 +24,11 @@ class AgentBid:
     bid_score: float
     estimated_cost: float
     estimated_tension: float
-    agent_capabilities: List[str] = field(default_factory=list)
+    agent_capabilities: Sequence[str] = field(default_factory=tuple)
     membrane_stability_margin: float = 1.0
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "agent_capabilities", tuple(self.agent_capabilities))
         self.validate()
 
     def validate(self) -> None:
@@ -107,18 +108,39 @@ class GovernedSwarmResult:
     task: GovernedSwarmTask
     selected_agent_id: str
     winning_bid: AgentBid
+    admissible_bids: tuple[AgentBid, ...]
     selection_digest: str
+    pre_execution_state_fingerprint: str
+    execution_binding_digest: str
     governed_run: GovernedRunResult
 
     def __post_init__(self) -> None:
-        if self.winning_bid.contract_id != self.task.contract_id:
-            raise ValidationError("winning bid is not bound to the governed swarm task.")
+        object.__setattr__(self, "admissible_bids", tuple(self.admissible_bids))
+        if not self.admissible_bids or len({bid.agent_id for bid in self.admissible_bids}) != len(
+            self.admissible_bids
+        ):
+            raise ValidationError("selection requires unique admissible agent bids.")
+        for bid in self.admissible_bids:
+            if (
+                bid.contract_id != self.task.contract_id
+                or not set(self.task.required_capabilities).issubset(bid.agent_capabilities)
+                or bid.estimated_cost > self.task.max_selection_budget
+                or bid.membrane_stability_margin <= 0.0
+            ):
+                raise ValidationError("selection contains a bid inadmissible for the governed task.")
+        deterministic_bids = tuple(sorted(
+            self.admissible_bids, key=lambda bid: (-bid.bid_score, bid.agent_id)
+        ))
+        deterministic_winner = deterministic_bids[0]
+        if self.winning_bid != deterministic_winner:
+            raise ValidationError("winning bid does not match the deterministic auction winner.")
         if self.winning_bid.agent_id != self.selected_agent_id:
-            raise ValidationError("selected agent and winning bid disagree.")
+            raise ValidationError("selected agent is not the deterministic auction winner.")
         expected = stable_digest({
             "task": self.task,
             "selected_agent_id": self.selected_agent_id,
             "winning_bid": self.winning_bid,
+            "admissible_bids": deterministic_bids,
         })
         if self.selection_digest != expected:
             raise ValidationError("governed swarm selection evidence is forged.")
@@ -127,6 +149,20 @@ class GovernedSwarmResult:
             or self.governed_run.intent_digest != self.task.intent.intent_digest
         ):
             raise ValidationError("governed swarm run is not bound to its explicit intent.")
+        if not self.governed_run.receipts:
+            raise ValidationError("governed swarm run requires initial execution evidence.")
+        initial_receipt = self.governed_run.receipts[0]
+        if initial_receipt.initial_state_fingerprint != self.pre_execution_state_fingerprint:
+            raise ValidationError("governed run is not bound to the winner's pre-execution state.")
+        expected_execution_binding = stable_digest({
+            "selection_digest": self.selection_digest,
+            "selected_agent_id": self.selected_agent_id,
+            "pre_execution_state_fingerprint": self.pre_execution_state_fingerprint,
+            "initial_receipt_digest": stable_digest(initial_receipt),
+            "intent_digest": self.task.intent.intent_digest,
+        })
+        if self.execution_binding_digest != expected_execution_binding:
+            raise ValidationError("governed swarm execution binding is forged.")
 
 
 class SwarmAuctioneer:
