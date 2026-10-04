@@ -174,7 +174,7 @@ def finalized_first_cycle():
         PlanTransitionType.VERIFIED_STEP,
         active_plan.revision,
         ("VERIFIED_STEP_COMMITTED",),
-    ))
+    ), plan_transition_finalized=True)
     feedback = engine._build_feedback_context(governed_intent, receipt, 0)
     return engine, governed_intent, active_plan, budget, receipt, feedback
 
