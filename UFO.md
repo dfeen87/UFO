@@ -253,20 +253,20 @@ A proposed state change should not become authoritative merely because the compo
 
 Accordingly, Paper XII generalizes reflection into
 
-$$\Delta M_{t}^{*} = F\left( \rho_{t},X_{t} \right),$$
+$$\Delta M_{t}^{\ast} = F\left( \rho_{t},X_{t} \right),$$
 
-where $\Delta M_{t}^{*}$ is a **candidate** membrane modification derived from current residual evidence and system state.
+where $\Delta M_{t}^{\ast}$ is a **candidate** membrane modification derived from current residual evidence and system state.
 
 A candidate membrane state is then constructed as
 
-$$M_{t}^{*} = M_{t} + \Delta M_{t}^{*},$$
+$$M_{t}^{\ast} = M_{t} + \Delta M_{t}^{\ast},$$
 
 followed by an explicit validation and commit boundary:
 
-$$M_{t + 1} = \left\{ \begin{matrix}
-M_{t}^{*}, & \mathrm{Valid}\left( M_{t}^{*} \right), \\
-M_{t}, & \text{otherwise}.
-\end{matrix} \right.\ $$
+$$M_{t + 1} = \left\lbrace  \begin{array}{l}
+M_{t}^{\ast}, \quad \mathrm{Valid}\left( M_{t}^{\ast} \right), \cr
+M_{t}, \quad \text{otherwise}.
+\end{array} \right.$$
 
 This extends BEDROCK's candidate–validate–commit discipline into agentic self-modification.
 
@@ -355,7 +355,7 @@ This result generalizes beyond SAO.
 Agentic execution should obey the same rule:
 
 $$\boxed{\begin{matrix}
-\text{No authoritative evidence of an event should be committed} \\
+\text{No authoritative evidence of an event should be committed} \cr
 \text{before the final governing verdict for that event exists.}
 \end{matrix}}$$
 
@@ -466,7 +466,7 @@ The cycle is modeled as a sequence of discrete governed transitions indexed by $
 The complete agentic cycle is represented as
 
 $$\begin{matrix}
-\text{Intent} \rightarrow \text{Plan} \rightarrow \text{Admission} \rightarrow \text{Execution} \rightarrow \text{Observation} \\
+\text{Intent} \rightarrow \text{Plan} \rightarrow \text{Admission} \rightarrow \text{Execution} \rightarrow \text{Observation} \cr
  \rightarrow \text{Verification} \rightarrow \text{Residual} \rightarrow \text{Reflection} \rightarrow \text{Memory} \rightarrow \text{Closure}.
 \end{matrix}$$
 
@@ -534,7 +534,7 @@ The admissibility layer evaluates whether the proposal remains consistent with t
 
 A useful verdict domain is
 
-$$V_{t}^{-} \in \{\text{ADMIT},\text{CONSTRAIN},\text{REPROJECT},\text{BLOCK},\text{ESCALATE}\}.$$
+$$V_{t}^{-} \in \lbrace \text{ADMIT},\text{CONSTRAIN},\text{REPROJECT},\text{BLOCK},\text{ESCALATE}\rbrace .$$
 
 ADMIT permits execution of the specific approved proposal.
 
@@ -570,7 +570,7 @@ This boundary is important because external side effects cannot always be revers
 
 Execution may result in several states:
 
-$$S_{t}^{E} \in \{\text{NOT\_EXECUTED},\text{EXECUTED},\text{FAILED},\text{OUTCOME\_UNKNOWN}\}.$$
+$$S_{t}^{E} \in \lbrace \text{NOT\textunderscore EXECUTED},\text{EXECUTED},\text{FAILED},\text{OUTCOME\textunderscore UNKNOWN}\rbrace .$$
 
 NOT_EXECUTED indicates that the action never crossed the execution boundary.
 
@@ -584,11 +584,11 @@ This last state prevents a common agentic failure mode. If a consequential exter
 
 Therefore,
 
-$$\boxed{\text{OUTCOME\_UNKNOWN} \neq \text{FAILED}}$$
+$$\boxed{\text{OUTCOME\textunderscore UNKNOWN} \neq \text{FAILED}}$$
 
 and particularly for non-idempotent or irreversible actions,
 
-$$\text{OUTCOME\_UNKNOWN} \nRightarrow \text{automatic retry}.$$
+$$\text{OUTCOME\textunderscore UNKNOWN} \nRightarrow \text{automatic retry}.$$
 
 This uncertainty must instead become evidence for verification, reconciliation, and possibly escalation.
 
@@ -660,24 +660,24 @@ This evidence drives the next stage.
 
 Reflection consumes the residual together with the existing system state:
 
-$$\Delta X_{t}^{*}\mathcal{= F}\left( \rho_{t},X_{t} \right),$$
+$$\Delta X_{t}^{\ast}\mathcal{= F}\left( \rho_{t},X_{t} \right),$$
 
-where $\mathcal{F}$ denotes the reflection operator and $\Delta X_{t}^{*}$ is a proposed corrective state change.
+where $\mathcal{F}$ denotes the reflection operator and $\Delta X_{t}^{\ast}$ is a proposed corrective state change.
 
 The asterisk indicates that this transition is still a **candidate**.
 
 A candidate next state may then be constructed:
 
-$$X_{t + 1}^{*} = X_{t} \oplus \Delta X_{t}^{*},$$
+$$X_{t + 1}^{\ast} = X_{t} \oplus \Delta X_{t}^{\ast},$$
 
 where $\oplus$ represents the applicable state-composition operation.
 
 The candidate must be validated before becoming authoritative:
 
-$$X_{t + 1} = \left\{ \begin{matrix}
-X_{t + 1}^{*}, & \mathrm{Valid}\left( X_{t + 1}^{*} \right) = 1, \\
-X_{t}, & \mathrm{Valid}\left( X_{t + 1}^{*} \right) = 0.
-\end{matrix} \right.\ $$
+$$X_{t + 1} = \left\lbrace  \begin{array}{l}
+X_{t + 1}^{\ast}, \quad \mathrm{Valid}\left( X_{t + 1}^{\ast} \right) = 1, \cr
+X_{t}, \quad \mathrm{Valid}\left( X_{t + 1}^{\ast} \right) = 0.
+\end{array} \right.$$
 
 This extends BEDROCK's atomic update discipline directly into the agentic loop.
 
@@ -727,7 +727,7 @@ where $\mathcal{C}_{A}$ is the **Agentic Closure Operator** and $D_{t}$ is the c
 
 A representative decision domain is
 
-$$D_{t} \in \{\text{CONTINUE},\text{REPLAN},\text{CONSTRAIN},\text{REFLECT},\text{ESCALATE},\text{HALT\_SUCCESS},\text{HALT\_FAILURE}\}.$$
+$$D_{t} \in \lbrace \text{CONTINUE},\text{REPLAN},\text{CONSTRAIN},\text{REFLECT},\text{ESCALATE},\text{HALT\textunderscore SUCCESS},\text{HALT\textunderscore FAILURE}\rbrace .$$
 
 The important distinction is that closure occurs **after** the consequences of the previous action have been reconciled.
 
@@ -745,11 +745,11 @@ $$\left( I,X_{t + 1} \right)\overset{\mathcal{P}}{\rightarrow}a_{t + 1}.$$
 
 By contrast,
 
-$$D_{t} = \text{HALT\_SUCCESS}$$
+$$D_{t} = \text{HALT\textunderscore SUCCESS}$$
 
 terminates because the intent's success conditions have been sufficiently satisfied, while
 
-$$D_{t} = \text{HALT\_FAILURE}$$
+$$D_{t} = \text{HALT\textunderscore FAILURE}$$
 
 terminates because the system has reached a state from which autonomous execution should not continue under the current contract.
 
@@ -765,7 +765,7 @@ Continued autonomy is a new decision.
 
 The complete Paper XII execution model can therefore be written as
 
-$$\left( I,X_{t} \right)\overset{\mathcal{P}}{\rightarrow}a_{t}\overset{\mathcal{A}^{-}}{\rightarrow}V_{t}^{-}\underset{\; V_{t}^{-} = \mathrm{ADMIT}\;}{\rightarrow }e_{t}\overset{\mathcal{O}}{\rightarrow}o_{t}\overset{\mathcal{V}}{\rightarrow}q_{t}\overset{\mathcal{R}}{\rightarrow}\rho_{t}\overset{\mathcal{F}}{\rightarrow}X_{t + 1}^{*}\overset{\text{Validate/Commit}}{\rightarrow}X_{t + 1}\overset{\mathcal{C}_{A}}{\rightarrow}D_{t}.$$
+$$\left( I,X_{t} \right)\overset{\mathcal{P}}{\rightarrow}a_{t}\overset{\mathcal{A}^{-}}{\rightarrow}V_{t}^{-}\underset{\  V_{t}^{-} = \mathrm{ADMIT}\ }{\rightarrow }e_{t}\overset{\mathcal{O}}{\rightarrow}o_{t}\overset{\mathcal{V}}{\rightarrow}q_{t}\overset{\mathcal{R}}{\rightarrow}\rho_{t}\overset{\mathcal{F}}{\rightarrow}X_{t + 1}^{\ast}\overset{\text{Validate/Commit}}{\rightarrow}X_{t + 1}\overset{\mathcal{C}_{A}}{\rightarrow}D_{t}.$$
 
 Memory qualification may occur from verified evidence produced during this sequence, but it does not bypass the final closure decision.
 
@@ -1123,7 +1123,7 @@ execution_evidence
 
 The exact representation may differ between tools, but the execution state must distinguish:
 
-$$\{\text{NOT\_EXECUTED},\text{EXECUTED},\text{FAILED},\text{OUTCOME\_UNKNOWN}\}.$$
+$$\lbrace \text{NOT\textunderscore EXECUTED},\text{EXECUTED},\text{FAILED},\text{OUTCOME\textunderscore UNKNOWN}\rbrace .$$
 
 The distinction between FAILED and OUTCOME_UNKNOWN is mandatory whenever external side effects may exist.
 
@@ -1131,7 +1131,7 @@ The distinction between FAILED and OUTCOME_UNKNOWN is mandatory whenever externa
 
 Actions should also be assigned an execution class such as
 
-$$S\left( a_{t} \right) \in \{\text{OBSERVATIONAL},\text{REVERSIBLE},\text{COMPENSATABLE},\text{IRREVERSIBLE}\}.$$
+$$S\left( a_{t} \right) \in \lbrace \text{OBSERVATIONAL},\text{REVERSIBLE},\text{COMPENSATABLE},\text{IRREVERSIBLE}\rbrace .$$
 
 An observational action is intended to read or inspect state.
 
@@ -1145,13 +1145,13 @@ The classification affects retry and escalation policy.
 
 In particular:
 
-$$S\left( a_{t} \right) = \text{IRREVERSIBLE} \land S_{t}^{E} = \text{OUTCOME\_UNKNOWN}$$
+$$S\left( a_{t} \right) = \text{IRREVERSIBLE} \land S_{t}^{E} = \text{OUTCOME\textunderscore UNKNOWN}$$
 
 must not automatically transition back to execution.
 
 Instead,
 
-$$\text{OUTCOME\_UNKNOWN} \rightarrow \text{VERIFY or ESCALATE}.$$
+$$\text{OUTCOME\textunderscore UNKNOWN} \rightarrow \text{VERIFY or ESCALATE}.$$
 
 This prevents uncertain side effects from being duplicated by naïve retry logic.
 
@@ -1177,7 +1177,7 @@ verification_method
 
 The status should distinguish at least:
 
-$$Q_{t} \in \{\text{VERIFIED},\text{PARTIAL},\text{FAILED},\text{UNKNOWN}\}.$$
+$$Q_{t} \in \lbrace \text{VERIFIED},\text{PARTIAL},\text{FAILED},\text{UNKNOWN}\rbrace .$$
 
 VERIFIED indicates that the required postconditions are satisfied by available evidence.
 
@@ -1247,7 +1247,7 @@ $$\left( \rho_{t},X_{t} \right)$$
 
 and produces
 
-$$\Delta X_{t}^{*}.$$
+$$\Delta X_{t}^{\ast}.$$
 
 The reflection contract should identify:
 
@@ -1273,7 +1273,7 @@ $$\text{reflection commit}.$$
 
 The resulting transition must preserve atomicity:
 
-$$X_{t} \rightarrow X_{t + 1}^{*} \rightarrow \mathrm{Validate} \rightarrow X_{t + 1}.$$
+$$X_{t} \rightarrow X_{t + 1}^{\ast} \rightarrow \mathrm{Validate} \rightarrow X_{t + 1}.$$
 
 If validation fails, then
 
@@ -1328,7 +1328,7 @@ The closure operator evaluates whether another autonomous action remains permiss
 
 The decision domain is
 
-$$D_{t} \in \{\text{CONTINUE},\text{REPLAN},\text{CONSTRAIN},\text{REFLECT},\text{ESCALATE},\text{HALT\_SUCCESS},\text{HALT\_FAILURE}\}.$$
+$$D_{t} \in \lbrace \text{CONTINUE},\text{REPLAN},\text{CONSTRAIN},\text{REFLECT},\text{ESCALATE},\text{HALT\textunderscore SUCCESS},\text{HALT\textunderscore FAILURE}\rbrace .$$
 
 A closure result should contain at least:
 
@@ -1350,7 +1350,7 @@ This record makes continuation explainable.
 
 A successful termination requires satisfaction of the Intent Contract's success conditions:
 
-$$\sigma(I) = 1 \Rightarrow D_{t} = \text{HALT\_SUCCESS}$$
+$$\sigma(I) = 1 \Rightarrow D_{t} = \text{HALT\textunderscore SUCCESS}$$
 
 provided no mandatory unresolved condition prohibits success.
 
@@ -1460,15 +1460,15 @@ Likewise, no stage should acquire authority merely because it received data prod
 
 This produces a concise set of v5 contract rules:
 
-$$\boxed{\begin{matrix}
-\text{Intent} & \neq \text{Plan}, \\
-\text{Plan} & \neq \text{Authorization}, \\
-\text{Authorization} & \neq \text{Execution Result}, \\
-\text{Execution Result} & \neq \text{Verified Outcome}, \\
-\text{Observation} & \neq \text{Durable Memory}, \\
-\text{Reflection Proposal} & \neq \text{Committed State}, \\
-\text{Action Completion} & \neq \text{Continued Authority}.
-\end{matrix}}$$
+$$\boxed{\begin{array}{l}
+\text{Intent} \neq \text{Plan}, \cr
+\text{Plan} \neq \text{Authorization}, \cr
+\text{Authorization} \neq \text{Execution Result}, \cr
+\text{Execution Result} \neq \text{Verified Outcome}, \cr
+\text{Observation} \neq \text{Durable Memory}, \cr
+\text{Reflection Proposal} \neq \text{Committed State}, \cr
+\text{Action Completion} \neq \text{Continued Authority}.
+\end{array}}$$
 
 These contracts provide the implementation vocabulary required for U.F.O. v5.0.0.
 
@@ -1588,7 +1588,7 @@ may permit the corresponding execution attempt.
 
 Therefore,
 
-$$V_{t}^{-} \neq \text{ADMIT} \Rightarrow S_{t}^{E} = \text{NOT\_EXECUTED}.$$
+$$V_{t}^{-} \neq \text{ADMIT} \Rightarrow S_{t}^{E} = \text{NOT\textunderscore EXECUTED}.$$
 
 This rule applies regardless of how the proposal was produced.
 
@@ -1654,7 +1654,7 @@ $$\text{routed=True} \nRightarrow \text{admissible},$$
 
 $$\text{selected=True} \nRightarrow \text{authorized},$$
 
-$$\text{tool\_success = True} \nRightarrow \text{verified},$$
+$$\text{tool\textunderscore success = True} \nRightarrow \text{verified},$$
 
 and
 
@@ -1728,22 +1728,22 @@ Any internal state transition that may affect future agent behavior must obey at
 
 Let
 
-$$X_{t + 1}^{*}$$
+$$X_{t + 1}^{\ast}$$
 
 represent a candidate next state.
 
 Then
 
-$$X_{t + 1} = \left\{ \begin{matrix}
-X_{t + 1}^{*}, & \mathrm{Valid}\left( X_{t + 1}^{*} \right) = 1, \\
-X_{t}, & \mathrm{Valid}\left( X_{t + 1}^{*} \right) = 0.
-\end{matrix} \right.\ $$
+$$X_{t + 1} = \left\lbrace  \begin{array}{l}
+X_{t + 1}^{\ast}, \quad \mathrm{Valid}\left( X_{t + 1}^{\ast} \right) = 1, \cr
+X_{t}, \quad \mathrm{Valid}\left( X_{t + 1}^{\ast} \right) = 0.
+\end{array} \right.$$
 
 The failed case must preserve the previous authoritative state.
 
 Therefore,
 
-$$\mathrm{Rejected}\left( X_{t + 1}^{*} \right) \Rightarrow X_{t + 1} = X_{t}.$$
+$$\mathrm{Rejected}\left( X_{t + 1}^{\ast} \right) \Rightarrow X_{t + 1} = X_{t}.$$
 
 There must be no intermediate result such as:
 
@@ -1847,7 +1847,7 @@ External execution introduces a condition that internal state transitions do not
 
 Accordingly,
 
-$$\text{OUTCOME\_UNKNOWN} \neq \text{FAILED}.$$
+$$\text{OUTCOME\textunderscore UNKNOWN} \neq \text{FAILED}.$$
 
 This distinction must remain explicit.
 
@@ -1857,7 +1857,7 @@ $$S\left( a_{t} \right) = \text{IRREVERSIBLE}$$
 
 and
 
-$$S_{t}^{E} = \text{OUTCOME\_UNKNOWN},$$
+$$S_{t}^{E} = \text{OUTCOME\textunderscore UNKNOWN},$$
 
 then the runtime must not infer
 
@@ -2155,18 +2155,18 @@ No individual invariant substitutes for the others.
 
 The cross-cutting requirements of this section can be condensed into the following engineering laws:
 
-$$\boxed{\begin{matrix}
-\text{Proposal} & \neq \text{Authorization}, \\
-\text{Selection} & \neq \text{Authorization}, \\
-\text{Metadata} & \neq \text{Evidence}, \\
-\text{Preliminary Verdict} & \neq \text{Final Verdict}, \\
-\text{Candidate State} & \neq \text{Authoritative State}, \\
-\text{Tool Success} & \neq \text{Verified Outcome}, \\
-\text{Experience} & \neq \text{Durable Memory}, \\
-\text{Unknown Outcome} & \neq \text{Failure}, \\
-\text{Diagnostic Signal} & \neq \text{Permission}, \\
-\text{Action Completion} & \neq \text{Continued Authority}.
-\end{matrix}}$$
+$$\boxed{\begin{array}{l}
+\text{Proposal} \neq \text{Authorization}, \cr
+\text{Selection} \neq \text{Authorization}, \cr
+\text{Metadata} \neq \text{Evidence}, \cr
+\text{Preliminary Verdict} \neq \text{Final Verdict}, \cr
+\text{Candidate State} \neq \text{Authoritative State}, \cr
+\text{Tool Success} \neq \text{Verified Outcome}, \cr
+\text{Experience} \neq \text{Durable Memory}, \cr
+\text{Unknown Outcome} \neq \text{Failure}, \cr
+\text{Diagnostic Signal} \neq \text{Permission}, \cr
+\text{Action Completion} \neq \text{Continued Authority}.
+\end{array}}$$
 
 Each inequality represents a boundary that the v5 implementation must preserve.
 
@@ -2228,7 +2228,7 @@ $$\text{PROPOSED} \rightarrow \text{EXECUTING}$$
 
 would violate $I_{A}$ if admission were bypassed.
 
-$$\text{EXECUTED} \rightarrow \text{HALT\_SUCCESS}$$
+$$\text{EXECUTED} \rightarrow \text{HALT\textunderscore SUCCESS}$$
 
 could violate $I_{V}$.
 
@@ -2337,10 +2337,10 @@ Absence of negative evidence is not positive evidence.
 A conforming runtime may expose the following logical states:
 
 $$\begin{matrix}
-S_{t} \in \{\text{READY},\text{PLANNING},\text{PROPOSED},\text{PREFLIGHT}, \\
-\text{AUTHORIZED},\text{EXECUTING},\text{OBSERVING},\text{VERIFYING}, \\
-\text{RECONCILING},\text{REFLECTING},\text{QUALIFYING\_MEMORY}, \\
-\text{CLOSURE},\text{HALTED},\text{ESCALATED}\}.
+S_{t} \in \lbrace \text{READY},\text{PLANNING},\text{PROPOSED},\text{PREFLIGHT}, \cr
+\text{AUTHORIZED},\text{EXECUTING},\text{OBSERVING},\text{VERIFYING}, \cr
+\text{RECONCILING},\text{REFLECTING},\text{QUALIFYING\textunderscore MEMORY}, \cr
+\text{CLOSURE},\text{HALTED},\text{ESCALATED}\rbrace .
 \end{matrix}$$
 
 These labels describe semantic stages. An implementation does not need one class for every state, but it must preserve their ordering constraints.
@@ -2348,10 +2348,10 @@ These labels describe semantic stages. An implementation does not need one class
 The nominal execution path is
 
 $$\begin{matrix}
-\text{READY} \rightarrow \text{PLANNING} \rightarrow \text{PROPOSED} \rightarrow \text{PREFLIGHT} \\
- \rightarrow \text{AUTHORIZED} \rightarrow \text{EXECUTING} \rightarrow \text{OBSERVING} \\
- \rightarrow \text{VERIFYING} \rightarrow \text{RECONCILING} \rightarrow \text{REFLECTING} \\
- \rightarrow \text{QUALIFYING\_MEMORY} \rightarrow \text{CLOSURE}.
+\text{READY} \rightarrow \text{PLANNING} \rightarrow \text{PROPOSED} \rightarrow \text{PREFLIGHT} \cr
+ \rightarrow \text{AUTHORIZED} \rightarrow \text{EXECUTING} \rightarrow \text{OBSERVING} \cr
+ \rightarrow \text{VERIFYING} \rightarrow \text{RECONCILING} \rightarrow \text{REFLECTING} \cr
+ \rightarrow \text{QUALIFYING\textunderscore MEMORY} \rightarrow \text{CLOSURE}.
 \end{matrix}$$
 
 Closure may then transition to a new cycle or terminate the run.
@@ -2368,13 +2368,13 @@ without passing through prospective admission.
 
 Likewise,
 
-$$\text{EXECUTING} \rightarrow \text{HALT\_SUCCESS}$$
+$$\text{EXECUTING} \rightarrow \text{HALT\textunderscore SUCCESS}$$
 
 must not occur solely because the executor reports success. Verification and closure still have responsibility for determining whether the Intent Contract has actually been satisfied.
 
 A direct transition
 
-$$\text{OBSERVING} \rightarrow \text{DURABLE\_MEMORY}$$
+$$\text{OBSERVING} \rightarrow \text{DURABLE\textunderscore MEMORY}$$
 
 is also prohibited because observations require qualification before becoming persistent state.
 
@@ -2386,13 +2386,13 @@ is valid only after candidate-state validation.
 
 These constraints can be summarized as
 
-$$\boxed{\begin{matrix}
-\text{Proposal} & \rightarrow \text{Admission} \rightarrow \text{Execution}, \\
-\text{Execution} & \rightarrow \text{Observation} \rightarrow \text{Verification}, \\
-\text{Residual} & \rightarrow \text{Candidate State} \rightarrow \text{Validation} \rightarrow \text{Commit}, \\
-\text{Evidence} & \rightarrow \text{Qualification} \rightarrow \text{Promotion} \rightarrow \text{Memory}, \\
-\text{Reconciliation} & \rightarrow \text{Closure} \rightarrow \text{Next Cycle}.
-\end{matrix}}$$
+$$\boxed{\begin{array}{l}
+\text{Proposal} \quad \rightarrow \text{Admission} \rightarrow \text{Execution}, \cr
+\text{Execution} \quad \rightarrow \text{Observation} \rightarrow \text{Verification}, \cr
+\text{Residual} \quad \rightarrow \text{Candidate State} \rightarrow \text{Validation} \rightarrow \text{Commit}, \cr
+\text{Evidence} \quad \rightarrow \text{Qualification} \rightarrow \text{Promotion} \rightarrow \text{Memory}, \cr
+\text{Reconciliation} \quad \rightarrow \text{Closure} \rightarrow \text{Next Cycle}.
+\end{array}}$$
 
 The ordering itself is part of the governance model.
 
@@ -2656,7 +2656,7 @@ unless the action is explicitly known to be idempotent or duplicate execution is
 
 Formally,
 
-$$S_{t}^{E} = \text{OUTCOME\_UNKNOWN} \land S\left( a_{t} \right) = \text{IRREVERSIBLE}$$
+$$S_{t}^{E} = \text{OUTCOME\textunderscore UNKNOWN} \land S\left( a_{t} \right) = \text{IRREVERSIBLE}$$
 
 implies
 
@@ -2670,7 +2670,7 @@ The runtime must also distinguish action completion from intent completion.
 
 Let
 
-$$\sigma = \{\sigma_{1},\sigma_{2},\ldots,\sigma_{n}\}$$
+$$\sigma = \lbrace \sigma_{1},\sigma_{2},\ldots,\sigma_{n}\rbrace $$
 
 be the success conditions of the Intent Contract.
 
@@ -2726,7 +2726,7 @@ must remain true.
 
 The invariant is
 
-$$\mathrm{Rejected}\left( X_{t + 1}^{*} \right) \Rightarrow X_{t + 1} = X_{t}.$$
+$$\mathrm{Rejected}\left( X_{t + 1}^{\ast} \right) \Rightarrow X_{t + 1} = X_{t}.$$
 
 This is particularly important because reflection is generated from system feedback and may eventually incorporate probabilistic or model-generated reasoning.
 
@@ -2827,7 +2827,7 @@ across repeated runs under the same controlled environment.
 
 More explicitly,
 
-$$\mathcal{T = \{}a_{t},V_{t}^{-},e_{t},q_{t},\rho_{t},X_{t + 1},D_{t},R_{t}^{A}\}_{t = 1}^{N}.$$
+$$\mathcal{T = \lbrace }a_{t},V_{t}^{-},e_{t},q_{t},\rho_{t},X_{t + 1},D_{t},R_{t}^{A}\rbrace _{t = 1}^{N}.$$
 
 This does not imply that all real-world agentic behavior must be deterministic. External APIs, networks, humans, clocks, probabilistic models, and environments may introduce nondeterminism.
 
@@ -3025,7 +3025,7 @@ $$\mathcal{T =}R\left( \Theta_{0} \right).$$
 
 The trajectory contains the sequence
 
-$$\mathcal{T = \{}a_{t},V_{t}^{-},e_{t},o_{t},q_{t},\rho_{t},X_{t + 1},D_{t},R_{t}^{A}\}_{t = 1}^{N}.$$
+$$\mathcal{T = \lbrace }a_{t},V_{t}^{-},e_{t},o_{t},q_{t},\rho_{t},X_{t + 1},D_{t},R_{t}^{A}\rbrace _{t = 1}^{N}.$$
 
 The experimental objective is to determine whether this trajectory preserves the invariants specified by the architecture for all exercised conditions.
 
@@ -3143,7 +3143,7 @@ $$\boxed{\text{Randomness may alter choices within the admissible region, but no
 
 A useful experiment is therefore to execute a fixed scenario across a seed set
 
-$$S = \{ s_{1},s_{2},\ldots,s_{n}\}$$
+$$S = \lbrace  s_{1},s_{2},\ldots,s_{n}\rbrace $$
 
 and verify that all mandatory invariants remain satisfied.
 
@@ -3173,7 +3173,7 @@ $$V_{t}^{-} \neq \text{ADMIT}$$
 
 must imply
 
-$$S_{t}^{E} = \text{NOT\_EXECUTED}.$$
+$$S_{t}^{E} = \text{NOT\textunderscore EXECUTED}.$$
 
 The test should inspect not only the returned verdict but also the executor call count and resulting system state.
 
@@ -3219,13 +3219,13 @@ Budget handling should be tested for both accounting correctness and directional
 
 Given two otherwise identical states with
 
-$$\beta_{A} > \beta_{B},$$
+$$\beta_{A} \gt  \beta_{B},$$
 
 an action requiring cost $c$ should not become admissible under the smaller budget if it is inadmissible under the larger budget solely because of budget sufficiency.
 
 Likewise, for two otherwise identical actions with
 
-$${\widehat{c}}_{A} < {\widehat{c}}_{B},$$
+$${\widehat{c}}_{A} \lt  {\widehat{c}}_{B},$$
 
 the more expensive action must not gain an admission advantage when cost is the only changed variable.
 
@@ -3239,11 +3239,11 @@ $$\widehat{c}.$$
 
 A simple grid may evaluate:
 
-$$\beta \in \{ 0.5,1.0,2.0,5.0,10.0\}$$
+$$\beta \in \lbrace  0.5,1.0,2.0,5.0,10.0\rbrace $$
 
 against
 
-$$\widehat{c} \in \{ 0.25,0.75,1.5,3.0,8.0\}.$$
+$$\widehat{c} \in \lbrace  0.25,0.75,1.5,3.0,8.0\rbrace .$$
 
 The expected boundary condition is
 
@@ -3276,7 +3276,7 @@ As side-effect severity increases, the system should not become less restrictive
 A useful expected relation is:
 
 $$\begin{matrix}
-\mathrm{Permission}\left( \text{IRREVERSIBLE} \right) \leq \mathrm{Permission}\left( \text{COMPENSATABLE} \right) \\
+\mathrm{Permission}\left( \text{IRREVERSIBLE} \right) \leq \mathrm{Permission}\left( \text{COMPENSATABLE} \right) \cr
  \leq \mathrm{Permission}\left( \text{REVERSIBLE} \right) \leq \mathrm{Permission}\left( \text{OBSERVATIONAL} \right),
 \end{matrix}$$
 
@@ -3294,7 +3294,7 @@ $$S\left( a_{t} \right) = \text{IRREVERSIBLE}$$
 
 and force the executor to return
 
-$$S_{t}^{E} = \text{OUTCOME\_UNKNOWN}.$$
+$$S_{t}^{E} = \text{OUTCOME\textunderscore UNKNOWN}.$$
 
 Then verify that the runtime does not automatically execute the same action again.
 
@@ -3312,7 +3312,7 @@ Required behavior should be one of:
 
 The forbidden behavior is:
 
-$$\text{OUTCOME\_UNKNOWN} \rightarrow \text{automatic duplicate execution}.$$
+$$\text{OUTCOME\textunderscore UNKNOWN} \rightarrow \text{automatic duplicate execution}.$$
 
 A direct test may look conceptually like:
 
@@ -3413,7 +3413,7 @@ The implementation must reject the complete candidate without retaining earlier 
 
 If
 
-$$\mathrm{Valid}\left( X_{t + 1}^{*} \right) = 0,$$
+$$\mathrm{Valid}\left( X_{t + 1}^{\ast} \right) = 0,$$
 
 then
 
@@ -3499,7 +3499,7 @@ Conversely, construct a plan that has exhausted its current steps while the Inte
 
 The system should not automatically return:
 
-$$\text{HALT\_SUCCESS}.$$
+$$\text{HALT\textunderscore SUCCESS}.$$
 
 This proves that:
 
@@ -3721,7 +3721,7 @@ They also provide a basis for future regression fixtures.
 
 The principal pass condition for the initial v5 model is not:
 
-$$\text{task completion rate} = 100\%.$$
+$$\text{task completion rate} = 100\char37 .$$
 
 Some scenarios are deliberately designed to fail, block, or escalate.
 
@@ -3731,7 +3731,7 @@ $$\boxed{\text{No tested trajectory may violate a mandatory governance invariant
 
 Thus a run that terminates with:
 
-$$D_{t} = \text{HALT\_FAILURE}$$
+$$D_{t} = \text{HALT\textunderscore FAILURE}$$
 
 may still be a successful engineering test if the system stopped correctly.
 
@@ -4155,7 +4155,7 @@ v5 MUST connect execution evidence to the existing temporal-governance and seman
 The required conceptual path is:
 
 $$\begin{matrix}
-\text{Observation} \rightarrow \text{Verification} \rightarrow \text{Provisional Evidence} \rightarrow \text{Temporal Qualification} \\
+\text{Observation} \rightarrow \text{Verification} \rightarrow \text{Provisional Evidence} \rightarrow \text{Temporal Qualification} \cr
  \rightarrow \text{Memory Admission} \rightarrow \text{Promotion} \rightarrow \text{Durable Memory}.
 \end{matrix}$$
 
@@ -4592,7 +4592,7 @@ Paper XII addresses that composition problem through **Governed Agentic Closure*
 The resulting model defines agency not simply as the ability to plan and act, but as a recurrent sequence in which every consequential transition carries its own evidence and authority boundary:
 
 $$\boxed{\begin{matrix}
-\text{Intent} \rightarrow \text{Plan} \rightarrow \text{Admission} \rightarrow \text{Execution} \rightarrow \text{Observation} \\
+\text{Intent} \rightarrow \text{Plan} \rightarrow \text{Admission} \rightarrow \text{Execution} \rightarrow \text{Observation} \cr
  \rightarrow \text{Verification} \rightarrow \text{Residual} \rightarrow \text{Reflection} \rightarrow \text{Memory} \rightarrow \text{Closure}
 \end{matrix}}$$
 
@@ -4816,7 +4816,7 @@ The architecture also treats uncertainty as a first-class state.
 
 An external action may result in:
 
-$$\text{OUTCOME\_UNKNOWN}.$$
+$$\text{OUTCOME\textunderscore UNKNOWN}.$$
 
 That condition is deliberately distinct from:
 
@@ -4828,7 +4828,7 @@ The distinction becomes especially important for irreversible or non-idempotent 
 
 In such cases,
 
-$$\text{OUTCOME\_UNKNOWN} \nRightarrow \text{automatic retry}.$$
+$$\text{OUTCOME\textunderscore UNKNOWN} \nRightarrow \text{automatic retry}.$$
 
 Instead, uncertainty becomes residual evidence that may require observation, verification, constraint, or escalation.
 
@@ -4858,13 +4858,13 @@ Reflection is similarly constrained.
 
 The system may reason about its own behavior and propose adjustments based on residual evidence:
 
-$$\Delta X_{t}^{*}\mathcal{= F}\left( \rho_{t},X_{t} \right).$$
+$$\Delta X_{t}^{\ast}\mathcal{= F}\left( \rho_{t},X_{t} \right).$$
 
 But reflective reasoning does not receive privileged write access.
 
 The proposal must still become a valid candidate state and pass the relevant state-validation boundary:
 
-$$X_{t} \rightarrow X_{t + 1}^{*} \rightarrow \mathrm{Validate} \rightarrow X_{t + 1}.$$
+$$X_{t} \rightarrow X_{t + 1}^{\ast} \rightarrow \mathrm{Validate} \rightarrow X_{t + 1}.$$
 
 If the candidate is invalid,
 
