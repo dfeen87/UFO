@@ -351,11 +351,14 @@ class AgenticEngine:
         termination = "MAX_CYCLES_REACHED"
 
         for cycle_index in range(max_cycles):
+            source_feedback = feedback_contexts[-1] if feedback_contexts else None
+            source_receipt = receipts[-1] if receipts else None
+            prior_signature = transition_signatures[-1] if transition_signatures else None
             receipt = self._run_governed_transaction(
                 intent, active_plan, budget, stability_allowed=stability_allowed,
                 policy_allowed=policy_allowed, handshake=handshake, require_action_local=True,
-                feedback_context=(feedback_contexts[-1] if feedback_contexts else None),
-                source_receipt=(receipts[-1] if receipts else None),
+                feedback_context=source_feedback,
+                source_receipt=source_receipt,
                 cycle_index=cycle_index,
             )
             decision = receipt.closure.decision
@@ -378,8 +381,8 @@ class AgenticEngine:
                 feedback_contexts.append(feedback)
                 transition_signatures.append(build_transition_signature(
                     receipt, feedback, cycle_index,
-                    source_feedback=(feedback_contexts[-2] if cycle_index else None),
-                    prior_signature=(transition_signatures[-1] if cycle_index else None),
+                    source_feedback=source_feedback, prior_signature=prior_signature,
+                    prior_receipt=source_receipt,
                 ))
                 if active_plan.current_step() is None:
                     termination = "PLAN_EXHAUSTED_WITH_INTENT_UNRESOLVED"
@@ -398,8 +401,8 @@ class AgenticEngine:
                 feedback_contexts.append(feedback)
                 transition_signatures.append(build_transition_signature(
                     receipt, feedback, cycle_index,
-                    source_feedback=(feedback_contexts[-2] if cycle_index else None),
-                    prior_signature=(transition_signatures[-1] if cycle_index else None),
+                    source_feedback=source_feedback, prior_signature=prior_signature,
+                    prior_receipt=source_receipt,
                 ))
                 if active_plan.status == "FAILED":
                     termination = "REPLAN_FAILED_CLOSED"
@@ -415,8 +418,8 @@ class AgenticEngine:
             feedback_contexts.append(feedback)
             transition_signatures.append(build_transition_signature(
                 receipt, feedback, cycle_index,
-                source_feedback=(feedback_contexts[-2] if cycle_index else None),
-                prior_signature=(transition_signatures[-1] if cycle_index else None),
+                source_feedback=source_feedback, prior_signature=prior_signature,
+                prior_receipt=source_receipt,
             ))
             termination = {
                 ClosureDecision.HALT_SUCCESS: "INTENT_SATISFIED",
