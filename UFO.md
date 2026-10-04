@@ -4,7 +4,7 @@ A Bounded Intent–Action–Evidence Architecture for Governed Agentic AI
 
 Don Michael Feeney Jr.
 
-DOI: https://doi.org/10.5281/zenodo.23142803
+DOI: [https://doi.org/10.5281/zenodo.23142803](https://doi.org/10.5281/zenodo.23147080)
 
 ### Note / Research Disclaimer
 
