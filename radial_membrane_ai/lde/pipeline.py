@@ -277,6 +277,7 @@ def lde_encode(text: str, config: Optional[LDEConfig] = None) -> LDEState:
 
     # 10. Reconstruction metadata map
     reconstruction_map = {
+        "mode": config.rho,
         "inserts": inserts,
         "casing": casing,
         "normalized_stream": T_n
@@ -304,3 +305,34 @@ def lde_encode(text: str, config: Optional[LDEConfig] = None) -> LDEState:
         boundary=boundary,
         reconstruction_map=reconstruction_map
     )
+
+
+def lde_reconstruct(state: LDEState) -> str:
+    """Reconstruct text from a full-reconstruction state.
+
+    Letter-depth geometry is not sufficient for lossless reconstruction.  This
+    operator therefore requires the ordering, casing, and non-alphabet-symbol
+    evidence retained by :func:`lde_encode`, and refuses compressed states.
+    """
+    metadata = state.reconstruction_map
+    if metadata.get("mode") != "full-reconstruction":
+        raise ReconstructionError("Compressed L.D.E. states are not lossless.")
+    stream = metadata.get("normalized_stream")
+    casing = metadata.get("casing")
+    inserts = metadata.get("inserts")
+    if not isinstance(stream, str) or not isinstance(casing, list) or not isinstance(inserts, dict):
+        raise ReconstructionError("Malformed full-reconstruction metadata.")
+    if len(casing) != len(stream) or any(type(flag) is not bool for flag in casing):
+        raise ReconstructionError("Malformed casing metadata.")
+    if any(type(index) is not int or not isinstance(value, str) for index, value in inserts.items()):
+        raise ReconstructionError("Malformed insertion metadata.")
+    if any(index < 0 or index > len(stream) for index in inserts):
+        raise ReconstructionError("Insertion index is outside the normalized stream.")
+
+    reconstructed: List[str] = []
+    for index in range(len(stream) + 1):
+        reconstructed.append(inserts.get(index, ""))
+        if index < len(stream):
+            symbol = stream[index]
+            reconstructed.append(symbol.upper() if casing[index] else symbol)
+    return "".join(reconstructed)

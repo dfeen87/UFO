@@ -15,6 +15,10 @@ from dataclasses import dataclass
 from typing import Dict, Any
 
 
+ADMISSIBILITY_EVIDENCE_FIELDS = frozenset({"capacity", "privacy", "latency", "cost"})
+ROUTING_METADATA_FIELDS = frozenset({"routed"})
+
+
 class ShardState(Enum):
     IDLE = auto()
     RESONANT = auto()
@@ -53,8 +57,14 @@ class FederatedShard:
         # This method is a trust boundary. Unknown keys, booleans, non-numeric
         # values, and non-finite evidence are rejected rather than relying on
         # comparisons whose NaN semantics can silently fail open.
-        allowed_keys = {"capacity", "privacy", "latency", "cost"}
+        allowed_keys = ADMISSIBILITY_EVIDENCE_FIELDS | ROUTING_METADATA_FIELDS
         if not isinstance(workload, dict) or not set(workload).issubset(allowed_keys):
+            return False
+        # ``routed`` is an informational projection marker, not attestation.  It
+        # is deliberately excluded from every calculation below.  Restricting
+        # its public shape lets routing output compose with admission without
+        # allowing arbitrary metadata through this trust boundary.
+        if "routed" in workload and workload["routed"] is not True:
             return False
         if not isinstance(self.state, ShardState) or not isinstance(self.consent_granted, bool):
             return False

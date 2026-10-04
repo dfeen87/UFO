@@ -15,7 +15,15 @@ one place.
 
 ## Papers
 
-The complete set of project papers is available in [`papers/`](papers/):
+The checked-in corpus in [`papers/`](papers/) has **11 filenames representing
+10 unique PDF documents**. `Publication Dynamic Radial Membrane.pdf` is a
+byte-identical alias of `A Governed Deformable Radial Membrane.pdf`; it is kept
+for stable publication links and is not counted as another paper. The paper
+named by the Invariant Handshake design note is not checked in as a PDF.
+
+See the [paper-to-code traceability report](PAPER_IMPLEMENTATION_TRACEABILITY.md)
+for the inventory, semantic mappings, executable boundaries, and open research
+questions.
 
 - [A Dynamic Radial Membrane Architecture](papers/A%20Dynamic%20Radial%20Membrane%20Architecture.pdf)
 - [A Governed Deformable Radial Membrane](papers/A%20Governed%20Deformable%20Radial%20Membrane.pdf)
