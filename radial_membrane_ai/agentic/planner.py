@@ -254,17 +254,18 @@ class GoalPlanner:
         if step is None or step.tool_name is None:
             raise ValidationError("plan has no executable current step.")
         metadata = self.tool_registry.get_metadata(step.tool_name)
-        parameters = dict(step.tool_params)
+        original_parameters = dict(step.tool_params)
+        parameters = dict(original_parameters)
         if feedback_context is not None and transition_signature is not None:
             parameters = self._adapt_parameters(step.tool_name, parameters, feedback_context)
         postconditions = step.expected_postconditions
-        if not postconditions:
+        if postconditions and parameters != original_parameters:
+            postconditions = self._rebind_postconditions(
+                step.tool_name, original_parameters, parameters, postconditions
+            )
+        elif not postconditions:
             try:
-                projected_step = PlanStep(
-                    step.step_id, step.description, step.tool_name, parameters,
-                    expected_postconditions=step.expected_postconditions,
-                )
-                postconditions = self._postconditions(projected_step)
+                postconditions = self._postconditions_for(step.tool_name, parameters)
             except ValidationError:
                 if require_action_local:
                     raise
@@ -317,25 +318,72 @@ class GoalPlanner:
         return parameters
 
     @staticmethod
-    def _postconditions(step: PlanStep) -> tuple[ExpectedPostcondition, ...]:
-        """Construct deterministic action-local evidence for built-in tools."""
-        params = step.tool_params
-        if step.tool_name == "SearchTool":
+    def _postconditions_for(
+        tool_name: str,
+        params: Dict[str, Any],
+    ) -> tuple[ExpectedPostcondition, ...]:
+        """Construct deterministic action-local evidence from effective parameters."""
+        if tool_name == "SearchTool":
             return (ExpectedPostcondition("fields_equal", {"query": str(params.get("query", "")).lower()}),)
-        if step.tool_name == "MemoryRetrievalTool":
+        if tool_name == "MemoryRetrievalTool":
             return (ExpectedPostcondition("fields_equal", {
                 "type": params.get("type", "semantic"), "tag": params.get("tag", "all")
             }),)
-        if step.tool_name == "APIRequestTool":
+        if tool_name == "APIRequestTool":
             return (ExpectedPostcondition("fields_equal", {
                 "endpoint": params.get("endpoint"), "method": str(params.get("method", "GET")).upper(),
                 "status_code": 200,
             }),)
-        if step.tool_name == "PythonCodeExecutorTool":
+        if tool_name == "PythonCodeExecutorTool":
             return (ExpectedPostcondition("fields_present", {"fields": ("result",)}),)
-        if step.tool_name == "DatabaseQueryTool":
+        if tool_name == "DatabaseQueryTool":
             return (ExpectedPostcondition("fields_present", {"fields": ("records", "count")}),)
         raise ValidationError("plan step lacks a deterministic governed postcondition.")
+
+    @classmethod
+    def _postconditions(cls, step: PlanStep) -> tuple[ExpectedPostcondition, ...]:
+        """Compatibility wrapper for deterministic built-in postconditions."""
+        if step.tool_name is None:
+            raise ValidationError("plan step lacks a deterministic governed postcondition.")
+        return cls._postconditions_for(step.tool_name, step.tool_params)
+
+    @classmethod
+    def _rebind_postconditions(
+        cls,
+        tool_name: str,
+        original_parameters: Dict[str, Any],
+        effective_parameters: Dict[str, Any],
+        postconditions: tuple[ExpectedPostcondition, ...],
+    ) -> tuple[ExpectedPostcondition, ...]:
+        """Rebind only recognizable parameter-derived expectations, or fail closed."""
+        original = cls._postconditions_for(tool_name, original_parameters)
+        effective = cls._postconditions_for(tool_name, effective_parameters)
+        original_fields = dict(original[0].expected) if original[0].verifier == "fields_equal" else {}
+        effective_fields = dict(effective[0].expected) if effective[0].verifier == "fields_equal" else {}
+        changed = {
+            key for key in original_fields.keys() & effective_fields.keys()
+            if original_fields[key] != effective_fields[key]
+        }
+        if not changed:
+            return postconditions
+
+        rebound: list[ExpectedPostcondition] = []
+        for condition in postconditions:
+            expected = dict(condition.expected)
+            represented = changed.intersection(expected)
+            if not represented:
+                rebound.append(condition)
+                continue
+            if condition.verifier != "fields_equal" or any(
+                expected[key] != original_fields[key] for key in represented
+            ):
+                raise ValidationError(
+                    "parameter-dependent postcondition cannot be safely rebound."
+                )
+            for key in represented:
+                expected[key] = effective_fields[key]
+            rebound.append(ExpectedPostcondition(condition.verifier, expected))
+        return tuple(rebound)
 
     @staticmethod
     def commit_verified_step(plan: Plan, receipt: AgenticActionReceipt) -> None:

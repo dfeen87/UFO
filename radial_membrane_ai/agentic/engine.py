@@ -607,20 +607,43 @@ class AgenticSwarmEngine:
                 boundary=winner.boundary,
             )
             selected_engine.semantic_memory = winner.semantic_memory
-            governed = AgenticEngine(engine=selected_engine).run_governed_intent(
+            governed_engine = AgenticEngine(engine=selected_engine)
+            pre_execution_state_fingerprint = governed_engine.state_fingerprint()
+            governed = governed_engine.run_governed_intent(
                 task.intent,
                 max_cycles=max_cycles,
             )
+            admissible_bids = tuple(sorted(
+                (
+                    bid for bid in bids
+                    if bid.contract_id == task.contract_id
+                    and set(task.required_capabilities).issubset(bid.agent_capabilities)
+                    and bid.estimated_cost <= task.max_selection_budget
+                    and bid.membrane_stability_margin > 0.0
+                ),
+                key=lambda bid: (-bid.bid_score, bid.agent_id),
+            ))
             selection_digest = stable_digest({
                 "task": task,
                 "selected_agent_id": winner.agent_id,
                 "winning_bid": awarded.winning_bid,
+                "admissible_bids": admissible_bids,
+            })
+            execution_binding_digest = stable_digest({
+                "selection_digest": selection_digest,
+                "selected_agent_id": winner.agent_id,
+                "pre_execution_state_fingerprint": pre_execution_state_fingerprint,
+                "initial_receipt_digest": stable_digest(governed.receipts[0]),
+                "intent_digest": task.intent.intent_digest,
             })
             results.append(GovernedSwarmResult(
                 task,
                 winner.agent_id,
                 awarded.winning_bid,
+                admissible_bids,
                 selection_digest,
+                pre_execution_state_fingerprint,
+                execution_binding_digest,
                 governed,
             ))
         return tuple(results)
