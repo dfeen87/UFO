@@ -570,7 +570,7 @@ This boundary is important because external side effects cannot always be revers
 
 Execution may result in several states:
 
-$$S_{t}^{E} \in \lbrace \text{NOT\textunderscore EXECUTED},\text{EXECUTED},\text{FAILED},\text{OUTCOME\textunderscore UNKNOWN}\rbrace .$$
+$$S_{t}^{E} \in \lbrace \text{NOT\_EXECUTED},\text{EXECUTED},\text{FAILED},\text{OUTCOME\_UNKNOWN}\rbrace .$$
 
 NOT_EXECUTED indicates that the action never crossed the execution boundary.
 
@@ -584,11 +584,11 @@ This last state prevents a common agentic failure mode. If a consequential exter
 
 Therefore,
 
-$$\boxed{\text{OUTCOME\textunderscore UNKNOWN} \neq \text{FAILED}}$$
+$$\boxed{\text{OUTCOME\_UNKNOWN} \neq \text{FAILED}}$$
 
 and particularly for non-idempotent or irreversible actions,
 
-$$\text{OUTCOME\textunderscore UNKNOWN} \nRightarrow \text{automatic retry}.$$
+$$\text{OUTCOME\_UNKNOWN} \nRightarrow \text{automatic retry}.$$
 
 This uncertainty must instead become evidence for verification, reconciliation, and possibly escalation.
 
@@ -727,7 +727,7 @@ where $\mathcal{C}_{A}$ is the **Agentic Closure Operator** and $D_{t}$ is the c
 
 A representative decision domain is
 
-$$D_{t} \in \lbrace \text{CONTINUE},\text{REPLAN},\text{CONSTRAIN},\text{REFLECT},\text{ESCALATE},\text{HALT\textunderscore SUCCESS},\text{HALT\textunderscore FAILURE}\rbrace .$$
+$$D_{t} \in \lbrace \text{CONTINUE},\text{REPLAN},\text{CONSTRAIN},\text{REFLECT},\text{ESCALATE},\text{HALT\_SUCCESS},\text{HALT\_FAILURE}\rbrace .$$
 
 The important distinction is that closure occurs **after** the consequences of the previous action have been reconciled.
 
@@ -745,11 +745,11 @@ $$\left( I,X_{t + 1} \right)\overset{\mathcal{P}}{\rightarrow}a_{t + 1}.$$
 
 By contrast,
 
-$$D_{t} = \text{HALT\textunderscore SUCCESS}$$
+$$D_{t} = \text{HALT\_SUCCESS}$$
 
 terminates because the intent's success conditions have been sufficiently satisfied, while
 
-$$D_{t} = \text{HALT\textunderscore FAILURE}$$
+$$D_{t} = \text{HALT\_FAILURE}$$
 
 terminates because the system has reached a state from which autonomous execution should not continue under the current contract.
 
@@ -1123,7 +1123,7 @@ execution_evidence
 
 The exact representation may differ between tools, but the execution state must distinguish:
 
-$$\lbrace \text{NOT\textunderscore EXECUTED},\text{EXECUTED},\text{FAILED},\text{OUTCOME\textunderscore UNKNOWN}\rbrace .$$
+$$\lbrace \text{NOT\_EXECUTED},\text{EXECUTED},\text{FAILED},\text{OUTCOME\_UNKNOWN}\rbrace .$$
 
 The distinction between FAILED and OUTCOME_UNKNOWN is mandatory whenever external side effects may exist.
 
@@ -1145,13 +1145,13 @@ The classification affects retry and escalation policy.
 
 In particular:
 
-$$S\left( a_{t} \right) = \text{IRREVERSIBLE} \land S_{t}^{E} = \text{OUTCOME\textunderscore UNKNOWN}$$
+$$S\left( a_{t} \right) = \text{IRREVERSIBLE} \land S_{t}^{E} = \text{OUTCOME\_UNKNOWN}$$
 
 must not automatically transition back to execution.
 
 Instead,
 
-$$\text{OUTCOME\textunderscore UNKNOWN} \rightarrow \text{VERIFY or ESCALATE}.$$
+$$\text{OUTCOME\_UNKNOWN} \rightarrow \text{VERIFY or ESCALATE}.$$
 
 This prevents uncertain side effects from being duplicated by naïve retry logic.
 
@@ -1328,7 +1328,7 @@ The closure operator evaluates whether another autonomous action remains permiss
 
 The decision domain is
 
-$$D_{t} \in \lbrace \text{CONTINUE},\text{REPLAN},\text{CONSTRAIN},\text{REFLECT},\text{ESCALATE},\text{HALT\textunderscore SUCCESS},\text{HALT\textunderscore FAILURE}\rbrace .$$
+$$D_{t} \in \lbrace \text{CONTINUE},\text{REPLAN},\text{CONSTRAIN},\text{REFLECT},\text{ESCALATE},\text{HALT\_SUCCESS},\text{HALT\_FAILURE}\rbrace .$$
 
 A closure result should contain at least:
 
@@ -1350,7 +1350,7 @@ This record makes continuation explainable.
 
 A successful termination requires satisfaction of the Intent Contract's success conditions:
 
-$$\sigma(I) = 1 \Rightarrow D_{t} = \text{HALT\textunderscore SUCCESS}$$
+$$\sigma(I) = 1 \Rightarrow D_{t} = \text{HALT\_SUCCESS}$$
 
 provided no mandatory unresolved condition prohibits success.
 
@@ -1588,7 +1588,7 @@ may permit the corresponding execution attempt.
 
 Therefore,
 
-$$V_{t}^{-} \neq \text{ADMIT} \Rightarrow S_{t}^{E} = \text{NOT\textunderscore EXECUTED}.$$
+$$V_{t}^{-} \neq \text{ADMIT} \Rightarrow S_{t}^{E} = \text{NOT\_EXECUTED}.$$
 
 This rule applies regardless of how the proposal was produced.
 
@@ -1654,7 +1654,7 @@ $$\text{routed=True} \nRightarrow \text{admissible},$$
 
 $$\text{selected=True} \nRightarrow \text{authorized},$$
 
-$$\text{tool\textunderscore success = True} \nRightarrow \text{verified},$$
+$$\text{tool\_success = True} \nRightarrow \text{verified},$$
 
 and
 
@@ -1847,7 +1847,7 @@ External execution introduces a condition that internal state transitions do not
 
 Accordingly,
 
-$$\text{OUTCOME\textunderscore UNKNOWN} \neq \text{FAILED}.$$
+$$\text{OUTCOME\_UNKNOWN} \neq \text{FAILED}.$$
 
 This distinction must remain explicit.
 
@@ -1857,7 +1857,7 @@ $$S\left( a_{t} \right) = \text{IRREVERSIBLE}$$
 
 and
 
-$$S_{t}^{E} = \text{OUTCOME\textunderscore UNKNOWN},$$
+$$S_{t}^{E} = \text{OUTCOME\_UNKNOWN},$$
 
 then the runtime must not infer
 
@@ -2228,7 +2228,7 @@ $$\text{PROPOSED} \rightarrow \text{EXECUTING}$$
 
 would violate $I_{A}$ if admission were bypassed.
 
-$$\text{EXECUTED} \rightarrow \text{HALT\textunderscore SUCCESS}$$
+$$\text{EXECUTED} \rightarrow \text{HALT\_SUCCESS}$$
 
 could violate $I_{V}$.
 
@@ -2339,7 +2339,7 @@ A conforming runtime may expose the following logical states:
 $$\begin{matrix}
 S_{t} \in \lbrace \text{READY},\text{PLANNING},\text{PROPOSED},\text{PREFLIGHT}, \cr
 \text{AUTHORIZED},\text{EXECUTING},\text{OBSERVING},\text{VERIFYING}, \cr
-\text{RECONCILING},\text{REFLECTING},\text{QUALIFYING\textunderscore MEMORY}, \cr
+\text{RECONCILING},\text{REFLECTING},\text{QUALIFYING\_MEMORY}, \cr
 \text{CLOSURE},\text{HALTED},\text{ESCALATED}\rbrace .
 \end{matrix}$$
 
@@ -2351,7 +2351,7 @@ $$\begin{matrix}
 \text{READY} \rightarrow \text{PLANNING} \rightarrow \text{PROPOSED} \rightarrow \text{PREFLIGHT} \cr
  \rightarrow \text{AUTHORIZED} \rightarrow \text{EXECUTING} \rightarrow \text{OBSERVING} \cr
  \rightarrow \text{VERIFYING} \rightarrow \text{RECONCILING} \rightarrow \text{REFLECTING} \cr
- \rightarrow \text{QUALIFYING\textunderscore MEMORY} \rightarrow \text{CLOSURE}.
+ \rightarrow \text{QUALIFYING\_MEMORY} \rightarrow \text{CLOSURE}.
 \end{matrix}$$
 
 Closure may then transition to a new cycle or terminate the run.
@@ -2368,13 +2368,13 @@ without passing through prospective admission.
 
 Likewise,
 
-$$\text{EXECUTING} \rightarrow \text{HALT\textunderscore SUCCESS}$$
+$$\text{EXECUTING} \rightarrow \text{HALT\_SUCCESS}$$
 
 must not occur solely because the executor reports success. Verification and closure still have responsibility for determining whether the Intent Contract has actually been satisfied.
 
 A direct transition
 
-$$\text{OBSERVING} \rightarrow \text{DURABLE\textunderscore MEMORY}$$
+$$\text{OBSERVING} \rightarrow \text{DURABLE\_MEMORY}$$
 
 is also prohibited because observations require qualification before becoming persistent state.
 
@@ -2656,7 +2656,7 @@ unless the action is explicitly known to be idempotent or duplicate execution is
 
 Formally,
 
-$$S_{t}^{E} = \text{OUTCOME\textunderscore UNKNOWN} \land S\left( a_{t} \right) = \text{IRREVERSIBLE}$$
+$$S_{t}^{E} = \text{OUTCOME\_UNKNOWN} \land S\left( a_{t} \right) = \text{IRREVERSIBLE}$$
 
 implies
 
@@ -3173,7 +3173,7 @@ $$V_{t}^{-} \neq \text{ADMIT}$$
 
 must imply
 
-$$S_{t}^{E} = \text{NOT\textunderscore EXECUTED}.$$
+$$S_{t}^{E} = \text{NOT\_EXECUTED}.$$
 
 The test should inspect not only the returned verdict but also the executor call count and resulting system state.
 
@@ -3294,7 +3294,7 @@ $$S\left( a_{t} \right) = \text{IRREVERSIBLE}$$
 
 and force the executor to return
 
-$$S_{t}^{E} = \text{OUTCOME\textunderscore UNKNOWN}.$$
+$$S_{t}^{E} = \text{OUTCOME\_UNKNOWN}.$$
 
 Then verify that the runtime does not automatically execute the same action again.
 
@@ -3312,7 +3312,7 @@ Required behavior should be one of:
 
 The forbidden behavior is:
 
-$$\text{OUTCOME\textunderscore UNKNOWN} \rightarrow \text{automatic duplicate execution}.$$
+$$\text{OUTCOME\_UNKNOWN} \rightarrow \text{automatic duplicate execution}.$$
 
 A direct test may look conceptually like:
 
@@ -3499,7 +3499,7 @@ Conversely, construct a plan that has exhausted its current steps while the Inte
 
 The system should not automatically return:
 
-$$\text{HALT\textunderscore SUCCESS}.$$
+$$\text{HALT\_SUCCESS}.$$
 
 This proves that:
 
@@ -3731,7 +3731,7 @@ $$\boxed{\text{No tested trajectory may violate a mandatory governance invariant
 
 Thus a run that terminates with:
 
-$$D_{t} = \text{HALT\textunderscore FAILURE}$$
+$$D_{t} = \text{HALT\_FAILURE}$$
 
 may still be a successful engineering test if the system stopped correctly.
 
@@ -4816,7 +4816,7 @@ The architecture also treats uncertainty as a first-class state.
 
 An external action may result in:
 
-$$\text{OUTCOME\textunderscore UNKNOWN}.$$
+$$\text{OUTCOME\_UNKNOWN}.$$
 
 That condition is deliberately distinct from:
 
@@ -4828,7 +4828,7 @@ The distinction becomes especially important for irreversible or non-idempotent 
 
 In such cases,
 
-$$\text{OUTCOME\textunderscore UNKNOWN} \nRightarrow \text{automatic retry}.$$
+$$\text{OUTCOME\_UNKNOWN} \nRightarrow \text{automatic retry}.$$
 
 Instead, uncertainty becomes residual evidence that may require observation, verification, constraint, or escalation.
 
