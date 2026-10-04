@@ -402,6 +402,12 @@ class MemoryCommitResult:
             _text(self.target_key, "target_key")
         _text(self.memory_state_digest, "memory_state_digest")
         object.__setattr__(self, "reason_codes", _reason_codes(self.reason_codes))
+        has_identity = self.candidate_digest is not None and self.target_key is not None
+        if self.status is MemoryCommitStatus.NOT_ATTEMPTED:
+            if self.candidate_digest is not None or self.target_key is not None:
+                raise ValidationError("an unattempted memory commit cannot carry commit identity.")
+        elif not has_identity:
+            raise ValidationError("an attempted memory commit requires candidate and target identity.")
 
 
 @dataclass(frozen=True)
@@ -422,6 +428,42 @@ class MemoryStageEvidence:
         if self.commit.candidate_digest is not None:
             if self.candidate is None or self.commit.candidate_digest != self.candidate.candidate_digest:
                 raise ValidationError("memory commit candidate mismatch.")
+        if self.candidate is None:
+            if self.qualification is not None or self.policy_admissible is not None:
+                raise ValidationError("candidate-free memory evidence cannot be qualified or policy evaluated.")
+            if self.final_verdict != "NO_CANDIDATE" or self.commit.status is not MemoryCommitStatus.NOT_ATTEMPTED:
+                raise ValidationError("candidate-free memory evidence must be an unattempted NO_CANDIDATE state.")
+            return
+
+        if self.qualification is None:
+            raise ValidationError("a memory candidate requires a qualification result.")
+        status = self.qualification.status
+        commit_status = self.commit.status
+        valid_states = {
+            "VERIFICATION_REJECTED": (MemoryQualificationStatus.REJECTED, None,
+                                      {MemoryCommitStatus.NOT_ATTEMPTED}),
+            "PROVISIONAL": (MemoryQualificationStatus.PROVISIONAL, None,
+                            {MemoryCommitStatus.NOT_ATTEMPTED}),
+            "REJECTED": (MemoryQualificationStatus.REJECTED, None,
+                         {MemoryCommitStatus.NOT_ATTEMPTED}),
+            "UNKNOWN": (MemoryQualificationStatus.UNKNOWN, None,
+                        {MemoryCommitStatus.NOT_ATTEMPTED}),
+            "POLICY_EVIDENCE_UNKNOWN": (MemoryQualificationStatus.QUALIFIED, None,
+                                        {MemoryCommitStatus.NOT_ATTEMPTED}),
+            "POLICY_REJECTED": (MemoryQualificationStatus.QUALIFIED, False,
+                                {MemoryCommitStatus.NOT_ATTEMPTED}),
+            "COMMIT_ACCEPTED": (MemoryQualificationStatus.QUALIFIED, True,
+                                {MemoryCommitStatus.COMMITTED, MemoryCommitStatus.ALREADY_COMMITTED}),
+            "COMMIT_FAILED": (MemoryQualificationStatus.QUALIFIED, True,
+                              {MemoryCommitStatus.FAILED}),
+        }
+        expected = valid_states.get(self.final_verdict)
+        if expected is None:
+            raise ValidationError("unknown final memory verdict.")
+        expected_qualification, expected_policy, allowed_commits = expected
+        if (status is not expected_qualification or self.policy_admissible is not expected_policy
+                or commit_status not in allowed_commits):
+            raise ValidationError("memory evidence fields encode a contradictory authoritative state.")
 
 
 @dataclass(frozen=True)

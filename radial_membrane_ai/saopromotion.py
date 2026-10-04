@@ -189,10 +189,27 @@ class SAOPromotor:
             "temporal_gate_verdict": temporal_gate_verdict
         }
 
-    def commit_evaluation(self, layer: str, activation: float, p_sao: float, verdict: str) -> None:
+    def commit_evaluation(
+        self,
+        layer: str,
+        activation: float,
+        p_sao: float,
+        verdict: str,
+        *,
+        candidate_digest: str | None = None,
+        target_key: str | None = None,
+    ) -> None:
         """Publish evidence only after the caller's complete governing verdict."""
         if verdict != "ascend":
             raise ValueError("only an ascending evaluation may be committed")
-        self.promotion_ledger.append({
+        if not all(isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+                   for value in (activation, p_sao)):
+            raise ValueError("promotion evidence must contain finite numeric values")
+        if (candidate_digest is None) is not (target_key is None):
+            raise ValueError("promotion provenance must be complete")
+        publication = {
             "layer": layer, "activation": activation, "p_sao": p_sao, "verdict": verdict,
-        })
+        }
+        if candidate_digest is not None:
+            publication.update({"candidate_digest": candidate_digest, "target_key": target_key})
+        self.promotion_ledger.append(publication)
