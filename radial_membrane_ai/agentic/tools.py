@@ -16,6 +16,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 from radial_membrane_ai.exceptions import ValidationError
+from radial_membrane_ai.agentic.contracts import (
+    ActionProposal, AdmissionVerdict, ExecutionRecord, ExecutionState, SideEffectClass, stable_digest,
+)
 
 
 @dataclass
@@ -68,6 +71,30 @@ class BaseTool(ABC):
         """Executes the tool with given parameters and returns a ToolCallResult."""
         pass
 
+
+@dataclass(frozen=True)
+class ToolCapability:
+    """Trusted registry metadata used prospectively by v5 governance."""
+
+    capability_id: str
+    side_effect_class: SideEffectClass
+    predicted_cost: tuple[float, ...]
+    idempotent: bool = True
+    retry_safe: bool = True
+    handshake_applicable: bool = False
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.capability_id, str) or not self.capability_id:
+            raise ValidationError("tool capability identifier cannot be empty.")
+        object.__setattr__(self, "side_effect_class", SideEffectClass(self.side_effect_class))
+        if len(self.predicted_cost) != 8 or any(
+            isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0
+            for value in self.predicted_cost
+        ):
+            raise ValidationError("tool predicted cost must contain eight finite non-negative values.")
+        object.__setattr__(self, "predicted_cost", tuple(float(value) for value in self.predicted_cost))
+        if not all(isinstance(value, bool) for value in (self.idempotent, self.retry_safe, self.handshake_applicable)):
+            raise ValidationError("tool execution semantics must be Boolean.")
 
 class SearchTool(BaseTool):
     """Search tool simulating web/corpus search with token and latency costs."""
@@ -336,6 +363,7 @@ class ToolRegistry:
 
     def __init__(self) -> None:
         self._tools: Dict[str, BaseTool] = {}
+        self._metadata: Dict[str, ToolCapability] = {}
         self._register_defaults()
 
     def _register_defaults(self) -> None:
@@ -350,6 +378,29 @@ class ToolRegistry:
         if not isinstance(tool, BaseTool) or not getattr(tool, "name", ""):
             raise ValidationError("Registered tools must be named BaseTool instances.")
         self._tools[tool.name] = tool
+        defaults = {
+            "SearchTool": ("search", SideEffectClass.OBSERVATIONAL, (0.4, 0.1, 0.3, 0.2, 0.1, 0.2, 0.0, 0.0)),
+            "MemoryRetrievalTool": ("memory.read", SideEffectClass.OBSERVATIONAL, (0.1, 0.1, 0.2, 0.1, 0.05, 0.05, 0.0, 0.0)),
+            "DatabaseQueryTool": ("database.read", SideEffectClass.OBSERVATIONAL, (0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0)),
+            "PythonCodeExecutorTool": ("code.execute", SideEffectClass.REVERSIBLE, (0.5, 0.8, 0.1, 0.0, 0.6, 0.3, 0.0, 0.1)),
+            "APIRequestTool": ("api.request", SideEffectClass.COMPENSATABLE, (0.3, 0.2, 0.1, 0.4, 0.2, 0.1, 0.0, 0.1)),
+        }
+        capability, effect, cost = defaults.get(
+            tool.name, (f"tool.{tool.name}", SideEffectClass.IRREVERSIBLE, (0.1,) * 8)
+        )
+        self._metadata[tool.name] = ToolCapability(capability, effect, cost,
+                                                   idempotent=effect is SideEffectClass.OBSERVATIONAL,
+                                                   retry_safe=effect is SideEffectClass.OBSERVATIONAL,
+                                                   handshake_applicable=False)
+
+    def set_metadata(self, name: str, metadata: ToolCapability) -> None:
+        if name not in self._tools or not isinstance(metadata, ToolCapability):
+            raise ValidationError("metadata must belong to a registered tool.")
+        self._metadata[name] = metadata
+
+    def get_metadata(self, name: str) -> ToolCapability:
+        self.get_tool(name)
+        return self._metadata[name]
 
     def get_tool(self, name: str) -> BaseTool:
         """Looks up a tool by name, raising KeyError if missing."""
@@ -389,3 +440,36 @@ class ToolRegistry:
                 tension_delta=0.3,
                 execution_time_ms=(time.perf_counter() - start) * 1000,
             )
+
+    def execute_admitted(
+        self,
+        proposal: ActionProposal,
+        admission: AdmissionVerdict,
+        intent: Any,
+        current_state_fingerprint: str,
+    ) -> tuple[ExecutionRecord, ToolCallResult]:
+        """Cross the v5 execution boundary only after exact binding validation."""
+        from radial_membrane_ai.agentic.admission import ProspectiveAgenticAdmission
+
+        ProspectiveAgenticAdmission.validate_execution_binding(
+            intent, proposal, admission, current_state_fingerprint
+        )
+        result = self.execute_tool(proposal.tool_name, dict(proposal.parameters))
+        state = ExecutionState.EXECUTED if result.success else ExecutionState.FAILED
+        admission_digest = stable_digest({
+            "proposal": admission.proposal_digest,
+            "state": admission.state_fingerprint,
+            "reservation": admission.reservation.reservation_id if admission.reservation else None,
+        })
+        record = ExecutionRecord(
+            execution_id=f"execution-{proposal.proposal_digest[:16]}",
+            proposal_digest=proposal.proposal_digest,
+            admission_digest=admission_digest,
+            state=state,
+            tool_name=proposal.tool_name,
+            success_reported=result.success,
+            output=result.output,
+            data=result.data,
+            observed_cost=tuple(result.cost_vector),
+        )
+        return record, result
