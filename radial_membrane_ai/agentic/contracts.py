@@ -428,6 +428,8 @@ class MemoryStageEvidence:
         if self.commit.candidate_digest is not None:
             if self.candidate is None or self.commit.candidate_digest != self.candidate.candidate_digest:
                 raise ValidationError("memory commit candidate mismatch.")
+            if self.commit.target_key != self.candidate.candidate_key:
+                raise ValidationError("memory commit target mismatch.")
         if self.candidate is None:
             if self.qualification is not None or self.policy_admissible is not None:
                 raise ValidationError("candidate-free memory evidence cannot be qualified or policy evaluated.")
@@ -582,6 +584,57 @@ class ResourceReconciliation:
 
 
 @dataclass(frozen=True)
+class GovernedFeedbackContext:
+    """Immutable reconciled information carried beyond a completed cycle."""
+
+    intent_id: str
+    intent_digest: str
+    source_cycle_index: int
+    source_receipt_digest: str
+    resulting_state_fingerprint: str
+    residual: AgenticResidual
+    memory_state_digest: str
+    remaining_budget: ResourceBudget
+    plan_transition: PlanTransitionEvidence
+    resulting_plan_revision: str
+    prior_closure: ClosureResult
+    feedback_context_digest: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        for value, name in (
+            (self.intent_id, "intent_id"),
+            (self.intent_digest, "intent_digest"),
+            (self.source_receipt_digest, "source_receipt_digest"),
+            (self.resulting_state_fingerprint, "resulting_state_fingerprint"),
+            (self.memory_state_digest, "memory_state_digest"),
+            (self.resulting_plan_revision, "resulting_plan_revision"),
+        ):
+            _text(value, name)
+        if (
+            isinstance(self.source_cycle_index, bool)
+            or not isinstance(self.source_cycle_index, int)
+            or self.source_cycle_index < 0
+        ):
+            raise ValidationError("source_cycle_index must be a non-negative integer.")
+        if not isinstance(self.residual, AgenticResidual):
+            raise ValidationError("feedback residual must be typed evidence.")
+        if not isinstance(self.remaining_budget, ResourceBudget):
+            raise ValidationError("feedback remaining budget must be typed evidence.")
+        if not isinstance(self.plan_transition, PlanTransitionEvidence):
+            raise ValidationError("feedback plan transition must be typed evidence.")
+        if not isinstance(self.prior_closure, ClosureResult):
+            raise ValidationError("feedback closure must be typed evidence.")
+        if self.plan_transition.resulting_plan_revision != self.resulting_plan_revision:
+            raise ValidationError("feedback resulting plan revision contradicts its transition.")
+        identity = {
+            item.name: getattr(self, item.name)
+            for item in fields(self)
+            if item.name != "feedback_context_digest"
+        }
+        object.__setattr__(self, "feedback_context_digest", stable_digest(identity))
+
+
+@dataclass(frozen=True)
 class AgenticActionReceipt:
     intent_id: str
     plan_revision: str
@@ -600,10 +653,13 @@ class AgenticActionReceipt:
     durable_memory_attempted: bool = False
     memory: MemoryStageEvidence | None = None
     plan_transition: PlanTransitionEvidence | None = None
+    incoming_feedback_digest: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.durable_memory_attempted, bool):
             raise ValidationError("durable_memory_attempted must be Boolean.")
+        if self.incoming_feedback_digest is not None:
+            _text(self.incoming_feedback_digest, "incoming_feedback_digest")
         if self.intent_id != self.proposal.intent_id or self.intent_id != self.admission.intent_id:
             raise ValidationError("receipt intent provenance mismatch.")
         if self.plan_revision != self.proposal.plan_revision or self.plan_revision != self.admission.plan_revision:
@@ -663,6 +719,7 @@ class GovernedRunResult:
     termination_reason: str
     success: bool
     final_plan_revision: str
+    feedback_contexts: tuple[GovernedFeedbackContext, ...] = ()
 
     def __post_init__(self) -> None:
         _text(self.intent_id, "intent_id")
@@ -670,6 +727,7 @@ class GovernedRunResult:
         _text(self.termination_reason, "termination_reason")
         _text(self.final_plan_revision, "final_plan_revision")
         object.__setattr__(self, "receipts", tuple(self.receipts))
+        object.__setattr__(self, "feedback_contexts", tuple(self.feedback_contexts))
         if (
             isinstance(self.cycles_executed, bool)
             or not isinstance(self.cycles_executed, int)
@@ -678,6 +736,8 @@ class GovernedRunResult:
             raise ValidationError("cycles_executed must be a non-negative integer.")
         if self.cycles_executed != len(self.receipts):
             raise ValidationError("run cycle count does not match its receipts.")
+        if len(self.feedback_contexts) != len(self.receipts):
+            raise ValidationError("run requires one feedback context per completed receipt.")
         if not isinstance(self.success, bool):
             raise ValidationError("run success must be Boolean.")
         if self.receipts:
@@ -691,12 +751,33 @@ class GovernedRunResult:
         if self.success is not expected_success:
             raise ValidationError("run success must derive from authoritative HALT_SUCCESS.")
         previous: AgenticActionReceipt | None = None
-        for receipt in self.receipts:
+        for index, (receipt, feedback) in enumerate(zip(self.receipts, self.feedback_contexts)):
             if receipt.intent_id != self.intent_id or receipt.admission.intent_digest != self.intent_digest:
                 raise ValidationError("run receipt intent provenance mismatch.")
+            if feedback.intent_id != self.intent_id or feedback.intent_digest != self.intent_digest:
+                raise ValidationError("run feedback intent provenance mismatch.")
+            if feedback.source_cycle_index != index:
+                raise ValidationError("run feedback cycle provenance mismatch.")
+            if feedback.source_receipt_digest != stable_digest(receipt):
+                raise ValidationError("run feedback receipt provenance mismatch.")
+            if receipt.plan_transition is None:
+                raise ValidationError("run receipts require plan transition evidence.")
+            if (
+                feedback.resulting_state_fingerprint != receipt.resulting_state_fingerprint
+                or feedback.residual != receipt.residual
+                or receipt.memory is None
+                or feedback.memory_state_digest != receipt.memory.commit.memory_state_digest
+                or feedback.remaining_budget != receipt.reconciliation.remaining_budget
+                or feedback.plan_transition != receipt.plan_transition
+                or feedback.resulting_plan_revision != receipt.plan_transition.resulting_plan_revision
+                or feedback.prior_closure != receipt.closure
+            ):
+                raise ValidationError("run feedback does not match its finalized receipt.")
             if receipt.reconciliation.budget_before is None:
                 raise ValidationError("run receipts require budget-before evidence.")
             if previous is not None:
+                if receipt.incoming_feedback_digest != self.feedback_contexts[index - 1].feedback_context_digest:
+                    raise ValidationError("run incoming feedback continuity is broken.")
                 if previous.resulting_state_fingerprint != receipt.initial_state_fingerprint:
                     raise ValidationError("run state fingerprint continuity is broken.")
                 if previous.reconciliation.remaining_budget != receipt.reconciliation.budget_before:
@@ -705,6 +786,8 @@ class GovernedRunResult:
                     raise ValidationError("run receipts require plan transition evidence.")
                 if previous.plan_transition.resulting_plan_revision != receipt.plan_revision:
                     raise ValidationError("run plan revision continuity is broken.")
+            elif receipt.incoming_feedback_digest is not None:
+                raise ValidationError("the first run receipt cannot have incoming feedback.")
             previous = receipt
         if self.receipts:
             transition = self.receipts[-1].plan_transition
