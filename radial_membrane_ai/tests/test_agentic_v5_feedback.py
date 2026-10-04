@@ -8,7 +8,6 @@ from radial_membrane_ai.agentic import (
     AgenticEngine,
     ClosureDecision,
     ExpectedPostcondition,
-    GovernedFeedbackContext,
     IntentContract,
     Plan,
     PlanStep,
@@ -19,7 +18,6 @@ from radial_membrane_ai.agentic import (
 )
 from radial_membrane_ai.agentic.admission import GovernedBudget
 from radial_membrane_ai.agentic.contracts import (
-    AgenticResidual,
     MemoryCommitResult,
     MemoryCommitStatus,
     MemoryQualificationResult,
