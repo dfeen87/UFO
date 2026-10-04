@@ -24,6 +24,7 @@ class VerificationRegistry:
         self._verifiers: dict[str, Verifier] = {
             "fields_equal": self._fields_equal,
             "output_equals": self._output_equals,
+            "fields_present": self._fields_present,
         }
 
     def register(self, name: str, verifier: Verifier) -> None:
@@ -45,6 +46,14 @@ class VerificationRegistry:
         if "value" not in expected or "output" not in evidence:
             return None
         return evidence["output"] == expected["value"]
+
+    @staticmethod
+    def _fields_present(expected: dict[str, Any], evidence: dict[str, Any]) -> bool | None:
+        source = evidence.get("data")
+        fields = expected.get("fields")
+        if not isinstance(source, Mapping) or not isinstance(fields, (list, tuple)):
+            return None
+        return all(isinstance(name, str) and name in source for name in fields)
 
     def verify(self, proposal: ActionProposal, observation: Observation | None) -> VerificationResult:
         if observation is None:

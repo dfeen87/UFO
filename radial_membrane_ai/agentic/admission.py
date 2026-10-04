@@ -98,7 +98,12 @@ class ProspectiveAgenticAdmission:
         if not budget.remaining.can_cover(proposal.predicted_cost):
             reasons.append("BUDGET_INSUFFICIENT")
         if proposal.handshake_required:
-            if handshake is None or handshake() is not True:
+            try:
+                handshake_passed = handshake is not None and handshake() is True
+            except Exception:
+                handshake_passed = False
+                reasons.append("INVARIANT_HANDSHAKE_EXCEPTION")
+            if not handshake_passed:
                 reasons.append("INVARIANT_HANDSHAKE_FAILED")
 
         reservation = None

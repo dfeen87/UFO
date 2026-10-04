@@ -14,6 +14,7 @@ from radial_membrane_ai.agentic.contracts import (
     ExecutionRecord,
     ExecutionState,
     ExpectedPostcondition,
+    GovernedRunResult,
     IntentContract,
     IntentSatisfaction,
     Observation,
@@ -38,6 +39,7 @@ from radial_membrane_ai.agentic.tools import (
     SearchTool,
     ToolCallResult,
     ToolRegistry,
+    ToolOutcomeUnknown,
 )
 
 __all__ = [
@@ -58,6 +60,7 @@ __all__ = [
     "ExecutionState",
     "ExpectedPostcondition",
     "GoalPlanner",
+    "GovernedRunResult",
     "IntentContract",
     "IntentSatisfaction",
     "MemoryRetrievalTool",
@@ -77,6 +80,7 @@ __all__ = [
     "SwarmContract",
     "ToolCallResult",
     "ToolRegistry",
+    "ToolOutcomeUnknown",
     "VerificationResult",
     "VerificationStatus",
 ]

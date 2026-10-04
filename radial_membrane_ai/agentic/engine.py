@@ -24,9 +24,11 @@ from radial_membrane_ai.agentic.contracts import (
     AdmissionDecision,
     AgenticActionReceipt,
     AgenticResidual,
+    ClosureDecision,
     ExecutionRecord,
     ExecutionState,
     IntentContract,
+    GovernedRunResult,
     Observation,
     ReflectionResult,
     ResourceReconciliation,
@@ -96,8 +98,28 @@ class AgenticEngine:
         if not isinstance(intent, IntentContract):
             raise ValueError("run_governed_cycle requires an IntentContract.")
         active_plan = plan or self.planner.create_plan(intent.goal)
+        return self._run_governed_transaction(
+            intent, active_plan, GovernedBudget(intent.initial_budget), proposal=proposal,
+            stability_allowed=stability_allowed, policy_allowed=policy_allowed, handshake=handshake,
+        )
+
+    def _run_governed_transaction(
+        self,
+        intent: IntentContract,
+        active_plan: Plan,
+        budget: GovernedBudget,
+        *,
+        proposal: ActionProposal | None = None,
+        stability_allowed: bool = True,
+        policy_allowed: bool = True,
+        handshake: Any = None,
+        require_action_local: bool = False,
+    ) -> AgenticActionReceipt:
+        """Shared single-action primitive; the supplied budget remains runtime-owned."""
         initial_fingerprint = self.state_fingerprint()
-        exact_proposal = proposal or self.planner.propose_step(active_plan, intent)
+        exact_proposal = proposal or self.planner.propose_step(
+            active_plan, intent, require_action_local=require_action_local
+        )
         if exact_proposal.plan_revision != active_plan.revision:
             raise ValueError("proposal is not bound to the supplied plan revision.")
 
@@ -105,7 +127,7 @@ class AgenticEngine:
         # governance claims before admission can reserve budget or grant authority.
         self.tool_registry.validate_governed_proposal(exact_proposal)
 
-        budget = GovernedBudget(intent.initial_budget)
+        budget_before = budget.remaining
         admission = self.admission.evaluate(
             intent, exact_proposal, initial_fingerprint, budget,
             stability_allowed=stability_allowed, policy_allowed=policy_allowed, handshake=handshake,
@@ -117,17 +139,20 @@ class AgenticEngine:
             execution, tool_result = self.tool_registry.execute_admitted(
                 exact_proposal, admission, intent, self.state_fingerprint()
             )
-            observation = Observation(
-                observation_id=f"observation-{exact_proposal.proposal_digest[:16]}",
-                execution_id=execution.execution_id,
-                evidence={"output": tool_result.output, "data": tool_result.data},
-                complete=True,
-            )
             assert admission.reservation is not None
-            hard_budget_breach = budget.reconcile(
-                admission.reservation,
-                execution.observed_cost or (0.0,) * 8,
-            )
+            if execution.state is ExecutionState.OUTCOME_UNKNOWN:
+                # The reservation stays consumed. Unknown cost is never invented.
+                observation = None
+            else:
+                assert tool_result is not None
+                observation = Observation(
+                    observation_id=f"observation-{exact_proposal.proposal_digest[:16]}",
+                    execution_id=execution.execution_id,
+                    evidence={"output": tool_result.output, "data": tool_result.data},
+                    complete=True,
+                )
+                assert execution.observed_cost is not None
+                hard_budget_breach = budget.reconcile(admission.reservation, execution.observed_cost)
         else:
             execution = ExecutionRecord(
                 execution_id=f"execution-{exact_proposal.proposal_digest[:16]}",
@@ -203,11 +228,72 @@ class AgenticEngine:
             observed,
             budget.remaining,
             hard_budget_breach,
+            budget_before,
         )
         return AgenticActionReceipt(
             intent.intent_id, active_plan.revision, exact_proposal, initial_fingerprint, admission,
             reconciliation, execution, observation, verification, intent_satisfaction, residual, reflection,
             resulting_fingerprint, closure, durable_memory_attempted=False,
+        )
+
+    def run_governed_intent(
+        self,
+        intent: IntentContract,
+        *,
+        max_cycles: int,
+        plan: Plan | None = None,
+        stability_allowed: bool = True,
+        policy_allowed: bool = True,
+        handshake: Any = None,
+    ) -> GovernedRunResult:
+        """Run a finite trajectory whose authority is re-earned on every cycle."""
+        if not isinstance(intent, IntentContract):
+            raise ValueError("run_governed_intent requires an IntentContract.")
+        if isinstance(max_cycles, bool) or not isinstance(max_cycles, int) or max_cycles <= 0:
+            raise ValueError("max_cycles must be a positive integer.")
+        active_plan = plan or self.planner.create_plan(intent.goal)
+        budget = GovernedBudget(intent.initial_budget)
+        receipts: list[AgenticActionReceipt] = []
+        termination = "MAX_CYCLES_REACHED"
+
+        for _ in range(max_cycles):
+            receipt = self._run_governed_transaction(
+                intent, active_plan, budget, stability_allowed=stability_allowed,
+                policy_allowed=policy_allowed, handshake=handshake, require_action_local=True,
+            )
+            receipts.append(receipt)
+            decision = receipt.closure.decision
+
+            if receipt.verification.status is VerificationStatus.VERIFIED:
+                self.planner.commit_verified_step(active_plan, receipt)
+
+            if decision is ClosureDecision.CONTINUE:
+                if active_plan.current_step() is None:
+                    termination = "PLAN_EXHAUSTED_WITH_INTENT_UNRESOLVED"
+                    break
+                continue
+            if decision is ClosureDecision.REPLAN:
+                self.planner.replan(active_plan, receipt.closure.reason_codes[0])
+                if active_plan.status == "FAILED":
+                    termination = "REPLAN_FAILED_CLOSED"
+                    break
+                continue
+
+            termination = {
+                ClosureDecision.HALT_SUCCESS: "INTENT_SATISFIED",
+                ClosureDecision.HALT_FAILURE: "GOVERNED_FAILURE",
+                ClosureDecision.ESCALATE: "AUTOMATION_ESCALATED",
+                ClosureDecision.CONSTRAIN: "CONSTRAINT_TRANSITION_UNAVAILABLE",
+                ClosureDecision.REFLECT: "REFLECTION_UNRESOLVED",
+            }[decision]
+            break
+
+        final_closure = receipts[-1].closure if receipts else None
+        return GovernedRunResult(
+            intent.intent_id, intent.intent_digest, tuple(receipts), len(receipts), budget.remaining,
+            final_closure, termination,
+            bool(final_closure and final_closure.decision is ClosureDecision.HALT_SUCCESS),
+            active_plan.revision,
         )
 
     def run_goal(self, goal: str, max_steps: int = 10) -> AgenticRunResult:
