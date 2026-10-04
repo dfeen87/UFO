@@ -3219,13 +3219,13 @@ Budget handling should be tested for both accounting correctness and directional
 
 Given two otherwise identical states with
 
-$$\beta_{A} \gt  \beta_{B},$$
+$$\beta_{A} >  \beta_{B},$$
 
 an action requiring cost $c$ should not become admissible under the smaller budget if it is inadmissible under the larger budget solely because of budget sufficiency.
 
 Likewise, for two otherwise identical actions with
 
-$${\widehat{c}}_{A} \lt  {\widehat{c}}_{B},$$
+$${\widehat{c}}_{A} <  {\widehat{c}}_{B},$$
 
 the more expensive action must not gain an admission advantage when cost is the only changed variable.
 
@@ -3721,7 +3721,7 @@ They also provide a basis for future regression fixtures.
 
 The principal pass condition for the initial v5 model is not:
 
-$$\text{task completion rate} = 100\char37 .$$
+$$\text{task completion rate} = 100\% .$$
 
 Some scenarios are deliberately designed to fail, block, or escalate.
 
@@ -5059,29 +5059,29 @@ Governed Agentic Closure is recurrent by design. The reference state machine alr
 
 The state presented to the next planning step should therefore be the reconciled state produced by the previous cycle, not a stale copy of the state that existed before execution. A useful feedback context may be represented as
 
-\[
+$$
 Z_{t+1} = \left(X_{t+1}, \rho_t, M_{t+1}, B_{t+1}, \Pi_{t+1}, D_t\right),
-\]
+$$
 
-where \(X_{t+1}\) denotes the resulting authoritative U.F.O. state, \(\rho_t\) the unresolved residual evidence, \(M_{t+1}\) the qualified durable-memory state, \(B_{t+1}\) the remaining governed budget, \(\Pi_{t+1}\) the active validated plan state or revision, and \(D_t\) the closure decision from the completed cycle. These quantities do not all confer authority. Together they describe what the system has verifiably become after the consequences of the previous action have been reconciled.
+where $X_{t+1}$ denotes the resulting authoritative U.F.O. state, $\rho_t$ the unresolved residual evidence, $M_{t+1}$ the qualified durable-memory state, $B_{t+1}$ the remaining governed budget, $\Pi_{t+1}$ the active validated plan state or revision, and $D_t$ the closure decision from the completed cycle. These quantities do not all confer authority. Together they describe what the system has verifiably become after the consequences of the previous action have been reconciled.
 
 The next proposal may then be generated from the intent and this updated feedback context:
 
-\[
+$$
 a_{t+1} = P(I, Z_{t+1}).
-\]
+$$
 
 This richer planning context does not weaken the separation between planning and authorization. The next proposal remains only a candidate and must pass a new prospective admission decision against the current authoritative state:
 
-\[
+$$
 V_{t+1}^{-} = \mathcal{A}^{-}(a_{t+1}, I, X_{t+1}).
-\]
+$$
 
-**Closure terminates the authority of cycle \(t\); it does not terminate information flow through the architecture.**
+**Closure terminates the authority of cycle $t$; it does not terminate information flow through the architecture.**
 
 This distinction turns recurrence into a closed governed feedback loop. Execution changes the world or produces evidence about it; verification and residual formation characterize the consequence; reflection may alter validated internal state; memory governance determines what becomes durable; resource reconciliation changes the remaining envelope; and Closure determines whether those reconciled results may participate in another planning cycle.
 
-\[
+$$
 Z_t
 \rightarrow
 \text{Proposal}
@@ -5099,7 +5099,7 @@ Z_t
 Z_{t+1}
 \rightarrow
 \text{Proposal}.
-\]
+$$
 
 Informally, this can be interpreted as an expansion-contraction rhythm. Planning, admission, and execution push a bounded candidate action outward toward an environment. Observation, verification, residual formation, reflection, memory, and Closure draw the consequences back into authoritative state. The next cycle begins from that changed state. This interpretation is architectural rather than biological; it does not imply consciousness, organic behavior, or continuous self-modification.
 
@@ -5109,19 +5109,19 @@ Closed recurrence also makes efficiency an explicit architectural question. For 
 
 One optional reference diagnostic for a controlled implementation may therefore relate verified progress toward the active intent to the cost and unresolved consequences of obtaining that progress:
 
-\[
+$$
 \eta_t =
 \frac{\Delta G_t}
 {\varepsilon + C_t + \lambda_1 \lVert \rho_t \rVert + \lambda_2 U_t + \lambda_3 S_t},
-\]
+$$
 
-where \(\Delta G_t\) denotes verified goal-relevant progress, \(C_t\) observed governed resource expenditure, \(\lVert \rho_t \rVert\) a declared residual magnitude for the applicable residual domain, \(U_t\) unresolved execution or verification uncertainty, \(S_t\) governed side-effect exposure, \(\varepsilon > 0\) a stabilizing constant, and \(\lambda_1\), \(\lambda_2\), and \(\lambda_3\) explicit non-negative weights. This expression is not proposed as a universal utility function. Different workloads may require different domains, scales, or no scalar efficiency summary at all.
+where $\Delta G_t$ denotes verified goal-relevant progress, $C_t$ observed governed resource expenditure, $\lVert \rho_t \rVert$ a declared residual magnitude for the applicable residual domain, $U_t$ unresolved execution or verification uncertainty, $S_t$ governed side-effect exposure, $\varepsilon > 0$ a stabilizing constant, and $\lambda_1$, $\lambda_2$, and $\lambda_3$ explicit non-negative weights. This expression is not proposed as a universal utility function. Different workloads may require different domains, scales, or no scalar efficiency summary at all.
 
 Most importantly, **efficiency remains diagnostic**. It may inform planning, route selection, decomposition, or a decision to replan, but it does not authorize execution.
 
-\[
+$$
 \eta_t \nRightarrow \operatorname{Authorize}(a_{t+1}).
-\]
+$$
 
 A high-efficiency candidate still requires fresh prospective admission. A low-efficiency path may remain authorized if it is the only admissible route to a required objective. This preserves the BEDROCK-derived rule that a useful diagnostic does not silently become an authority source.
 
@@ -5140,43 +5140,43 @@ This refinement does not replace Governed Agentic Closure. It clarifies what Clo
 
 Governed Adaptive Recurrence establishes a bounded feedback architecture in which U.F.O. can act, reconcile consequences, adapt authoritative state, and generate subsequent proposals without allowing adaptation to inherit execution authority. A natural future direction is to extend this recurrent substrate toward **compartmentalized machine-learning computation at the upper boundaries of the V-Channel architecture**. Rather than embedding one monolithic learning system into the U.F.O. core, specialized machine-learning capabilities may be attached to governed V-Channel interfaces, allowing distinct functions such as classification, prediction, anomaly detection, perception, language processing, control, or optimization to remain computationally specialized while participating in a common governance substrate.
 
-Conceptually, a V-Channel \(V_k\) may expose a bounded interface to a machine-learning compartment \(\mathcal{M}_k\):
+Conceptually, a V-Channel $V_k$ may expose a bounded interface to a machine-learning compartment $\mathcal{M}_k$:
 
-\[
+$$
 V_k \rightarrow \mathcal{M}_k \rightarrow E_k \rightarrow V_k^{-1},
-\]
+$$
 
-where \(E_k\) represents the evidence returned by the compartment rather than an automatically authoritative conclusion. Such evidence may include model output, uncertainty, provenance, resource consumption, confidence information, or other declared diagnostic state. The architectural distinction established throughout Paper XII would remain intact:
+where $E_k$ represents the evidence returned by the compartment rather than an automatically authoritative conclusion. Such evidence may include model output, uncertainty, provenance, resource consumption, confidence information, or other declared diagnostic state. The architectural distinction established throughout Paper XII would remain intact:
 
-\[
+$$
 \text{Model Output} \neq \text{Verified Evidence},
-\]
+$$
 
-\[
+$$
 \text{Model Confidence} \neq \text{Authorization},
-\]
+$$
 
-\[
+$$
 \text{Model Selection} \neq \text{Execution Authority}.
-\]
+$$
 
 A machine-learning compartment would therefore remain subordinate to the same proposal, admission, verification, residual, memory, and Closure semantics established for governed agentic execution. Learned computation may influence what U.F.O. proposes or how it interprets evidence, but it would not inherit global authority merely because a model produced a high-confidence result.
 
-This approach also creates a potential relationship between U.F.O.'s deformable geometry and learned computation. The authoritative state \(X_t\), current intent \(I\), residual evidence \(\rho_t\), and resource state \(B_t\) may eventually influence which V-Channel or specialized learning compartment receives computational attention:
+This approach also creates a potential relationship between U.F.O.'s deformable geometry and learned computation. The authoritative state $X_t$, current intent $I$, residual evidence $\rho_t$, and resource state $B_t$ may eventually influence which V-Channel or specialized learning compartment receives computational attention:
 
-\[
+$$
 k^{*}=R_V(I,X_t,\rho_t,B_t),
-\]
+$$
 
 followed by
 
-\[
+$$
 E_t=\mathcal{M}_{k^{*}}(x_t).
-\]
+$$
 
 The resulting evidence would then return through the governed recurrent architecture rather than bypass it:
 
-\[
+$$
 X_t
 \rightarrow
 R_V
@@ -5188,7 +5188,7 @@ E_t
 \rho_t
 \rightarrow
 X_{t+1}.
-\]
+$$
 
 This future direction would preserve a central U.F.O. design principle: **specialization should occur at declared computational boundaries without duplicating or weakening the governing substrate**. Different machine-learning compartments could employ different internal techniques or model families while exposing a common bounded contract to U.F.O. The radial membrane and V-Channels would therefore remain model-agnostic at the architectural core while providing governed pathways through which specialized learned computation may participate.
 
