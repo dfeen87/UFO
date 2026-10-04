@@ -151,10 +151,18 @@ class AgenticEngine:
         )
         residual = AgenticResidual(
             proposal_digest=exact_proposal.proposal_digest,
-            goal=(
-                () if intent_satisfaction.status is VerificationStatus.VERIFIED
-                else tuple(intent_satisfaction.reason_codes)
-            ),
+            goal=tuple(dict.fromkeys(
+                (
+                    verification.reason_codes
+                    if verification.status is not VerificationStatus.VERIFIED
+                    else ()
+                )
+                + (
+                    intent_satisfaction.reason_codes
+                    if intent_satisfaction.status is not VerificationStatus.VERIFIED
+                    else ()
+                )
+            )),
             resource=resource_residual,
             policy_authority=policy_residual,
             stability=tuple(code for code in admission.reason_codes if "STABILITY" in code),
