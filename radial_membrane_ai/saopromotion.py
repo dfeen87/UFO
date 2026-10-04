@@ -82,6 +82,18 @@ class SAOPromotor:
         - reproject: Re-projection required to handle residues before promotion.
         - ascend: Successfully promotes representation to receiving layer.
         """
+        verdict, p_sao, evidence = self.evaluate(membrane, boundary, target_layer)
+        if verdict == "ascend":
+            self.commit_evaluation(target_layer, evidence["collapse_activation"], p_sao, verdict)
+        return verdict, p_sao, evidence
+
+    def evaluate(
+        self,
+        membrane: RadialMembrane,
+        boundary: BoundaryGeometry,
+        target_layer: str
+    ) -> Tuple[str, float, Dict[str, Any]]:
+        """Purely evaluate promotion; do not publish promotion evidence."""
         valid_layers = {
             "Holistic Governor", "identity core", "semantic memory",
             "execution layer", "policy layer", "agent orchestration"
@@ -170,20 +182,17 @@ class SAOPromotor:
         if verdict == "ascend" and temporal_gate_verdict != "ascend":
             verdict = temporal_gate_verdict
 
-        # Promotion evidence is the transaction commit.  Temporal governance is
-        # part of authorization, so no record may be observable before its final
-        # verdict has survived every gate.
-        if verdict == "ascend":
-            self.promotion_ledger.append({
-                "layer": target_layer,
-                "activation": collapse_activation,
-                "p_sao": p_sao,
-                "verdict": verdict,
-            })
-
         return verdict, p_sao, {
             "collapse_activation": collapse_activation,
             "max_closure_ratio": max_i,
             "beta": beta,
             "temporal_gate_verdict": temporal_gate_verdict
         }
+
+    def commit_evaluation(self, layer: str, activation: float, p_sao: float, verdict: str) -> None:
+        """Publish evidence only after the caller's complete governing verdict."""
+        if verdict != "ascend":
+            raise ValueError("only an ascending evaluation may be committed")
+        self.promotion_ledger.append({
+            "layer": layer, "activation": activation, "p_sao": p_sao, "verdict": verdict,
+        })

@@ -17,9 +17,17 @@ from radial_membrane_ai.agentic.contracts import (
     GovernedRunResult,
     IntentContract,
     IntentSatisfaction,
+    MemoryCommitResult,
+    MemoryCommitStatus,
+    MemoryQualificationResult,
+    MemoryQualificationStatus,
+    MemoryStageEvidence,
     Observation,
     ReflectionCandidate,
     ReflectionResult,
+    PlanTransitionEvidence,
+    PlanTransitionType,
+    ProvisionalMemoryCandidate,
     ResourceBudget,
     ResourceReservation,
     SideEffectClass,
@@ -27,6 +35,7 @@ from radial_membrane_ai.agentic.contracts import (
     VerificationStatus,
 )
 from radial_membrane_ai.agentic.engine import AgenticEngine, AgenticSwarmEngine
+from radial_membrane_ai.agentic.memory import GovernedMemoryConfig, GovernedMemoryPipeline
 from radial_membrane_ai.agentic.planner import GoalPlanner, Plan, PlanStep
 from radial_membrane_ai.agentic.reflection import ReflectionEngine, ReflectionRecord
 from radial_membrane_ai.agentic.swarm import AgentBid, SwarmAuctioneer, SwarmContract
@@ -61,12 +70,22 @@ __all__ = [
     "ExpectedPostcondition",
     "GoalPlanner",
     "GovernedRunResult",
+    "GovernedMemoryConfig",
+    "GovernedMemoryPipeline",
     "IntentContract",
     "IntentSatisfaction",
     "MemoryRetrievalTool",
+    "MemoryCommitResult",
+    "MemoryCommitStatus",
+    "MemoryQualificationResult",
+    "MemoryQualificationStatus",
+    "MemoryStageEvidence",
     "Observation",
     "Plan",
     "PlanStep",
+    "PlanTransitionEvidence",
+    "PlanTransitionType",
+    "ProvisionalMemoryCandidate",
     "PythonCodeExecutorTool",
     "ReflectionCandidate",
     "ReflectionEngine",
