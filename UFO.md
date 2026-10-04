@@ -5053,7 +5053,90 @@ $$\text{Paper} \rightarrow \text{Invariant} \rightarrow \text{Implementation} \r
 
 That relationship is itself part of the U.F.O. engineering methodology.
 
-## 9.14 Conclusion
+## 9.14 Governed Adaptive Recurrence: Closure as a Feedback Boundary
+
+Governed Agentic Closure is recurrent by design. The reference state machine already returns `CONTINUE` to planning, and the model requires every subsequent action to receive renewed prospective admission. The implementation path developed from this paper suggests a stronger interpretation: **Closure should be understood not merely as the endpoint of an action transaction, but as the governed feedback boundary between consecutive agentic states.**
+
+The state presented to the next planning step should therefore be the reconciled state produced by the previous cycle, not a stale copy of the state that existed before execution. A useful feedback context may be represented as
+
+\[
+Z_{t+1} = \left(X_{t+1}, \rho_t, M_{t+1}, B_{t+1}, \Pi_{t+1}, D_t\right),
+\]
+
+where \(X_{t+1}\) denotes the resulting authoritative U.F.O. state, \(\rho_t\) the unresolved residual evidence, \(M_{t+1}\) the qualified durable-memory state, \(B_{t+1}\) the remaining governed budget, \(\Pi_{t+1}\) the active validated plan state or revision, and \(D_t\) the closure decision from the completed cycle. These quantities do not all confer authority. Together they describe what the system has verifiably become after the consequences of the previous action have been reconciled.
+
+The next proposal may then be generated from the intent and this updated feedback context:
+
+\[
+a_{t+1} = P(I, Z_{t+1}).
+\]
+
+This richer planning context does not weaken the separation between planning and authorization. The next proposal remains only a candidate and must pass a new prospective admission decision against the current authoritative state:
+
+\[
+V_{t+1}^{-} = \mathcal{A}^{-}(a_{t+1}, I, X_{t+1}).
+\]
+
+**Closure terminates the authority of cycle \(t\); it does not terminate information flow through the architecture.**
+
+This distinction turns recurrence into a closed governed feedback loop. Execution changes the world or produces evidence about it; verification and residual formation characterize the consequence; reflection may alter validated internal state; memory governance determines what becomes durable; resource reconciliation changes the remaining envelope; and Closure determines whether those reconciled results may participate in another planning cycle.
+
+\[
+Z_t
+\rightarrow
+\text{Proposal}
+\rightarrow
+\text{Admission}
+\rightarrow
+\text{Action}
+\rightarrow
+\text{Evidence}
+\rightarrow
+\text{Reconciliation}
+\rightarrow
+\text{Closure}
+\rightarrow
+Z_{t+1}
+\rightarrow
+\text{Proposal}.
+\]
+
+Informally, this can be interpreted as an expansion-contraction rhythm. Planning, admission, and execution push a bounded candidate action outward toward an environment. Observation, verification, residual formation, reflection, memory, and Closure draw the consequences back into authoritative state. The next cycle begins from that changed state. This interpretation is architectural rather than biological; it does not imply consciousness, organic behavior, or continuous self-modification.
+
+The adaptive part of the loop is likewise narrower than arbitrary source-code mutation. U.F.O. may deform its membrane state, accumulate or resolve residuals, qualify durable memory, consume budget, revise a plan, and change the context used to produce a subsequent proposal. Those are governed runtime-state transitions. The governing contracts themselves do not become writable merely because the agent is permitted to adapt.
+
+Closed recurrence also makes efficiency an explicit architectural question. For a governed agent, efficiency should not be defined only as action frequency, token throughput, or the number of completed plan steps. A system that refuses an unnecessary or poorly evidenced action may be more efficient than one that acts aggressively and later spends additional resources correcting residuals.
+
+One optional reference diagnostic for a controlled implementation may therefore relate verified progress toward the active intent to the cost and unresolved consequences of obtaining that progress:
+
+\[
+\eta_t =
+\frac{\Delta G_t}
+{\varepsilon + C_t + \lambda_1 \lVert \rho_t \rVert + \lambda_2 U_t + \lambda_3 S_t},
+\]
+
+where \(\Delta G_t\) denotes verified goal-relevant progress, \(C_t\) observed governed resource expenditure, \(\lVert \rho_t \rVert\) a declared residual magnitude for the applicable residual domain, \(U_t\) unresolved execution or verification uncertainty, \(S_t\) governed side-effect exposure, \(\varepsilon > 0\) a stabilizing constant, and \(\lambda_1\), \(\lambda_2\), and \(\lambda_3\) explicit non-negative weights. This expression is not proposed as a universal utility function. Different workloads may require different domains, scales, or no scalar efficiency summary at all.
+
+Most importantly, **efficiency remains diagnostic**. It may inform planning, route selection, decomposition, or a decision to replan, but it does not authorize execution.
+
+\[
+\eta_t \nRightarrow \operatorname{Authorize}(a_{t+1}).
+\]
+
+A high-efficiency candidate still requires fresh prospective admission. A low-efficiency path may remain authorized if it is the only admissible route to a required objective. This preserves the BEDROCK-derived rule that a useful diagnostic does not silently become an authority source.
+
+A conforming closed-loop implementation should therefore preserve the following feedback properties:
+
+- the next proposal is derived from post-cycle authoritative state rather than stale pre-execution state;
+- residual and memory evidence may shape later planning only through their declared, validated contracts;
+- remaining budget carries forward and is never reset merely because another cycle begins;
+- runtime adaptation may change strategy or state but must not silently widen the Intent Contract, delegated authority, or permitted side-effect envelope;
+- efficiency or optimization signals may influence proposal generation but never substitute for admission;
+- and every consequential next action receives a fresh proposal identity, state binding, resource reservation, and admission verdict.
+
+This refinement does not replace Governed Agentic Closure. It clarifies what Closure closes. Closure closes the authority-bearing transaction for the current cycle. When continuation or governed replanning is permitted, it opens only a feedback path from the reconciled state into a new proposal. The architecture therefore becomes more than a sequence that repeats: **it becomes a bounded adaptive recurrence in which verified consequences can reshape what the system proposes next without allowing adaptation to self-authorize.**
+
+## 9.15 Conclusion
 
 Agentic systems become difficult to govern precisely where individually reasonable components begin interacting.
 
