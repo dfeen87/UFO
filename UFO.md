@@ -264,7 +264,7 @@ $$M_{t}^{*} = M_{t} + \Delta M_{t}^{*},$$
 followed by an explicit validation and commit boundary:
 
 $$M_{t + 1} = \left\{ \begin{matrix}
-M_{t}^{*}, & Valid\left( M_{t}^{*} \right), \\
+M_{t}^{*}, & \mathrm{Valid}\left( M_{t}^{*} \right), \\
 M_{t}, & \text{otherwise}.
 \end{matrix} \right.\ $$
 
@@ -328,7 +328,7 @@ $$J_{t}.$$
 
 It may then pass through verification, policy evaluation, temporal qualification, and promotion:
 
-$$o_{t} \rightarrow J_{t} \rightarrow T_{t} \rightarrow \mathcal{A}_{M} \rightarrow Promote \rightarrow \mathcal{M}_{t + 1}.$$
+$$o_{t} \rightarrow J_{t} \rightarrow T_{t} \rightarrow \mathcal{A}_{M} \rightarrow \mathrm{Promote} \rightarrow \mathcal{M}_{t + 1}.$$
 
 Here, $o_{t}$ denotes the immediate observation associated with the current action, $J_{t}$ denotes provisional evidence, $T_{t}$ denotes temporally evaluated evidence state, $\mathcal{A}_{M}$ denotes memory admissibility, and $\mathcal{M}_{t + 1}$ denotes the resulting durable governed memory state if promotion succeeds.
 
@@ -548,11 +548,11 @@ ESCALATE indicates that the system lacks sufficient authority to resolve the act
 
 Only an admissible final pre-execution verdict may cross into execution:
 
-$$V_{t}^{-} = \text{ADMIT} \Rightarrow Execute\left( a_{t} \right).$$
+$$V_{t}^{-} = \text{ADMIT} \Rightarrow \mathrm{Execute}\left( a_{t} \right).$$
 
 For all other verdicts,
 
-$$V_{t}^{-} \neq \text{ADMIT} \Rightarrow \neg Execute\left( a_{t} \right).$$
+$$V_{t}^{-} \neq \text{ADMIT} \Rightarrow \neg \mathrm{Execute}\left( a_{t} \right).$$
 
 This is one of the primary v5 invariants.
 
@@ -588,7 +588,7 @@ $$\boxed{\text{OUTCOME\_UNKNOWN} \neq \text{FAILED}}$$
 
 and particularly for non-idempotent or irreversible actions,
 
-$$\text{OUTCOME\_UNKNOWN} \Rightarrow \not{}\text{automatic retry}.$$
+$$\text{OUTCOME\_UNKNOWN} \nRightarrow \text{automatic retry}.$$
 
 This uncertainty must instead become evidence for verification, reconciliation, and possibly escalation.
 
@@ -675,8 +675,8 @@ where $\oplus$ represents the applicable state-composition operation.
 The candidate must be validated before becoming authoritative:
 
 $$X_{t + 1} = \left\{ \begin{matrix}
-X_{t + 1}^{*}, & Valid\left( X_{t + 1}^{*} \right) = 1, \\
-X_{t}, & Valid\left( X_{t + 1}^{*} \right) = 0.
+X_{t + 1}^{*}, & \mathrm{Valid}\left( X_{t + 1}^{*} \right) = 1, \\
+X_{t}, & \mathrm{Valid}\left( X_{t + 1}^{*} \right) = 0.
 \end{matrix} \right.\ $$
 
 This extends BEDROCK's atomic update discipline directly into the agentic loop.
@@ -765,7 +765,7 @@ Continued autonomy is a new decision.
 
 The complete Paper XII execution model can therefore be written as
 
-$$\left( I,X_{t} \right)\overset{\mathcal{P}}{\rightarrow}a_{t}\overset{\mathcal{A}^{-}}{\rightarrow}V_{t}^{-}\underset{\; V_{t}^{-} = ADMIT\;}{\rightarrow }e_{t}\overset{\mathcal{O}}{\rightarrow}o_{t}\overset{\mathcal{V}}{\rightarrow}q_{t}\overset{\mathcal{R}}{\rightarrow}\rho_{t}\overset{\mathcal{F}}{\rightarrow}X_{t + 1}^{*}\overset{\text{Validate/Commit}}{\rightarrow}X_{t + 1}\overset{\mathcal{C}_{A}}{\rightarrow}D_{t}.$$
+$$\left( I,X_{t} \right)\overset{\mathcal{P}}{\rightarrow}a_{t}\overset{\mathcal{A}^{-}}{\rightarrow}V_{t}^{-}\underset{\; V_{t}^{-} = \mathrm{ADMIT}\;}{\rightarrow }e_{t}\overset{\mathcal{O}}{\rightarrow}o_{t}\overset{\mathcal{V}}{\rightarrow}q_{t}\overset{\mathcal{R}}{\rightarrow}\rho_{t}\overset{\mathcal{F}}{\rightarrow}X_{t + 1}^{*}\overset{\text{Validate/Commit}}{\rightarrow}X_{t + 1}\overset{\mathcal{C}_{A}}{\rightarrow}D_{t}.$$
 
 Memory qualification may occur from verified evidence produced during this sequence, but it does not bypass the final closure decision.
 
@@ -969,7 +969,7 @@ It is incomplete.
 
 Therefore,
 
-$$Incomplete\left( a_{t} \right) \Rightarrow V_{t}^{-} \neq \text{ADMIT}.$$
+$$\mathrm{Incomplete}\left( a_{t} \right) \Rightarrow V_{t}^{-} \neq \text{ADMIT}.$$
 
 ### Expected postconditions
 
@@ -1026,7 +1026,7 @@ $$C_{P} = \text{policy compatibility}.$$
 
 A simplified admission condition may therefore be expressed as
 
-$$Admit\left( a_{t} \right) = C_{\alpha} \land C_{\kappa} \land C_{\beta} \land C_{\chi} \land C_{S} \land C_{P}.$$
+$$\mathrm{Admit}\left( a_{t} \right) = C_{\alpha} \land C_{\kappa} \land C_{\beta} \land C_{\chi} \land C_{S} \land C_{P}.$$
 
 The implementation may contain more detailed evidence, but no negative result in a mandatory gate may be ignored merely because another score is favorable.
 
@@ -1081,7 +1081,7 @@ must hold for the resource dimensions governed by the contract.
 
 An admitted action may then reserve the predicted quantity:
 
-$$\beta_{t}^{reserved} = \beta_{t} - {\widehat{c}}_{t}.$$
+$$\beta_{t}^{\mathrm{reserved}} = \beta_{t} - {\widehat{c}}_{t}.$$
 
 After execution, observed cost $c_{t}$ is reconciled against the prediction:
 
@@ -1191,11 +1191,11 @@ This prevents binary execution status from standing in for evidence quality.
 
 The governing relationship is therefore
 
-$$ToolSuccess\left( e_{t} \right) \Rightarrow \not{}Q_{t} = \text{VERIFIED}.$$
+$$\mathrm{ToolSuccess}\left( e_{t} \right) \nRightarrow Q_{t} = \text{VERIFIED}.$$
 
 Likewise,
 
-$$Q_{t} = \text{UNKNOWN} \Rightarrow \not{}Q_{t} = \text{FAILED}.$$
+$$Q_{t} = \text{UNKNOWN} \nRightarrow Q_{t} = \text{FAILED}.$$
 
 Uncertainty remains explicit.
 
@@ -1273,7 +1273,7 @@ $$\text{reflection commit}.$$
 
 The resulting transition must preserve atomicity:
 
-$$X_{t} \rightarrow X_{t + 1}^{*} \rightarrow Validate \rightarrow X_{t + 1}.$$
+$$X_{t} \rightarrow X_{t + 1}^{*} \rightarrow \mathrm{Validate} \rightarrow X_{t + 1}.$$
 
 If validation fails, then
 
@@ -1306,7 +1306,7 @@ $$J_{t} \rightarrow T_{t} \rightarrow A_{M,t} \rightarrow P_{M,t}.$$
 
 Only a final authorized promotion may modify durable memory:
 
-$$P_{M,t} = \text{PROMOTE} \Rightarrow \mathcal{M}_{t + 1} = Commit\left( J_{t} \right).$$
+$$P_{M,t} = \text{PROMOTE} \Rightarrow \mathcal{M}_{t + 1} = \mathrm{Commit}\left( J_{t} \right).$$
 
 Otherwise,
 
@@ -1574,7 +1574,7 @@ $$a_{t}\mathcal{= P}\left( I,X_{t} \right),$$
 
 the existence of the proposal does not imply authorization:
 
-$$a_{t} \Rightarrow \not{}Authorized\left( a_{t} \right).$$
+$$a_{t} \nRightarrow \mathrm{Authorized}\left( a_{t} \right).$$
 
 Execution requires an independent prospective admission verdict:
 
@@ -1612,7 +1612,7 @@ The same principle applies to multi-agent coordination.
 
 Suppose a swarm auction or task-allocation mechanism selects agent $U_{i}$:
 
-$$Select(K) = U_{i}.$$
+$$\mathrm{Select}(K) = U_{i}.$$
 
 This establishes a preferred executor.
 
@@ -1620,7 +1620,7 @@ It does not establish that every action proposed by $U_{i}$ is admissible.
 
 Therefore,
 
-$$Select\left( U_{i} \right) \Rightarrow \not{}Authorize\left( a_{t} \right).$$
+$$\mathrm{Select}\left( U_{i} \right) \nRightarrow \mathrm{Authorize}\left( a_{t} \right).$$
 
 Each proposed action must remain within the delegated authority envelope
 
@@ -1650,15 +1650,15 @@ Paper XII generalizes this rule.
 
 Examples include:
 
-$$\text{routed=True} \Rightarrow \not{}\text{admissible},$$
+$$\text{routed=True} \nRightarrow \text{admissible},$$
 
-$$\text{selected=True} \Rightarrow \not{}\text{authorized},$$
+$$\text{selected=True} \nRightarrow \text{authorized},$$
 
-$$\text{tool\_success}\text{=True} \Rightarrow \not{}\text{verified},$$
+$$\text{tool\_success = True} \nRightarrow \text{verified},$$
 
 and
 
-$$\text{completed=True} \Rightarrow \not{}\text{closure satisfied}.$$
+$$\text{completed=True} \nRightarrow \text{closure satisfied}.$$
 
 Metadata may describe process state.
 
@@ -1735,15 +1735,15 @@ represent a candidate next state.
 Then
 
 $$X_{t + 1} = \left\{ \begin{matrix}
-X_{t + 1}^{*}, & Valid\left( X_{t + 1}^{*} \right) = 1, \\
-X_{t}, & Valid\left( X_{t + 1}^{*} \right) = 0.
+X_{t + 1}^{*}, & \mathrm{Valid}\left( X_{t + 1}^{*} \right) = 1, \\
+X_{t}, & \mathrm{Valid}\left( X_{t + 1}^{*} \right) = 0.
 \end{matrix} \right.\ $$
 
 The failed case must preserve the previous authoritative state.
 
 Therefore,
 
-$$Rejected\left( X_{t + 1}^{*} \right) \Rightarrow X_{t + 1} = X_{t}.$$
+$$\mathrm{Rejected}\left( X_{t + 1}^{*} \right) \Rightarrow X_{t + 1} = X_{t}.$$
 
 There must be no intermediate result such as:
 
@@ -1861,7 +1861,7 @@ $$S_{t}^{E} = \text{OUTCOME\_UNKNOWN},$$
 
 then the runtime must not infer
 
-$$SafeToRetry\left( a_{t} \right) = 1.$$
+$$\mathrm{SafeToRetry}\left( a_{t} \right) = 1.$$
 
 Instead, the unresolved state should flow into verification, residual formation, closure, and possibly escalation.
 
@@ -1901,7 +1901,7 @@ They do not independently become governing decisions unless the applicable polic
 
 Formally, for diagnostic quantity $d_{t}$,
 
-$$d_{t} \Rightarrow \not{}V_{t}^{-}.$$
+$$d_{t} \nRightarrow V_{t}^{-}.$$
 
 Instead,
 
@@ -2033,7 +2033,7 @@ Inputs used for authority, budget, residuals, stability, verification, memory, o
 
 This includes values such as:
 
-$$NaN,\quad + \infty,\quad - \infty,$$
+$$\mathrm{NaN},\quad + \infty,\quad - \infty,$$
 
 as well as malformed types, boolean values masquerading as numerics, impossible negative quantities, incorrect vector dimensions, and values whose conversion exceeds the supported numerical representation.
 
@@ -2143,7 +2143,7 @@ A perfectly atomic state update may still leave the system outside the condition
 
 Governance correctness therefore requires the applicable invariants to hold together:
 
-$${GovernedCycle}_{t} = \bigwedge_{j \in J_{t}}I_{j},$$
+$${\mathrm{GovernedCycle}}_{t} = \bigwedge_{j \in J_{t}}I_{j},$$
 
 where $J_{t}$ is the set of mandatory invariants applicable to cycle $t$.
 
@@ -2520,7 +2520,7 @@ $$a_{t + 1}\mathcal{= P}\left( I,X_{t + 1} \right).$$
 
 It does **not** imply:
 
-$$Execute\left( a_{t + 1} \right).$$
+$$\mathrm{Execute}\left( a_{t + 1} \right).$$
 
 The next action must independently satisfy:
 
@@ -2550,7 +2550,7 @@ denote plan revision $k$ during cycle $t$.
 
 A replan may produce
 
-$$P_{t}^{(k + 1)} = Replan\left( P_{t}^{(k)},I,X_{t},\rho_{t} \right).$$
+$$P_{t}^{(k + 1)} = \mathrm{Replan}\left( P_{t}^{(k)},I,X_{t},\rho_{t} \right).$$
 
 The following must remain invariant unless an explicit external authority update occurs:
 
@@ -2580,7 +2580,7 @@ Resource handling should also preserve transaction ordering.
 
 For an admitted proposal with predicted cost ${\widehat{c}}_{t}$,
 
-$$Reserve\left( {\widehat{c}}_{t} \right)$$
+$$\mathrm{Reserve}\left( {\widehat{c}}_{t} \right)$$
 
 occurs before execution.
 
@@ -2676,7 +2676,7 @@ be the success conditions of the Intent Contract.
 
 Then successful closure requires sufficient verified evidence for the mandatory conditions:
 
-$$\underset{j = 1}{\bigwedge^{n}}Satisfied\left( \sigma_{j} \right) = 1$$
+$$\underset{j = 1}{\bigwedge^{n}}\mathrm{Satisfied}\left( \sigma_{j} \right) = 1$$
 
 for those conditions designated mandatory.
 
@@ -2726,7 +2726,7 @@ must remain true.
 
 The invariant is
 
-$$Rejected\left( X_{t + 1}^{*} \right) \Rightarrow X_{t + 1} = X_{t}.$$
+$$\mathrm{Rejected}\left( X_{t + 1}^{*} \right) \Rightarrow X_{t + 1} = X_{t}.$$
 
 This is particularly important because reflection is generated from system feedback and may eventually incorporate probabilistic or model-generated reasoning.
 
@@ -2766,7 +2766,7 @@ $$P_{M,t} = \text{PROMOTE}$$
 
 permits
 
-$$\mathcal{M}_{t + 1} = Commit\left( J_{t} \right).$$
+$$\mathcal{M}_{t + 1} = \mathrm{Commit}\left( J_{t} \right).$$
 
 The rule follows directly from BEDROCK III's SAO correction:
 
@@ -2982,10 +2982,6 @@ The v5 reference implementation makes the complete transaction explicit.
 For implementation, the important part of that final statement is not the metaphor. It is the sequence.
 
 Every verb corresponds to a distinct engineering responsibility, and each boundary can be independently tested.
-
-**Section 7 will convert this reference state machine into a falsification and seeded-experiment plan so that the v5 implementation can be evaluated against the paper rather than merely appearing to resemble it.**
-
-Absolutely. We’ll leave **Section 5 intentionally open** and continue forward.
 
 # 7. Falsification and Seeded Validation Plan
 
@@ -3280,8 +3276,8 @@ As side-effect severity increases, the system should not become less restrictive
 A useful expected relation is:
 
 $$\begin{matrix}
-Permission\left( \text{IRREVERSIBLE} \right) \leq Permission\left( \text{COMPENSATABLE} \right) \\
- \leq Permission\left( \text{REVERSIBLE} \right) \leq Permission\left( \text{OBSERVATIONAL} \right),
+\mathrm{Permission}\left( \text{IRREVERSIBLE} \right) \leq \mathrm{Permission}\left( \text{COMPENSATABLE} \right) \\
+ \leq \mathrm{Permission}\left( \text{REVERSIBLE} \right) \leq \mathrm{Permission}\left( \text{OBSERVATIONAL} \right),
 \end{matrix}$$
 
 for configurations in which side-effect class contributes monotonically to the governing decision.
@@ -3417,7 +3413,7 @@ The implementation must reject the complete candidate without retaining earlier 
 
 If
 
-$$Valid\left( X_{t + 1}^{*} \right) = 0,$$
+$$\mathrm{Valid}\left( X_{t + 1}^{*} \right) = 0,$$
 
 then
 
@@ -3776,8 +3772,6 @@ The simulator attempts to falsify it.
 The implementation must then prove itself against both.
 
 **Section 8 defines the implementation boundary for U.F.O. v5.0.0: what the release should actually build, what should remain unchanged from v4, and which research claims remain deliberately outside scope.**
-
-Absolutely. Section 8 should now turn the paper from **model + tests** into an actual implementation boundary. This is where an engineer should be able to say: *I know what belongs in v5, what stays from v4, and what would be scope creep.*
 
 # 8. U.F.O. v5.0.0 Implementation Boundary and Scope
 
@@ -4286,11 +4280,11 @@ After a winning agent is selected, however, the selected agent MUST still enter 
 
 Therefore:
 
-$$Winner(K) = U_{i}$$
+$$\mathrm{Winner}(K) = U_{i}$$
 
 does not imply:
 
-$$Authorized\left( a_{t} \right) = 1.$$
+$$\mathrm{Authorized}\left( a_{t} \right) = 1.$$
 
 The agent inherits only the authority explicitly delegated by its contract.
 
@@ -4834,7 +4828,7 @@ The distinction becomes especially important for irreversible or non-idempotent 
 
 In such cases,
 
-$$\text{OUTCOME\_UNKNOWN} \Rightarrow \not{}\text{automatic retry}.$$
+$$\text{OUTCOME\_UNKNOWN} \nRightarrow \text{automatic retry}.$$
 
 Instead, uncertainty becomes residual evidence that may require observation, verification, constraint, or escalation.
 
@@ -4870,7 +4864,7 @@ But reflective reasoning does not receive privileged write access.
 
 The proposal must still become a valid candidate state and pass the relevant state-validation boundary:
 
-$$X_{t} \rightarrow X_{t + 1}^{*} \rightarrow Validate \rightarrow X_{t + 1}.$$
+$$X_{t} \rightarrow X_{t + 1}^{*} \rightarrow \mathrm{Validate} \rightarrow X_{t + 1}.$$
 
 If the candidate is invalid,
 
@@ -4894,7 +4888,7 @@ These are different questions.
 
 Therefore,
 
-$$Select\left( U_{i} \right) \Rightarrow \not{}Authorize\left( a_{t} \right).$$
+$$\mathrm{Select}\left( U_{i} \right) \nRightarrow \mathrm{Authorize}\left( a_{t} \right).$$
 
 Delegation may narrow authority.
 
