@@ -140,9 +140,57 @@ class GovernedMemoryPipeline:
         except (ValueError, TypeError, ArithmeticError):
             verdict, p_sao, temporal = "unknown", float("nan"), {}
         temporal_digest = stable_digest(temporal) if temporal else None
-        if not math.isfinite(p_sao):
+        temporal_state = getattr(membrane, "temporal_state", None)
+        history_source = getattr(temporal_state, "admissibility_history", ())
+        tension_source = getattr(temporal_state, "tension_history", ())
+        try:
+            history = tuple(history_source)
+            tensions = tuple(tension_source)
+            sequences_valid = True
+        except TypeError:
+            history = ()
+            tensions = ()
+            sequences_valid = False
+        consecutive = getattr(temporal_state, "consecutive_admissible_ticks", None)
+        horizon = getattr(temporal_state, "long_horizon", None)
+        required_history = horizon if isinstance(horizon, int) and not isinstance(horizon, bool) else math.inf
+        admissible_ticks = (
+            consecutive if isinstance(consecutive, int) and not isinstance(consecutive, bool) else -1
+        )
+        temporal_values = history + tensions
+        temporal_valid = (
+            temporal_state is not None
+            and sequences_valid
+            and not isinstance(consecutive, bool)
+            and isinstance(consecutive, int)
+            and consecutive >= 0
+            and not isinstance(horizon, bool)
+            and isinstance(horizon, int)
+            and horizon > 0
+            and len(history) == len(tensions)
+            and all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                    and math.isfinite(value) and value >= 0.0 for value in temporal_values)
+        )
+        evidence_values = (
+            (temporal.get("collapse_activation"), temporal.get("max_closure_ratio"), temporal.get("beta"))
+            if isinstance(temporal, Mapping) else ()
+        )
+        evaluation_valid = len(evidence_values) == 3 and all(
+            isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+            for value in evidence_values
+        )
+        if not isinstance(p_sao, (int, float)) or isinstance(p_sao, bool) or not math.isfinite(p_sao):
             q_status = MemoryQualificationStatus.UNKNOWN
             q_reasons = ("TEMPORAL_EVIDENCE_NON_FINITE",)
+        elif not temporal_valid or not evaluation_valid:
+            q_status = MemoryQualificationStatus.UNKNOWN
+            q_reasons = ("TEMPORAL_EVIDENCE_INVALID",)
+        elif verdict == "block":
+            q_status = MemoryQualificationStatus.REJECTED
+            q_reasons = ("TEMPORAL_BLOCKED",)
+        elif len(history) < required_history or admissible_ticks < required_history:
+            q_status = MemoryQualificationStatus.PROVISIONAL
+            q_reasons = ("TEMPORAL_HISTORY_INSUFFICIENT",)
         elif verdict == "ascend":
             q_status = MemoryQualificationStatus.QUALIFIED
             q_reasons = ("TEMPORAL_QUALIFIED",)
@@ -177,24 +225,35 @@ class GovernedMemoryPipeline:
             return MemoryStageEvidence(candidate, qualification, False, "POLICY_REJECTED", empty,
                                        ("MEMORY_POLICY_REJECTED",))
 
-        commit = self._atomic_commit(candidate)
+        commit = self._atomic_commit(candidate, temporal["collapse_activation"], p_sao)
         if commit.status in {MemoryCommitStatus.COMMITTED, MemoryCommitStatus.ALREADY_COMMITTED}:
-            # Publication is deliberately last: neither SAO nor memory history can
-            # claim success until the final verdict and durable commit both exist.
-            if commit.status is MemoryCommitStatus.COMMITTED:
-                self.sao.commit_evaluation("semantic memory", temporal["collapse_activation"], p_sao, "ascend")
             return MemoryStageEvidence(candidate, qualification, True, "COMMIT_ACCEPTED", commit,
                                        commit.reason_codes)
         return MemoryStageEvidence(candidate, qualification, True, "COMMIT_FAILED", commit,
                                    commit.reason_codes)
 
-    def _atomic_commit(self, candidate: ProvisionalMemoryCandidate) -> MemoryCommitResult:
+    def _atomic_commit(
+        self, candidate: ProvisionalMemoryCandidate, collapse_activation: float, p_sao: float,
+    ) -> MemoryCommitResult:
         commits = self.memory.governed_commits  # type: ignore[attr-defined]
         prior = commits.get(candidate.candidate_digest)
         before_digest = semantic_memory_digest(self.memory)
         if prior is not None:
             if prior != candidate.candidate_key:
                 raise ValidationError("candidate replay target mismatch.")
+            publications = [
+                item for item in self.sao.promotion_ledger
+                if item.get("layer") == "semantic memory"
+                and item.get("candidate_digest") == candidate.candidate_digest
+                and item.get("target_key") == candidate.candidate_key
+                and item.get("verdict") == "ascend"
+            ]
+            if len(publications) != 1:
+                return MemoryCommitResult(
+                    MemoryCommitStatus.FAILED, candidate.candidate_digest,
+                    candidate.candidate_key, before_digest,
+                    ("AUTHORITATIVE_PUBLICATION_DISAGREEMENT",),
+                )
             return MemoryCommitResult(
                 MemoryCommitStatus.ALREADY_COMMITTED, candidate.candidate_digest,
                 candidate.candidate_key, before_digest, ("EXACT_REPLAY",),
@@ -202,6 +261,7 @@ class GovernedMemoryPipeline:
         snapshot = (
             deepcopy(self.memory.local_store), deepcopy(self.memory.history),
             deepcopy(self.memory.residuals), deepcopy(self.memory.curvature_state), deepcopy(commits),
+            deepcopy(self.sao.promotion_ledger),
         )
         try:
             assert self.config is not None
@@ -214,6 +274,11 @@ class GovernedMemoryPipeline:
             if self.failure_injector is not None:
                 self.failure_injector()
             commits[candidate.candidate_digest] = candidate.candidate_key
+            self.sao.commit_evaluation(
+                "semantic memory", collapse_activation, p_sao, "ascend",
+                candidate_digest=candidate.candidate_digest,
+                target_key=candidate.candidate_key,
+            )
             digest = semantic_memory_digest(self.memory)
             return MemoryCommitResult(
                 MemoryCommitStatus.COMMITTED, candidate.candidate_digest, candidate.candidate_key,
@@ -221,8 +286,9 @@ class GovernedMemoryPipeline:
             )
         except Exception:
             (self.memory.local_store, self.memory.history, self.memory.residuals,
-             self.memory.curvature_state, restored) = snapshot
+             self.memory.curvature_state, restored, ledger) = snapshot
             self.memory.governed_commits = restored  # type: ignore[attr-defined]
+            self.sao.promotion_ledger = ledger
             return MemoryCommitResult(
                 MemoryCommitStatus.FAILED, candidate.candidate_digest, candidate.candidate_key,
                 semantic_memory_digest(self.memory), ("ATOMIC_COMMIT_ROLLED_BACK",),

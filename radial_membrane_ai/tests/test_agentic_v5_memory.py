@@ -4,6 +4,7 @@ from copy import deepcopy
 from dataclasses import replace
 
 import pytest
+import radial_membrane_ai.agentic.memory as memory_module
 
 from radial_membrane_ai.agentic import (
     AgenticEngine,
@@ -21,6 +22,11 @@ from radial_membrane_ai.agentic import (
     IntentContract,
     VerificationStatus,
 )
+from radial_membrane_ai.agentic.contracts import (
+    MemoryCommitResult,
+    MemoryQualificationResult,
+    MemoryStageEvidence,
+)
 from radial_membrane_ai.agentic.tools import ToolCapability
 from radial_membrane_ai.exceptions import ValidationError
 from radial_membrane_ai.semantic_memory import AdmissibilityContext, MemoryPolicy
@@ -34,6 +40,9 @@ def configured_engine(*, coherence=0.8, failure=None, qualified=True):
     activation = 0.8 if qualified else 0.1
     for string in engine.engine.membrane.strings:
         string.activation = activation
+    if qualified:
+        for _ in range(engine.engine.membrane.temporal_state.long_horizon):
+            engine.engine.membrane.temporal_state.update_tick_history(0.1, 0.1, 0.1)
     return engine
 
 
@@ -56,7 +65,9 @@ def plan(expected="memory evidence"):
 def snapshot(engine):
     memory = engine.engine.semantic_memory
     return (deepcopy(memory.local_store), deepcopy(memory.history), deepcopy(memory.residuals),
-            deepcopy(memory.curvature_state), deepcopy(engine.engine.sao_promotor.promotion_ledger))
+            deepcopy(memory.curvature_state), deepcopy(memory.governed_commits),
+            memory_module.semantic_memory_digest(memory),
+            deepcopy(engine.engine.sao_promotor.promotion_ledger))
 
 
 def test_candidate_is_not_memory_and_temporal_provisional_has_no_side_effects():
@@ -175,9 +186,8 @@ def test_forged_memory_provenance_and_plan_trajectory_are_rejected():
     result = engine.run_governed_intent(governed_intent(), max_cycles=1, plan=plan())
     receipt = result.receipts[0]
     candidate = replace(receipt.memory.candidate, observation_id="other-observation")
-    forged_memory = replace(receipt.memory, candidate=candidate, qualification=None)
     with pytest.raises(ValidationError):
-        replace(receipt, memory=forged_memory)
+        replace(receipt.memory, candidate=candidate, qualification=None)
     forged_transition = replace(receipt.plan_transition, resulting_plan_revision="forged-revision")
     with pytest.raises(ValidationError):
         replace(result, receipts=(replace(receipt, plan_transition=forged_transition),))
@@ -188,3 +198,140 @@ def test_canonical_memory_scenario_excludes_diagnostic_timestamps():
     second = configured_engine().run_governed_cycle(governed_intent(), plan=plan())
     assert first.canonical() == second.canonical()
     assert first.memory.commit.memory_state_digest == second.memory.commit.memory_state_digest
+
+
+@pytest.mark.parametrize("samples", [0, 1, 4, 5, 19])
+def test_insufficient_temporal_history_is_provisional(samples):
+    engine = configured_engine(qualified=False)
+    for string in engine.engine.membrane.strings:
+        string.activation = 0.8
+    for _ in range(samples):
+        engine.engine.membrane.temporal_state.update_tick_history(0.1, 0.1, 0.1)
+    receipt = engine.run_governed_cycle(governed_intent(), plan=plan())
+    assert receipt.memory.qualification.status is MemoryQualificationStatus.PROVISIONAL
+    assert receipt.memory.reason_codes == ("TEMPORAL_HISTORY_INSUFFICIENT",)
+    assert not engine.engine.semantic_memory.local_store
+
+
+def test_temporal_threshold_and_excessive_tension():
+    qualified = configured_engine()
+    accepted = qualified.run_governed_cycle(governed_intent(), plan=plan())
+    assert accepted.memory.commit.status is MemoryCommitStatus.COMMITTED
+
+    tense = configured_engine(qualified=False)
+    for string in tense.engine.membrane.strings:
+        string.activation = 0.8
+    for _ in range(20):
+        tense.engine.membrane.temporal_state.update_tick_history(0.1, 1.1, 0.1)
+    constrained = tense.run_governed_cycle(governed_intent(), plan=plan())
+    assert constrained.memory.qualification.status is MemoryQualificationStatus.PROVISIONAL
+    assert not tense.engine.semantic_memory.local_store
+
+    above = configured_engine()
+    above.engine.membrane.temporal_state.update_tick_history(0.1, 0.1, 0.1)
+    accepted_above = above.run_governed_cycle(governed_intent(), plan=plan())
+    assert accepted_above.memory.commit.status is MemoryCommitStatus.COMMITTED
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf"), True])
+def test_malformed_temporal_numeric_never_qualifies(bad):
+    engine = configured_engine()
+    engine.engine.membrane.temporal_state.tension_history[-1] = bad
+    receipt = engine.run_governed_cycle(governed_intent(), plan=plan())
+    assert receipt.memory.qualification.status is MemoryQualificationStatus.UNKNOWN
+    assert not engine.engine.semantic_memory.local_store
+
+
+def test_sao_publication_failure_rolls_back_all_authoritative_surfaces(monkeypatch):
+    engine = configured_engine()
+    before = snapshot(engine)
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("SAO unavailable")
+
+    monkeypatch.setattr(engine.engine.sao_promotor, "commit_evaluation", fail)
+    receipt = engine.run_governed_cycle(governed_intent(), plan=plan())
+    assert receipt.memory.commit.status is MemoryCommitStatus.FAILED
+    assert receipt.closure.decision is ClosureDecision.REFLECT
+    assert snapshot(engine) == before
+
+
+def test_semantic_memory_write_failure_restores_all_surfaces(monkeypatch):
+    engine = configured_engine()
+    before = snapshot(engine)
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("storage unavailable")
+
+    monkeypatch.setattr(memory_module, "write_memory", fail)
+    receipt = engine.run_governed_cycle(governed_intent(), plan=plan())
+    assert receipt.memory.commit.status is MemoryCommitStatus.FAILED
+    assert snapshot(engine) == before
+
+
+def test_replay_fails_closed_when_sao_publication_is_missing():
+    engine = configured_engine()
+    first = engine.run_governed_cycle(governed_intent(), plan=plan())
+    engine.engine.sao_promotor.promotion_ledger.clear()
+    replay = engine.memory_pipeline.govern(
+        governed_intent(), first.proposal, first.execution.execution_id, first.observation,
+        first.verification, engine.engine.membrane, engine.engine.boundary,
+    )
+    assert replay.commit.status is MemoryCommitStatus.FAILED
+    assert replay.commit.reason_codes == ("AUTHORITATIVE_PUBLICATION_DISAGREEMENT",)
+    assert len(engine.engine.semantic_memory.local_store) == 1
+    assert not engine.engine.sao_promotor.promotion_ledger
+
+
+def test_memory_stage_rejects_contradictory_authoritative_histories():
+    engine = configured_engine(qualified=False)
+    receipt = engine.run_governed_cycle(governed_intent(), plan=plan())
+    candidate = receipt.memory.candidate
+    assert candidate is not None
+    qualified = MemoryQualificationResult(
+        MemoryQualificationStatus.QUALIFIED, candidate.candidate_digest, ("QUALIFIED",), "temporal",
+    )
+    provisional = replace(qualified, status=MemoryQualificationStatus.PROVISIONAL)
+    committed = MemoryCommitResult(
+        MemoryCommitStatus.COMMITTED, candidate.candidate_digest, candidate.candidate_key,
+        receipt.memory.commit.memory_state_digest, ("COMMITTED",),
+    )
+    failed = replace(committed, status=MemoryCommitStatus.FAILED)
+    unattempted = receipt.memory.commit
+    contradictions = [
+        (qualified, False, "POLICY_REJECTED", committed),
+        (qualified, None, "VERIFICATION_REJECTED", committed),
+        (provisional, None, "PROVISIONAL", committed),
+        (qualified, True, "COMMIT_ACCEPTED", failed),
+        (qualified, True, "COMMIT_ACCEPTED", unattempted),
+        (qualified, True, "COMMIT_FAILED", committed),
+    ]
+    for qualification, policy, verdict, commit in contradictions:
+        with pytest.raises(ValidationError):
+            MemoryStageEvidence(candidate, qualification, policy, verdict, commit, ("FORGED",))
+    with pytest.raises(ValidationError):
+        MemoryStageEvidence(None, qualified, None, "NO_CANDIDATE", committed, ("FORGED",))
+
+
+@pytest.mark.parametrize(
+    "qualification_status,verdict",
+    [
+        (MemoryQualificationStatus.PROVISIONAL, "PROVISIONAL"),
+        (MemoryQualificationStatus.UNKNOWN, "UNKNOWN"),
+        (MemoryQualificationStatus.REJECTED, "REJECTED"),
+    ],
+)
+def test_nonqualified_status_cannot_be_committed(qualification_status, verdict):
+    engine = configured_engine(qualified=False)
+    receipt = engine.run_governed_cycle(governed_intent(), plan=plan())
+    candidate = receipt.memory.candidate
+    assert candidate is not None
+    qualification = MemoryQualificationResult(
+        qualification_status, candidate.candidate_digest, ("FORGED",), "temporal",
+    )
+    commit = MemoryCommitResult(
+        MemoryCommitStatus.COMMITTED, candidate.candidate_digest, candidate.candidate_key,
+        receipt.memory.commit.memory_state_digest, ("FORGED",),
+    )
+    with pytest.raises(ValidationError):
+        MemoryStageEvidence(candidate, qualification, None, verdict, commit, ("FORGED",))
