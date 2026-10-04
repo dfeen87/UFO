@@ -9,9 +9,9 @@ and data-plane V-Channels: Type-W, Type-R, Type-T, Type-A, Type-E.
 """
 
 from __future__ import annotations
-import math
 from typing import Dict, Any, List, Optional
 from radial_membrane_ai.shard import FederatedShard, ShardState
+from radial_membrane_ai.numeric import finite_real
 
 
 class FederatedRoutingChannel:
@@ -42,17 +42,12 @@ class FederatedRoutingChannel:
         # Admission remains authoritative: this marker records that projection
         # was requested, but is not proof of trust or admissibility.
         workload_cap = workload.get("capacity", 0.5)
-        if (
-            isinstance(workload_cap, bool)
-            or not isinstance(workload_cap, (int, float))
-            or not isinstance(shard.capacity, (int, float))
-            or isinstance(shard.capacity, bool)
-            or not math.isfinite(float(workload_cap))
-            or not math.isfinite(float(shard.capacity))
-        ):
+        workload_cap_float = finite_real(workload_cap)
+        shard_cap_float = finite_real(shard.capacity)
+        if workload_cap_float is None or shard_cap_float is None:
             projected_cap = workload_cap
         else:
-            projected_cap = min(workload_cap, shard.capacity)
+            projected_cap = min(workload_cap_float, shard_cap_float)
 
         projected_workload = workload.copy()
         projected_workload["capacity"] = projected_cap

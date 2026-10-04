@@ -134,13 +134,6 @@ class SAOPromotor:
             verdict = "constrain"
         elif collapse_activation >= self.promotion_threshold:
             verdict = "ascend"
-            # Log ascension
-            self.promotion_ledger.append({
-                "layer": target_layer,
-                "activation": collapse_activation,
-                "p_sao": p_sao,
-                "verdict": "ascend"
-            })
         else:
             verdict = "admit"
 
@@ -176,6 +169,17 @@ class SAOPromotor:
         # Blend original and temporal verdicts
         if verdict == "ascend" and temporal_gate_verdict != "ascend":
             verdict = temporal_gate_verdict
+
+        # Promotion evidence is the transaction commit.  Temporal governance is
+        # part of authorization, so no record may be observable before its final
+        # verdict has survived every gate.
+        if verdict == "ascend":
+            self.promotion_ledger.append({
+                "layer": target_layer,
+                "activation": collapse_activation,
+                "p_sao": p_sao,
+                "verdict": verdict,
+            })
 
         return verdict, p_sao, {
             "collapse_activation": collapse_activation,

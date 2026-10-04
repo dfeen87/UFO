@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     from radial_membrane_ai.adapters.invariant_handshake import HandshakeStatus
 
 from radial_membrane_ai.projection import closure_ratio, admissibility_test
+from radial_membrane_ai.numeric import finite_real
+from radial_membrane_ai.exceptions import ValidationError
 
 
 def angular_decomposition(
@@ -144,18 +146,33 @@ def apply_lyapunov_dissipation(
         target_energy: The maximum acceptable energy limit.
         dissipation_rate: The scaling dampening factor to apply to activations.
     """
-    current_energy = governor.compute_lyapunov_energy(membrane)
+    rate = finite_real(dissipation_rate)
+    if rate is None or not 0.0 <= rate <= 1.0:
+        raise ValidationError("dissipation_rate must be finite and in [0, 1].")
+    current_energy = finite_real(governor.compute_lyapunov_energy(membrane))
+    if current_energy is None or current_energy < 0.0:
+        raise ValidationError("current Lyapunov-style energy must be finite and non-negative.")
 
     if target_energy is None:
         # If no target, use average of history if history exists, else do nothing
         if len(governor.energy_history) > 1:
-            target_energy = float(np.mean(governor.energy_history[:-1]))
+            history: list[float] = []
+            for value in governor.energy_history[:-1]:
+                converted = finite_real(value)
+                if converted is None or converted < 0.0:
+                    raise ValidationError("energy history must be finite and non-negative.")
+                history.append(converted)
+            target_energy = float(np.mean(history))
         else:
             return
 
+    target_energy = finite_real(target_energy)
+    if target_energy is None or target_energy < 0.0:
+        raise ValidationError("target_energy must be finite and non-negative.")
+
     if current_energy > target_energy:
         # Scale down activations to dissipate energy
-        factor = 1.0 - dissipation_rate
+        factor = 1.0 - rate
         for s in membrane.strings:
             s.activation = max(0.0, s.activation * factor)
 
@@ -375,5 +392,6 @@ class AdmissibilityGate:
             v_channel_pressure=v_channel_pressure,
             conversion_cost=conversion_cost,
         )
-        tol_val = float(self.tol) if math.isfinite(float(self.tol)) else 0.2
+        tol_val = finite_real(self.tol)
+        tol_val = tol_val if tol_val is not None else 0.2
         return handshake(legacy_in, ai_in, tol=max(0.0, tol_val), mode=mode)

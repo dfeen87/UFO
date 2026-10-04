@@ -9,12 +9,14 @@ This module implements the global coherence field H_hol(t) as described in Feene
 
 from __future__ import annotations
 import numpy as np
+import math
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from radial_membrane_ai.membrane import RadialMembrane
     from radial_membrane_ai.boundary import BoundaryGeometry
     from radial_membrane_ai.facet import FacetVector
+from radial_membrane_ai.numeric import require_finite_real
 
 
 def compute_holistic_field(
@@ -48,23 +50,43 @@ def compute_holistic_field(
     Returns:
         The scalar value of the holistic governor field H_hol(t).
     """
+    if len(facets) != 12:
+        raise ValueError("holistic field requires exactly twelve facets.")
+    matrix = np.asarray(Q_matrix)
+    if matrix.shape != (12, 12) or not np.issubdtype(matrix.dtype, np.number):
+        raise ValueError("Q_matrix must be a numeric 12x12 matrix.")
+    try:
+        finite_matrix = np.asarray(matrix, dtype=np.float64)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError("Q_matrix must contain representable finite values.") from exc
+    if not np.all(np.isfinite(finite_matrix)):
+        raise ValueError("Q_matrix must contain representable finite values.")
+    global_policy_weight = require_finite_real(global_policy_weight, "global_policy_weight")
+    if global_policy_weight < 0.0:
+        raise ValueError("global_policy_weight must be non-negative.")
     w_G = 0.7
     w_C = 0.3
 
     geom_sum = 0.0
     for facet in facets:
-        a = facet.activation
-        c = facet.capacity
-        p = facet.residual
-        pi = facet.policy_priority * global_policy_weight
+        a = require_finite_real(facet.activation, "facet.activation")
+        c = require_finite_real(facet.capacity, "facet.capacity")
+        p = require_finite_real(facet.residual, "facet.residual")
+        priority = require_finite_real(facet.policy_priority, "facet.policy_priority")
+        if not 0.0 <= a <= 1.0 or c < 0.0 or p < 0.0 or priority < 0.0:
+            raise ValueError("facet evidence is outside its model domain.")
+        pi = priority * global_policy_weight
 
         facet_term = (a * c) * (1.0 - p**2) * pi
         geom_sum += facet_term
 
     geom_avg = geom_sum / 12.0 if len(facets) > 0 else 0.0
-    coherence_avg = float(np.mean(Q_matrix)) if Q_matrix.size > 0 else 0.0
+    coherence_avg = float(np.mean(finite_matrix))
 
-    return w_G * geom_avg + w_C * coherence_avg
+    result = w_G * geom_avg + w_C * coherence_avg
+    if not math.isfinite(result):
+        raise ValueError("holistic field must remain finite.")
+    return result
 
 
 class HolisticGovernorField:
@@ -81,11 +103,12 @@ class HolisticGovernorField:
         w_T: float = 0.15,
         w_K: float = 0.15
     ) -> None:
-        self.w_p = w_p
-        self.w_o = w_o
-        self.w_c = w_c
-        self.w_T = w_T
-        self.w_K = w_K
+        values = [require_finite_real(v, name) for name, v in (
+            ("w_p", w_p), ("w_o", w_o), ("w_c", w_c), ("w_T", w_T), ("w_K", w_K)
+        )]
+        if any(v < 0.0 for v in values):
+            raise ValueError("holistic weights must be non-negative.")
+        self.w_p, self.w_o, self.w_c, self.w_T, self.w_K = values
         self.drift_history: list[float] = []
 
     def compute_H_field(
@@ -100,14 +123,26 @@ class HolisticGovernorField:
         Decomposes and computes the supervisory field:
         H(t) = w_p * p - w_o * o - w_c * c - w_T * T + w_K * K
         """
-        return self.w_p * p_avg - self.w_o * o_avg - self.w_c * c_avg - self.w_T * T_avg + self.w_K * K_avg
+        p_avg, o_avg, c_avg, T_avg, K_avg = (
+            require_finite_real(v, n) for n, v in (
+                ("p_avg", p_avg), ("o_avg", o_avg), ("c_avg", c_avg),
+                ("T_avg", T_avg), ("K_avg", K_avg)
+            )
+        )
+        result = self.w_p * p_avg - self.w_o * o_avg - self.w_c * c_avg - self.w_T * T_avg + self.w_K * K_avg
+        if not math.isfinite(result):
+            raise ValueError("H field must remain finite.")
+        return result
 
     def get_coherence_score(self, H_val: float) -> float:
         """
         Calculates a normalized coherence score C(t) in [0, 1].
         """
-        # Sigmoid mapping of H_val to represent coherence
-        return 1.0 / (1.0 + np.exp(-H_val))
+        H_val = require_finite_real(H_val, "H_val")
+        if H_val >= 0.0:
+            return 1.0 / (1.0 + math.exp(-H_val))
+        exp_value = math.exp(H_val)
+        return exp_value / (1.0 + exp_value)
 
     def evaluate_stability_band(self, score: float) -> str:
         """

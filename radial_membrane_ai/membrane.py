@@ -15,6 +15,7 @@ from dataclasses import dataclass
 import numpy as np
 from typing import TYPE_CHECKING
 from radial_membrane_ai.exceptions import ValidationError, GeometryValidationError
+from radial_membrane_ai.numeric import finite_real
 
 if TYPE_CHECKING:
     from radial_membrane_ai.facet import FacetVector
@@ -36,7 +37,7 @@ class BehavioralString:
             "stiffness": self.stiffness,
         }
         for name, value in numeric_fields.items():
-            if not isinstance(value, (int, float, np.number)) or not math.isfinite(float(value)):
+            if finite_real(value) is None:
                 raise ValidationError(f"{name} must be a finite number, got {value!r}.")
         if self.radius < 0.0:
             raise GeometryValidationError(f"Radius cannot be negative, got {self.radius}.")

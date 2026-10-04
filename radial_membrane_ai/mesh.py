@@ -18,11 +18,12 @@ C_mesh(t) = normalize(
 """
 
 from __future__ import annotations
-import numpy as np
+import math
 from typing import List, Dict, Any
 from radial_membrane_ai.shard import FederatedShard, ShardState
 from radial_membrane_ai.residuals import ResidualLedger
 from radial_membrane_ai.routing import FederatedRoutingChannel
+from radial_membrane_ai.numeric import finite_real, require_finite_real
 
 
 class MeshGovernor:
@@ -153,21 +154,51 @@ class FederatedShardMesh:
             w_r * R_residual - w_p * P_policy - w_l * L_latency - w_f * F_failure
         )
         """
+        weights = (w_q, w_t, w_e, w_r, w_p, w_l, w_f)
+        converted_weights = tuple(require_finite_real(value, "mesh weight") for value in weights)
+        if any(value < 0.0 for value in converted_weights):
+            raise ValueError("mesh weights must be non-negative.")
+        w_q, w_t, w_e, w_r, w_p, w_l, w_f = converted_weights
         if not self.shards:
             return 1.0
 
-        # Extract averages from shards
+        for shard in self.shards:
+            evidence = (
+                shard.quality_score, shard.trust_score, shard.cost_factor,
+                shard.policy_compliance, shard.latency,
+            )
+            converted = tuple(finite_real(value) for value in evidence)
+            if any(value is None for value in converted):
+                raise ValueError("mesh shard evidence must be finite and representable.")
+            quality, trust, cost, policy, latency = converted
+            if (quality is None or trust is None or cost is None
+                    or policy is None or latency is None):  # mypy narrowing
+                raise ValueError("mesh shard evidence must be finite and representable.")
+            if not (0.0 <= quality <= 1.0 and 0.0 <= trust <= 1.0
+                    and cost >= 0.0 and 0.0 <= policy <= 1.0 and latency >= 0.0):
+                raise ValueError("mesh shard evidence is outside its model domain.")
+
+        # Terminal shards cannot contribute positive authorization/coherence
+        # evidence.  They remain represented by failure, residual and policy
+        # penalties so quarantine cannot improve the aggregate.
+        terminal = {ShardState.QUARANTINED, ShardState.REVOKED, ShardState.EXPIRED}
+        eligible_shards = [s for s in self.shards if s.state not in terminal]
         active_shards = [s for s in self.shards if s.state == ShardState.ACTIVE]
         q_route = sum(s.quality_score for s in active_shards) / len(active_shards) if active_shards else 0.5
-        t_trust = sum(s.trust_score for s in self.shards) / len(self.shards)
-        e_economic = sum(1.0 / (s.cost_factor + 1e-6) for s in self.shards) / len(self.shards)
+        t_trust = (sum(s.trust_score for s in eligible_shards) / len(eligible_shards)
+                   if eligible_shards else 0.0)
+        e_economic = (sum(1.0 / (s.cost_factor + 1e-6) for s in eligible_shards)
+                      / len(eligible_shards) if eligible_shards else 0.0)
 
         r_residual = self.ledger.get_total_severity_index() / 100.0
-        p_policy = sum(1.0 - s.policy_compliance for s in self.shards) / len(self.shards)
-        l_latency = sum(s.latency for s in self.shards) / len(self.shards) / 1000.0  # Normalized latency
+        # Keep terminal non-compliance as retained negative evidence without
+        # letting favorable stale policy dilute the eligible mesh denominator.
+        p_policy = sum(1.0 - s.policy_compliance for s in self.shards) / max(len(eligible_shards), 1)
+        l_latency = (sum(s.latency for s in eligible_shards) / len(eligible_shards) / 1000.0
+                     if eligible_shards else 0.0)
 
-        quarantined = len([s for s in self.shards if s.state == ShardState.QUARANTINED])
-        f_failure = quarantined / len(self.shards)
+        terminal_count = len([s for s in self.shards if s.state in terminal])
+        f_failure = terminal_count / len(self.shards)
 
         # Raw formula evaluation
         raw_val = (
@@ -181,4 +212,9 @@ class FederatedShardMesh:
         )
 
         # Min-max sigmoid styled normalization to [0, 1]
-        return float(1.0 / (1.0 + np.exp(-raw_val)))
+        if not math.isfinite(raw_val):
+            raise ValueError("mesh coherence evidence must remain finite.")
+        if raw_val >= 0.0:
+            return float(1.0 / (1.0 + math.exp(-raw_val)))
+        exp_value = math.exp(raw_val)
+        return float(exp_value / (1.0 + exp_value))
