@@ -34,9 +34,11 @@ from radial_membrane_ai.agentic.contracts import (
     SideEffectClass,
     VerificationResult,
     VerificationStatus,
+    TransitionSignature,
 )
 from radial_membrane_ai.agentic.engine import AgenticEngine, AgenticSwarmEngine
 from radial_membrane_ai.agentic.memory import GovernedMemoryConfig, GovernedMemoryPipeline
+from radial_membrane_ai.agentic.successor import build_transition_signature
 from radial_membrane_ai.agentic.planner import GoalPlanner, Plan, PlanStep
 from radial_membrane_ai.agentic.reflection import ReflectionEngine, ReflectionRecord
 from radial_membrane_ai.agentic.swarm import AgentBid, SwarmAuctioneer, SwarmContract
@@ -102,6 +104,8 @@ __all__ = [
     "ToolCallResult",
     "ToolRegistry",
     "ToolOutcomeUnknown",
+    "TransitionSignature",
     "VerificationResult",
     "VerificationStatus",
+    "build_transition_signature",
 ]

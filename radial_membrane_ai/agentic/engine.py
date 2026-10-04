@@ -37,6 +37,7 @@ from radial_membrane_ai.agentic.contracts import (
     ReflectionResult,
     ResourceReconciliation,
     VerificationStatus,
+    TransitionSignature,
     admission_binding_digest,
     stable_digest,
 )
@@ -46,6 +47,7 @@ from radial_membrane_ai.agentic.memory import (
     GovernedMemoryPipeline,
     semantic_memory_digest,
 )
+from radial_membrane_ai.agentic.successor import build_transition_signature
 from radial_membrane_ai.exceptions import ValidationError
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.ufo_engine.multi_agent import MultiAgentEngine, MultiAgentRunResult
@@ -114,10 +116,11 @@ class AgenticEngine:
         if not isinstance(intent, IntentContract):
             raise ValueError("run_governed_cycle requires an IntentContract.")
         active_plan = plan or self.planner.create_plan(intent.goal)
-        return self._run_governed_transaction(
+        receipt = self._run_governed_transaction(
             intent, active_plan, GovernedBudget(intent.initial_budget), proposal=proposal,
             stability_allowed=stability_allowed, policy_allowed=policy_allowed, handshake=handshake,
         )
+        return replace(receipt, plan_transition_finalized=True)
 
     def _run_governed_transaction(
         self,
@@ -142,6 +145,7 @@ class AgenticEngine:
         elif source_receipt is not None or cycle_index != 0:
             raise ValidationError("a recurrent cycle requires its immediately preceding feedback context.")
         initial_fingerprint = self.state_fingerprint()
+        initial_memory_digest = semantic_memory_digest(self.engine.semantic_memory)
         exact_proposal = proposal or self.planner.propose_step(
             active_plan, intent, require_action_local=require_action_local
         )
@@ -261,7 +265,8 @@ class AgenticEngine:
             budget_before,
         )
         return AgenticActionReceipt(
-            intent.intent_id, active_plan.revision, exact_proposal, initial_fingerprint, admission,
+            intent.intent_id, active_plan.revision, exact_proposal, initial_fingerprint,
+            initial_memory_digest, admission,
             reconciliation, execution, observation, verification, intent_satisfaction, residual, reflection,
             resulting_fingerprint, closure,
             durable_memory_attempted=memory.commit.status is not MemoryCommitStatus.NOT_ATTEMPTED,
@@ -282,7 +287,7 @@ class AgenticEngine:
         cycle_index: int,
     ) -> GovernedFeedbackContext:
         """Bind reconciled state only after the receipt's plan transition is final."""
-        if receipt.memory is None or receipt.plan_transition is None:
+        if receipt.memory is None or receipt.plan_transition is None or not receipt.plan_transition_finalized:
             raise ValidationError("finalized receipt evidence is required for feedback.")
         return GovernedFeedbackContext(
             intent.intent_id,
@@ -342,6 +347,7 @@ class AgenticEngine:
         budget = GovernedBudget(intent.initial_budget)
         receipts: list[AgenticActionReceipt] = []
         feedback_contexts: list[GovernedFeedbackContext] = []
+        transition_signatures: list[TransitionSignature] = []
         termination = "MAX_CYCLES_REACHED"
 
         for cycle_index in range(max_cycles):
@@ -366,9 +372,15 @@ class AgenticEngine:
                 receipt = replace(receipt, plan_transition=PlanTransitionEvidence(
                     prior_revision, receipt.proposal.proposal_digest, receipt.proposal.action_id,
                     transition_type, active_plan.revision, transition_reasons,
-                ))
+                ), plan_transition_finalized=True)
                 receipts.append(receipt)
-                feedback_contexts.append(self._build_feedback_context(intent, receipt, cycle_index))
+                feedback = self._build_feedback_context(intent, receipt, cycle_index)
+                feedback_contexts.append(feedback)
+                transition_signatures.append(build_transition_signature(
+                    receipt, feedback, cycle_index,
+                    source_feedback=(feedback_contexts[-2] if cycle_index else None),
+                    prior_signature=(transition_signatures[-1] if cycle_index else None),
+                ))
                 if active_plan.current_step() is None:
                     termination = "PLAN_EXHAUSTED_WITH_INTENT_UNRESOLVED"
                     break
@@ -380,9 +392,15 @@ class AgenticEngine:
                 receipt = replace(receipt, plan_transition=PlanTransitionEvidence(
                     prior_revision, receipt.proposal.proposal_digest, receipt.proposal.action_id,
                     transition_type, active_plan.revision, transition_reasons,
-                ))
+                ), plan_transition_finalized=True)
                 receipts.append(receipt)
-                feedback_contexts.append(self._build_feedback_context(intent, receipt, cycle_index))
+                feedback = self._build_feedback_context(intent, receipt, cycle_index)
+                feedback_contexts.append(feedback)
+                transition_signatures.append(build_transition_signature(
+                    receipt, feedback, cycle_index,
+                    source_feedback=(feedback_contexts[-2] if cycle_index else None),
+                    prior_signature=(transition_signatures[-1] if cycle_index else None),
+                ))
                 if active_plan.status == "FAILED":
                     termination = "REPLAN_FAILED_CLOSED"
                     break
@@ -391,9 +409,15 @@ class AgenticEngine:
             receipt = replace(receipt, plan_transition=PlanTransitionEvidence(
                 prior_revision, receipt.proposal.proposal_digest, receipt.proposal.action_id,
                 transition_type, active_plan.revision, transition_reasons,
-            ))
+            ), plan_transition_finalized=True)
             receipts.append(receipt)
-            feedback_contexts.append(self._build_feedback_context(intent, receipt, cycle_index))
+            feedback = self._build_feedback_context(intent, receipt, cycle_index)
+            feedback_contexts.append(feedback)
+            transition_signatures.append(build_transition_signature(
+                receipt, feedback, cycle_index,
+                source_feedback=(feedback_contexts[-2] if cycle_index else None),
+                prior_signature=(transition_signatures[-1] if cycle_index else None),
+            ))
             termination = {
                 ClosureDecision.HALT_SUCCESS: "INTENT_SATISFIED",
                 ClosureDecision.HALT_FAILURE: "GOVERNED_FAILURE",
@@ -410,6 +434,7 @@ class AgenticEngine:
             bool(final_closure and final_closure.decision is ClosureDecision.HALT_SUCCESS),
             active_plan.revision,
             tuple(feedback_contexts),
+            tuple(transition_signatures),
         )
 
     def run_goal(self, goal: str, max_steps: int = 10) -> AgenticRunResult:
