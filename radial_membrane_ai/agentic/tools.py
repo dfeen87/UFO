@@ -77,6 +77,13 @@ class BaseTool(ABC):
         pass
 
 
+class ToolOutcomeUnknown(Exception):
+    """Signal that invocation crossed its boundary but its outcome is unknown."""
+
+    def __init__(self, message: str = "tool outcome could not be established") -> None:
+        super().__init__(message)
+
+
 @dataclass(frozen=True)
 class ToolCapability:
     """Trusted registry metadata used prospectively by v5 governance."""
@@ -460,6 +467,8 @@ class ToolRegistry:
             return result
         except (KeyboardInterrupt, SystemExit):
             raise
+        except ToolOutcomeUnknown:
+            raise
         except Exception as exc:
             return ToolCallResult(
                 tool_name=name,
@@ -477,7 +486,7 @@ class ToolRegistry:
         admission: AdmissionVerdict,
         intent: Any,
         current_state_fingerprint: str,
-    ) -> tuple[ExecutionRecord, ToolCallResult]:
+    ) -> tuple[ExecutionRecord, ToolCallResult | None]:
         """Cross the v5 execution boundary only after exact binding validation."""
         from radial_membrane_ai.agentic.admission import ProspectiveAgenticAdmission
 
@@ -485,7 +494,20 @@ class ToolRegistry:
         ProspectiveAgenticAdmission.validate_execution_binding(
             intent, proposal, admission, current_state_fingerprint
         )
-        result = self.execute_tool(proposal.tool_name, dict(proposal.parameters))
+        try:
+            result = self.execute_tool(proposal.tool_name, dict(proposal.parameters))
+        except ToolOutcomeUnknown as exc:
+            return ExecutionRecord(
+                execution_id=f"execution-{proposal.proposal_digest[:16]}",
+                proposal_digest=proposal.proposal_digest,
+                admission_digest=admission_binding_digest(admission),
+                state=ExecutionState.OUTCOME_UNKNOWN,
+                tool_name=proposal.tool_name,
+                success_reported=None,
+                output=None,
+                data={"uncertainty": type(exc).__name__},
+                observed_cost=None,
+            ), None
         state = ExecutionState.EXECUTED if result.success else ExecutionState.FAILED
         admission_digest = admission_binding_digest(admission)
         record = ExecutionRecord(

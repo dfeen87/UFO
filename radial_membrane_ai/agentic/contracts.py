@@ -404,6 +404,7 @@ class ResourceReconciliation:
     observed_cost: tuple[float, ...] | None
     remaining_budget: ResourceBudget
     hard_budget_breach: bool = False
+    budget_before: ResourceBudget | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "predicted_cost", _vector(self.predicted_cost, "predicted cost"))
@@ -461,6 +462,64 @@ class AgenticActionReceipt:
 
     def canonical(self) -> str:
         """Semantic receipt serialization, intentionally excluding timing metadata."""
+        return json.dumps(_plain(self), sort_keys=True, separators=(",", ":"))
+
+
+@dataclass(frozen=True)
+class GovernedRunResult:
+    """Validated semantic trajectory produced by a bounded governed run."""
+
+    intent_id: str
+    intent_digest: str
+    receipts: tuple[AgenticActionReceipt, ...]
+    cycles_executed: int
+    final_remaining_budget: ResourceBudget
+    final_closure: ClosureResult | None
+    termination_reason: str
+    success: bool
+    final_plan_revision: str
+
+    def __post_init__(self) -> None:
+        _text(self.intent_id, "intent_id")
+        _text(self.intent_digest, "intent_digest")
+        _text(self.termination_reason, "termination_reason")
+        _text(self.final_plan_revision, "final_plan_revision")
+        object.__setattr__(self, "receipts", tuple(self.receipts))
+        if (
+            isinstance(self.cycles_executed, bool)
+            or not isinstance(self.cycles_executed, int)
+            or self.cycles_executed < 0
+        ):
+            raise ValidationError("cycles_executed must be a non-negative integer.")
+        if self.cycles_executed != len(self.receipts):
+            raise ValidationError("run cycle count does not match its receipts.")
+        if not isinstance(self.success, bool):
+            raise ValidationError("run success must be Boolean.")
+        if self.receipts:
+            if self.final_closure != self.receipts[-1].closure:
+                raise ValidationError("final closure must be the last receipt closure.")
+            if self.final_remaining_budget != self.receipts[-1].reconciliation.remaining_budget:
+                raise ValidationError("final run budget does not match the trajectory.")
+        expected_success = bool(
+            self.final_closure and self.final_closure.decision is ClosureDecision.HALT_SUCCESS
+        )
+        if self.success is not expected_success:
+            raise ValidationError("run success must derive from authoritative HALT_SUCCESS.")
+        previous: AgenticActionReceipt | None = None
+        for receipt in self.receipts:
+            if receipt.intent_id != self.intent_id or receipt.admission.intent_digest != self.intent_digest:
+                raise ValidationError("run receipt intent provenance mismatch.")
+            if receipt.reconciliation.budget_before is None:
+                raise ValidationError("run receipts require budget-before evidence.")
+            if previous is not None:
+                if previous.resulting_state_fingerprint != receipt.initial_state_fingerprint:
+                    raise ValidationError("run state fingerprint continuity is broken.")
+                if previous.reconciliation.remaining_budget != receipt.reconciliation.budget_before:
+                    raise ValidationError("run budget continuity is broken.")
+            previous = receipt
+
+    def canonical(self) -> str:
+        """Deterministic semantic serialization without wall-clock diagnostics."""
         return json.dumps(_plain(self), sort_keys=True, separators=(",", ":"))
 
 

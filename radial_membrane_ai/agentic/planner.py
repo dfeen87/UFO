@@ -13,7 +13,14 @@ import math
 from typing import Any, Dict, List, Optional
 
 from radial_membrane_ai.agentic.tools import ToolCallResult, ToolRegistry
-from radial_membrane_ai.agentic.contracts import ActionProposal, IntentContract, stable_digest
+from radial_membrane_ai.agentic.contracts import (
+    ActionProposal,
+    AgenticActionReceipt,
+    ExpectedPostcondition,
+    IntentContract,
+    VerificationStatus,
+    stable_digest,
+)
 from radial_membrane_ai.exceptions import ValidationError
 
 
@@ -29,6 +36,7 @@ class PlanStep:
     result: Optional[ToolCallResult] = None
     cost_impact: float = 0.0
     tension_impact: float = 0.0
+    expected_postconditions: tuple[ExpectedPostcondition, ...] = ()
 
     def __post_init__(self) -> None:
         self.validate()
@@ -43,6 +51,9 @@ class PlanStep:
             raise ValidationError(f"cost_impact cannot be negative, got {self.cost_impact}.")
         if not math.isfinite(self.tension_impact) or self.tension_impact < 0.0:
             raise ValidationError(f"tension_impact cannot be negative, got {self.tension_impact}.")
+        if not all(isinstance(value, ExpectedPostcondition) for value in self.expected_postconditions):
+            raise ValidationError("step postconditions must be typed ExpectedPostcondition values.")
+        self.expected_postconditions = tuple(self.expected_postconditions)
 
 
 @dataclass
@@ -73,7 +84,10 @@ class Plan:
         if not math.isfinite(self.total_tension) or self.total_tension < 0.0:
             raise ValidationError(f"total_tension cannot be negative, got {self.total_tension}.")
         if not self.revision:
-            identity = [(s.step_id, s.description, s.tool_name, s.tool_params) for s in self.steps]
+            identity = [
+                (s.step_id, s.description, s.tool_name, s.tool_params, s.expected_postconditions)
+                for s in self.steps
+            ]
             self.revision = stable_digest({"goal": self.goal, "steps": identity})[:24]
 
     def current_step(self) -> Optional[PlanStep]:
@@ -89,7 +103,10 @@ class Plan:
 
     def refresh_revision(self) -> None:
         """Assign a new stable identity after a material plan change."""
-        identity = [(s.step_id, s.description, s.tool_name, s.tool_params, s.completed) for s in self.steps]
+        identity = [
+            (s.step_id, s.description, s.tool_name, s.tool_params, s.completed, s.expected_postconditions)
+            for s in self.steps
+        ]
         self.revision = stable_digest({"goal": self.goal, "steps": identity})[:24]
 
 
@@ -219,25 +236,72 @@ class GoalPlanner:
                 plan.status = "COMPLETED"
             return None
 
-    def propose_step(self, plan: Plan, intent: IntentContract) -> ActionProposal:
+    def propose_step(
+        self, plan: Plan, intent: IntentContract, *, require_action_local: bool = False
+    ) -> ActionProposal:
         """Create, but never execute or authorize, the current step proposal."""
         step = plan.current_step()
         if step is None or step.tool_name is None:
             raise ValidationError("plan has no executable current step.")
         metadata = self.tool_registry.get_metadata(step.tool_name)
+        postconditions = step.expected_postconditions
+        if not postconditions:
+            try:
+                postconditions = self._postconditions(step)
+            except ValidationError:
+                if require_action_local:
+                    raise
+                # Legacy isolated-cycle compatibility only. Recurrent runs fail
+                # closed rather than treating intent criteria as action criteria.
+                postconditions = intent.success_conditions
         return ActionProposal(
             intent_id=intent.intent_id,
             plan_revision=plan.revision,
             action_id=f"step-{step.step_id}",
             tool_name=step.tool_name,
             parameters=step.tool_params,
-            expected_postconditions=intent.success_conditions,
+            expected_postconditions=postconditions,
             predicted_cost=metadata.predicted_cost,
             side_effect_class=metadata.side_effect_class,
             required_capabilities=frozenset({metadata.capability_id}),
             provenance=f"GoalPlanner:{plan.revision}:{step.step_id}",
             handshake_required=metadata.handshake_applicable,
         )
+
+    @staticmethod
+    def _postconditions(step: PlanStep) -> tuple[ExpectedPostcondition, ...]:
+        """Construct deterministic action-local evidence for built-in tools."""
+        params = step.tool_params
+        if step.tool_name == "SearchTool":
+            return (ExpectedPostcondition("fields_equal", {"query": str(params.get("query", "")).lower()}),)
+        if step.tool_name == "MemoryRetrievalTool":
+            return (ExpectedPostcondition("fields_equal", {
+                "type": params.get("type", "semantic"), "tag": params.get("tag", "all")
+            }),)
+        if step.tool_name == "APIRequestTool":
+            return (ExpectedPostcondition("fields_equal", {
+                "endpoint": params.get("endpoint"), "method": str(params.get("method", "GET")).upper(),
+                "status_code": 200,
+            }),)
+        if step.tool_name == "PythonCodeExecutorTool":
+            return (ExpectedPostcondition("fields_present", {"fields": ("result",)}),)
+        if step.tool_name == "DatabaseQueryTool":
+            return (ExpectedPostcondition("fields_present", {"fields": ("records", "count")}),)
+        raise ValidationError("plan step lacks a deterministic governed postcondition.")
+
+    @staticmethod
+    def commit_verified_step(plan: Plan, receipt: AgenticActionReceipt) -> None:
+        """Atomically advance only the exact independently verified plan step."""
+        step = plan.current_step()
+        if step is None or receipt.plan_revision != plan.revision:
+            raise ValidationError("receipt is stale for the active plan.")
+        if receipt.proposal.action_id != f"step-{step.step_id}":
+            raise ValidationError("receipt does not bind the active plan step.")
+        if receipt.verification.status is not VerificationStatus.VERIFIED:
+            raise ValidationError("an unverified action cannot advance a governed plan.")
+        step.completed = True
+        plan.status = "COMPLETED" if plan.is_finished() else "IN_PROGRESS"
+        plan.refresh_revision()
 
     def replan(self, plan: Plan, reason: str) -> None:
         """Adjusts remaining steps in response to execution failures or envelope pressure."""
