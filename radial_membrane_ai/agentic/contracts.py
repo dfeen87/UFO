@@ -103,6 +103,26 @@ class ClosureDecision(str, Enum):
     HALT_FAILURE = "HALT_FAILURE"
 
 
+class PlanTransitionType(str, Enum):
+    NONE = "NONE"
+    VERIFIED_STEP = "VERIFIED_STEP"
+    REPLAN = "REPLAN"
+
+
+class MemoryQualificationStatus(str, Enum):
+    QUALIFIED = "QUALIFIED"
+    PROVISIONAL = "PROVISIONAL"
+    REJECTED = "REJECTED"
+    UNKNOWN = "UNKNOWN"
+
+
+class MemoryCommitStatus(str, Enum):
+    NOT_ATTEMPTED = "NOT_ATTEMPTED"
+    COMMITTED = "COMMITTED"
+    ALREADY_COMMITTED = "ALREADY_COMMITTED"
+    FAILED = "FAILED"
+
+
 @dataclass(frozen=True)
 class ResourceBudget:
     limits: tuple[float, ...]
@@ -321,6 +341,111 @@ class VerificationResult:
 
 
 @dataclass(frozen=True)
+class ProvisionalMemoryCandidate:
+    """Immutable evidence proposal; construction has no persistence authority."""
+
+    intent_digest: str
+    plan_revision: str
+    proposal_digest: str
+    execution_id: str
+    observation_id: str
+    verification_digest: str
+    candidate_key: str
+    evidence: Mapping[str, Any]
+    tags: frozenset[str]
+    policy_digest: str
+    candidate_digest: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        for value, name in (
+            (self.intent_digest, "intent_digest"), (self.plan_revision, "plan_revision"),
+            (self.proposal_digest, "proposal_digest"), (self.execution_id, "execution_id"),
+            (self.observation_id, "observation_id"),
+            (self.verification_digest, "verification_digest"),
+            (self.candidate_key, "candidate_key"), (self.policy_digest, "policy_digest"),
+        ):
+            _text(value, name)
+        object.__setattr__(self, "evidence", _freeze(self.evidence))
+        object.__setattr__(self, "tags", frozenset(_text(v, "memory tag") for v in self.tags))
+        identity = {item.name: getattr(self, item.name) for item in fields(self) if item.name != "candidate_digest"}
+        object.__setattr__(self, "candidate_digest", stable_digest(identity))
+
+
+@dataclass(frozen=True)
+class MemoryQualificationResult:
+    status: MemoryQualificationStatus
+    candidate_digest: str
+    reason_codes: tuple[str, ...]
+    temporal_evidence_digest: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "status", MemoryQualificationStatus(self.status))
+        _text(self.candidate_digest, "candidate_digest")
+        if self.temporal_evidence_digest is not None:
+            _text(self.temporal_evidence_digest, "temporal_evidence_digest")
+        object.__setattr__(self, "reason_codes", _reason_codes(self.reason_codes))
+
+
+@dataclass(frozen=True)
+class MemoryCommitResult:
+    status: MemoryCommitStatus
+    candidate_digest: str | None
+    target_key: str | None
+    memory_state_digest: str
+    reason_codes: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "status", MemoryCommitStatus(self.status))
+        if self.candidate_digest is not None:
+            _text(self.candidate_digest, "candidate_digest")
+        if self.target_key is not None:
+            _text(self.target_key, "target_key")
+        _text(self.memory_state_digest, "memory_state_digest")
+        object.__setattr__(self, "reason_codes", _reason_codes(self.reason_codes))
+
+
+@dataclass(frozen=True)
+class MemoryStageEvidence:
+    candidate: ProvisionalMemoryCandidate | None
+    qualification: MemoryQualificationResult | None
+    policy_admissible: bool | None
+    final_verdict: str
+    commit: MemoryCommitResult
+    reason_codes: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        _text(self.final_verdict, "final memory verdict")
+        object.__setattr__(self, "reason_codes", _reason_codes(self.reason_codes))
+        if self.qualification is not None:
+            if self.candidate is None or self.qualification.candidate_digest != self.candidate.candidate_digest:
+                raise ValidationError("memory qualification candidate mismatch.")
+        if self.commit.candidate_digest is not None:
+            if self.candidate is None or self.commit.candidate_digest != self.candidate.candidate_digest:
+                raise ValidationError("memory commit candidate mismatch.")
+
+
+@dataclass(frozen=True)
+class PlanTransitionEvidence:
+    prior_plan_revision: str
+    proposal_digest: str
+    action_id: str
+    transition: PlanTransitionType
+    resulting_plan_revision: str
+    reason_codes: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        for value, name in ((self.prior_plan_revision, "prior plan revision"),
+                            (self.proposal_digest, "proposal digest"),
+                            (self.action_id, "action id"),
+                            (self.resulting_plan_revision, "resulting plan revision")):
+            _text(value, name)
+        object.__setattr__(self, "transition", PlanTransitionType(self.transition))
+        object.__setattr__(self, "reason_codes", _reason_codes(self.reason_codes))
+        if self.transition is PlanTransitionType.NONE and self.prior_plan_revision != self.resulting_plan_revision:
+            raise ValidationError("no-mutation plan evidence cannot change revision.")
+
+
+@dataclass(frozen=True)
 class IntentSatisfaction:
     status: VerificationStatus
     intent_digest: str
@@ -431,6 +556,8 @@ class AgenticActionReceipt:
     resulting_state_fingerprint: str
     closure: ClosureResult
     durable_memory_attempted: bool = False
+    memory: MemoryStageEvidence | None = None
+    plan_transition: PlanTransitionEvidence | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.durable_memory_attempted, bool):
@@ -459,6 +586,22 @@ class AgenticActionReceipt:
             raise ValidationError("receipt intent observation mismatch.")
         if self.reflection.candidate is not None and self.reflection.candidate.proposal_digest != digest:
             raise ValidationError("receipt reflection provenance mismatch.")
+        if self.memory is not None and self.memory.candidate is not None:
+            candidate = self.memory.candidate
+            if (candidate.intent_digest != self.admission.intent_digest
+                    or candidate.plan_revision != self.plan_revision
+                    or candidate.proposal_digest != digest
+                    or candidate.execution_id != self.execution.execution_id
+                    or self.observation is None
+                    or candidate.observation_id != self.observation.observation_id
+                    or candidate.verification_digest != stable_digest(self.verification)):
+                raise ValidationError("receipt memory provenance mismatch.")
+        if self.plan_transition is not None:
+            transition = self.plan_transition
+            if (transition.prior_plan_revision != self.plan_revision
+                    or transition.proposal_digest != digest
+                    or transition.action_id != self.proposal.action_id):
+                raise ValidationError("receipt plan transition provenance mismatch.")
 
     def canonical(self) -> str:
         """Semantic receipt serialization, intentionally excluding timing metadata."""
@@ -516,7 +659,15 @@ class GovernedRunResult:
                     raise ValidationError("run state fingerprint continuity is broken.")
                 if previous.reconciliation.remaining_budget != receipt.reconciliation.budget_before:
                     raise ValidationError("run budget continuity is broken.")
+                if previous.plan_transition is None:
+                    raise ValidationError("run receipts require plan transition evidence.")
+                if previous.plan_transition.resulting_plan_revision != receipt.plan_revision:
+                    raise ValidationError("run plan revision continuity is broken.")
             previous = receipt
+        if self.receipts:
+            transition = self.receipts[-1].plan_transition
+            if transition is None or transition.resulting_plan_revision != self.final_plan_revision:
+                raise ValidationError("final plan revision does not match trajectory evidence.")
 
     def canonical(self) -> str:
         """Deterministic semantic serialization without wall-clock diagnostics."""

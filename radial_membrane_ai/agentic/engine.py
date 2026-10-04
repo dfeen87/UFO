@@ -8,7 +8,7 @@ Integrates goal planning, tool execution, dual-trigger reflection, and swarm bid
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Dict, List, Optional, Sequence
 import math
 import numpy as np
@@ -30,6 +30,9 @@ from radial_membrane_ai.agentic.contracts import (
     IntentContract,
     GovernedRunResult,
     Observation,
+    MemoryCommitStatus,
+    PlanTransitionEvidence,
+    PlanTransitionType,
     ReflectionResult,
     ResourceReconciliation,
     VerificationStatus,
@@ -37,6 +40,11 @@ from radial_membrane_ai.agentic.contracts import (
     stable_digest,
 )
 from radial_membrane_ai.agentic.verification import VerificationRegistry
+from radial_membrane_ai.agentic.memory import (
+    GovernedMemoryConfig,
+    GovernedMemoryPipeline,
+    semantic_memory_digest,
+)
 from radial_membrane_ai.exceptions import ValidationError
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.ufo_engine.multi_agent import MultiAgentEngine, MultiAgentRunResult
@@ -64,6 +72,8 @@ class AgenticEngine:
         tool_registry: Optional[ToolRegistry] = None,
         planner: Optional[GoalPlanner] = None,
         reflection_engine: Optional[ReflectionEngine] = None,
+        memory_config: GovernedMemoryConfig | None = None,
+        memory_failure_injector: Any = None,
     ) -> None:
         self.engine = engine or SingleAgentEngine()
         self.tool_registry = tool_registry or ToolRegistry()
@@ -74,6 +84,10 @@ class AgenticEngine:
         self.admission = ProspectiveAgenticAdmission()
         self.verifiers = VerificationRegistry()
         self.closure = AgenticClosure()
+        self.memory_pipeline = GovernedMemoryPipeline(
+            self.engine.semantic_memory, self.engine.sao_promotor, memory_config,
+            failure_injector=memory_failure_injector,
+        )
 
     def state_fingerprint(self) -> str:
         """Fingerprint only the authoritative state relevant to a v5 action."""
@@ -81,6 +95,7 @@ class AgenticEngine:
             "activations": tuple(float(s.activation) for s in self.engine.membrane.strings),
             "tension": float(self.engine.membrane.temporal_state.accumulated_tension),
             "boundary": tuple(float(self.engine.boundary.get_radius(s.theta)) for s in self.engine.membrane.strings),
+            "semantic_memory": semantic_memory_digest(self.engine.semantic_memory),
         }
         return stable_digest(state)
 
@@ -214,6 +229,10 @@ class AgenticEngine:
             except ValidationError:
                 reflection = ReflectionResult(True, False, None, ("CANDIDATE_VALIDATION_REJECTED",))
 
+        memory = self.memory_pipeline.govern(
+            intent, exact_proposal, execution.execution_id, observation, verification,
+            self.engine.membrane, self.engine.boundary,
+        )
         resulting_fingerprint = self.state_fingerprint()
         closure = self.closure.evaluate(
             admission=admission, execution_state=execution.state, verification=verification,
@@ -221,6 +240,7 @@ class AgenticEngine:
             residual=residual, remaining_budget=budget.remaining,
             authority_valid=not policy_residual, reflection=reflection,
             hard_budget_breach=hard_budget_breach,
+            memory_commit_failed=memory.commit.status is MemoryCommitStatus.FAILED,
         )
         reconciliation = ResourceReconciliation(
             admission.reservation,
@@ -233,7 +253,13 @@ class AgenticEngine:
         return AgenticActionReceipt(
             intent.intent_id, active_plan.revision, exact_proposal, initial_fingerprint, admission,
             reconciliation, execution, observation, verification, intent_satisfaction, residual, reflection,
-            resulting_fingerprint, closure, durable_memory_attempted=False,
+            resulting_fingerprint, closure,
+            durable_memory_attempted=memory.commit.status is not MemoryCommitStatus.NOT_ATTEMPTED,
+            memory=memory,
+            plan_transition=PlanTransitionEvidence(
+                active_plan.revision, exact_proposal.proposal_digest, exact_proposal.action_id,
+                PlanTransitionType.NONE, active_plan.revision, ("PLAN_UNCHANGED",),
+            ),
         )
 
     def run_governed_intent(
@@ -261,24 +287,45 @@ class AgenticEngine:
                 intent, active_plan, budget, stability_allowed=stability_allowed,
                 policy_allowed=policy_allowed, handshake=handshake, require_action_local=True,
             )
-            receipts.append(receipt)
             decision = receipt.closure.decision
+            prior_revision = active_plan.revision
+            transition_type = PlanTransitionType.NONE
+            transition_reasons: tuple[str, ...] = ("PLAN_UNCHANGED",)
 
             if receipt.verification.status is VerificationStatus.VERIFIED:
                 self.planner.commit_verified_step(active_plan, receipt)
+                transition_type = PlanTransitionType.VERIFIED_STEP
+                transition_reasons = ("VERIFIED_STEP_COMMITTED",)
 
             if decision is ClosureDecision.CONTINUE:
+                receipt = replace(receipt, plan_transition=PlanTransitionEvidence(
+                    prior_revision, receipt.proposal.proposal_digest, receipt.proposal.action_id,
+                    transition_type, active_plan.revision, transition_reasons,
+                ))
+                receipts.append(receipt)
                 if active_plan.current_step() is None:
                     termination = "PLAN_EXHAUSTED_WITH_INTENT_UNRESOLVED"
                     break
                 continue
             if decision is ClosureDecision.REPLAN:
                 self.planner.replan(active_plan, receipt.closure.reason_codes[0])
+                transition_type = PlanTransitionType.REPLAN
+                transition_reasons = tuple(receipt.closure.reason_codes)
+                receipt = replace(receipt, plan_transition=PlanTransitionEvidence(
+                    prior_revision, receipt.proposal.proposal_digest, receipt.proposal.action_id,
+                    transition_type, active_plan.revision, transition_reasons,
+                ))
+                receipts.append(receipt)
                 if active_plan.status == "FAILED":
                     termination = "REPLAN_FAILED_CLOSED"
                     break
                 continue
 
+            receipt = replace(receipt, plan_transition=PlanTransitionEvidence(
+                prior_revision, receipt.proposal.proposal_digest, receipt.proposal.action_id,
+                transition_type, active_plan.revision, transition_reasons,
+            ))
+            receipts.append(receipt)
             termination = {
                 ClosureDecision.HALT_SUCCESS: "INTENT_SATISFIED",
                 ClosureDecision.HALT_FAILURE: "GOVERNED_FAILURE",

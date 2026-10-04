@@ -28,6 +28,7 @@ class AgenticClosure:
         authority_valid: bool,
         reflection: ReflectionResult,
         hard_budget_breach: bool = False,
+        memory_commit_failed: bool = False,
     ) -> ClosureResult:
         if admission.decision is AdmissionDecision.ESCALATE:
             return ClosureResult(ClosureDecision.ESCALATE, ("ADMISSION_ESCALATED",))
@@ -45,6 +46,8 @@ class AgenticClosure:
             return ClosureResult(ClosureDecision.HALT_FAILURE, ("HARD_BUDGET_BREACH",))
         if reflection.attempted and not reflection.committed:
             return ClosureResult(ClosureDecision.REFLECT, ("REFLECTION_REJECTED",))
+        if memory_commit_failed:
+            return ClosureResult(ClosureDecision.REFLECT, ("DURABLE_MEMORY_COMMIT_FAILED",))
         if execution_state is ExecutionState.FAILED or verification.status is VerificationStatus.FAILED:
             return ClosureResult(ClosureDecision.REPLAN, ("ACTION_OR_VERIFICATION_FAILED",))
         if intent_satisfaction.status is VerificationStatus.VERIFIED:
