@@ -60,6 +60,18 @@ def test_easier_action_postcondition_cannot_claim_intent_success():
     assert receipt.closure.decision is not ClosureDecision.HALT_SUCCESS
 
 
+def test_failed_action_postcondition_is_preserved_when_intent_is_satisfied():
+    intent = make_intent()
+    engine = AgenticEngine()
+    action_conditions = (ExpectedPostcondition("fields_equal", {"query": "wrong query"}),)
+    plan, proposal = make_search_proposal(engine, intent, action_conditions)
+    receipt = engine.run_governed_cycle(intent, plan=plan, proposal=proposal)
+    assert receipt.verification.status.value == "FAILED"
+    assert receipt.intent_satisfaction.status.value == "VERIFIED"
+    assert receipt.closure.decision is ClosureDecision.REPLAN
+    assert receipt.residual.goal == ("CONTRADICTORY_EVIDENCE",)
+
+
 @pytest.mark.parametrize(
     "changed",
     [
