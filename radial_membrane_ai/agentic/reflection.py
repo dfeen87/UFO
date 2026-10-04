@@ -16,6 +16,8 @@ from typing import Dict, List, Optional
 from radial_membrane_ai.agentic.tools import ToolCallResult
 from radial_membrane_ai.exceptions import ValidationError
 from radial_membrane_ai.residuals import ResidualLedger
+from radial_membrane_ai.agentic.contracts import ReflectionCandidate, ReflectionResult
+from radial_membrane_ai.numeric import finite_real
 
 
 @dataclass
@@ -148,3 +150,37 @@ class ReflectionEngine:
             deltas[1] = 0.2
             deltas[9] = 0.15
         return deltas
+
+    def build_candidate(
+        self,
+        proposal_digest: str,
+        current_activations: List[float],
+        deltas: Dict[int, float],
+        reason: str,
+    ) -> ReflectionCandidate:
+        """Build a complete detached activation transition without live mutation."""
+        values = list(current_activations)
+        if len(values) != 12:
+            raise ValidationError("reflection requires twelve authoritative activations.")
+        for index, delta in deltas.items():
+            if isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < 12:
+                raise ValidationError("reflection delta index is outside the membrane.")
+            converted = finite_real(delta)
+            if converted is None:
+                raise ValidationError("reflection deltas must be finite real numbers.")
+            values[index] = values[index] + converted
+        return ReflectionCandidate(proposal_digest, tuple(values), reason)
+
+    def commit_candidate(self, membrane: object, candidate: ReflectionCandidate) -> ReflectionResult:
+        """Validate the entire candidate, then atomically publish it or publish nothing."""
+        before = tuple(string.activation for string in membrane.strings)  # type: ignore[attr-defined]
+        try:
+            validated = ReflectionCandidate(candidate.proposal_digest, candidate.activations, candidate.reason)
+            # All potentially failing validation happens before the commit loop.
+            for string, value in zip(membrane.strings, validated.activations):  # type: ignore[attr-defined]
+                string.activation = value
+        except (ValidationError, TypeError, ValueError):
+            for string, value in zip(membrane.strings, before):  # type: ignore[attr-defined]
+                string.activation = value
+            return ReflectionResult(True, False, candidate, ("CANDIDATE_VALIDATION_REJECTED",))
+        return ReflectionResult(True, True, validated, ("CANDIDATE_ATOMICALLY_COMMITTED",))
