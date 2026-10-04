@@ -101,6 +101,7 @@ class ToolCapability:
         if not all(isinstance(value, bool) for value in (self.idempotent, self.retry_safe, self.handshake_applicable)):
             raise ValidationError("tool execution semantics must be Boolean.")
 
+
 class SearchTool(BaseTool):
     """Search tool simulating web/corpus search with token and latency costs."""
 
@@ -417,6 +418,20 @@ class ToolRegistry:
             )
         return self._metadata[name]
 
+    def validate_governed_proposal(self, proposal: ActionProposal) -> None:
+        """Bind caller-supplied governance claims to trusted tool metadata."""
+        metadata = self.get_metadata(proposal.tool_name)
+        mismatched = (
+            proposal.required_capabilities != frozenset({metadata.capability_id})
+            or proposal.side_effect_class is not metadata.side_effect_class
+            or proposal.predicted_cost != metadata.predicted_cost
+            or proposal.handshake_required is not metadata.handshake_applicable
+        )
+        if mismatched:
+            raise ValidationError(
+                "governed proposal metadata does not match the trusted tool capability."
+            )
+
     def get_tool(self, name: str) -> BaseTool:
         """Looks up a tool by name, raising KeyError if missing."""
         if name not in self._tools:
@@ -466,6 +481,7 @@ class ToolRegistry:
         """Cross the v5 execution boundary only after exact binding validation."""
         from radial_membrane_ai.agentic.admission import ProspectiveAgenticAdmission
 
+        self.validate_governed_proposal(proposal)
         ProspectiveAgenticAdmission.validate_execution_binding(
             intent, proposal, admission, current_state_fingerprint
         )

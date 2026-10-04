@@ -101,6 +101,10 @@ class AgenticEngine:
         if exact_proposal.plan_revision != active_plan.revision:
             raise ValueError("proposal is not bound to the supplied plan revision.")
 
+        # Caller-created proposals are untrusted.  Validate their prospective
+        # governance claims before admission can reserve budget or grant authority.
+        self.tool_registry.validate_governed_proposal(exact_proposal)
+
         budget = GovernedBudget(intent.initial_budget)
         admission = self.admission.evaluate(
             intent, exact_proposal, initial_fingerprint, budget,
@@ -147,11 +151,21 @@ class AgenticEngine:
         )
         residual = AgenticResidual(
             proposal_digest=exact_proposal.proposal_digest,
-            goal=() if verification.status is VerificationStatus.VERIFIED else tuple(verification.reason_codes),
+            goal=(
+                () if intent_satisfaction.status is VerificationStatus.VERIFIED
+                else tuple(intent_satisfaction.reason_codes)
+            ),
             resource=resource_residual,
             policy_authority=policy_residual,
             stability=tuple(code for code in admission.reason_codes if "STABILITY" in code),
-            uncertainty=("OUTCOME_UNVERIFIED",) if verification.status is VerificationStatus.UNKNOWN else (),
+            uncertainty=(
+                tuple(intent_satisfaction.reason_codes)
+                if intent_satisfaction.status in {
+                    VerificationStatus.PARTIAL,
+                    VerificationStatus.UNKNOWN,
+                }
+                else ()
+            ),
         )
 
         reflection = ReflectionResult(False, False, None, ("NO_REFLECTION_REQUIRED",))
