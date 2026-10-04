@@ -16,6 +16,7 @@ import numpy as np
 
 from radial_membrane_ai.membrane import BehavioralString, RadialMembrane
 from radial_membrane_ai.facet import route_signal
+from radial_membrane_ai.numeric import require_finite_real
 
 
 def phase_alignment(theta_s: float, theta_t: float) -> float:
@@ -31,7 +32,9 @@ def phase_alignment(theta_s: float, theta_t: float) -> float:
     Returns:
         Alignment value in [0, 1].
     """
-    return (1.0 + math.cos(theta_s - theta_t)) / 2.0
+    theta_s = require_finite_real(theta_s, "theta_s")
+    theta_t = require_finite_real(theta_t, "theta_t")
+    return min(1.0, max(0.0, (1.0 + math.cos(theta_s - theta_t)) / 2.0))
 
 
 def activation_weight(activation: float, k: float = 10.0, x0: float = 0.5) -> float:
@@ -49,7 +52,20 @@ def activation_weight(activation: float, k: float = 10.0, x0: float = 0.5) -> fl
     Returns:
         Weight value in [0, 1].
     """
-    return 1.0 / (1.0 + math.exp(-k * (activation - x0)))
+    activation = require_finite_real(activation, "activation")
+    k = require_finite_real(k, "k")
+    x0 = require_finite_real(x0, "x0")
+    if not 0.0 <= activation <= 1.0:
+        raise ValueError("activation must be in [0, 1].")
+    if k < 0.0:
+        raise ValueError("k must be non-negative.")
+    exponent = k * (activation - x0)
+    if not math.isfinite(exponent):
+        raise ValueError("activation sigmoid exponent must remain finite.")
+    if exponent >= 0.0:
+        return 1.0 / (1.0 + math.exp(-exponent))
+    exp_value = math.exp(exponent)
+    return exp_value / (1.0 + exp_value)
 
 
 def base_propagation(source: BehavioralString, target: BehavioralString) -> float:
@@ -85,6 +101,12 @@ def inverse_cost_weight(cost: float, lambda_: float = 1.0, variant: str = "expon
     Returns:
         Inverse cost weight.
     """
+    cost = require_finite_real(cost, "cost")
+    lambda_ = require_finite_real(lambda_, "lambda_")
+    if cost < 0.0:
+        raise ValueError("cost must be non-negative.")
+    if lambda_ < 0.0:
+        raise ValueError("lambda_ must be non-negative.")
     if variant == "simple":
         return 1.0 / (1.0 + cost)
     elif variant == "exponential":
@@ -147,6 +169,12 @@ def update_radius_along_channel(
     Returns:
         The new reasoning radius for the target behavioral string.
     """
+    r_max = require_finite_real(r_max, "r_max")
+    if r_max < 0.0:
+        raise ValueError("r_max must be non-negative.")
+    source_radius = require_finite_real(source.radius, "source.radius")
+    if source_radius < 0.0:
+        raise ValueError("source.radius must be non-negative.")
     p_cost = cost_aware_propagation(source, target, lambda_=lambda_, cost_variant=cost_variant)
     if h_func is None:
         # Linear default
@@ -154,7 +182,14 @@ def update_radius_along_channel(
     else:
         h_val = h_func(p_cost)
 
-    return min(r_max, source.radius * h_val)
+    h_val = require_finite_real(h_val, "h(P)")
+    if h_val < 0.0:
+        raise ValueError("h(P) must be non-negative.")
+    candidate = source_radius * h_val
+    if not math.isfinite(candidate):
+        raise ValueError("depth candidate must remain finite.")
+
+    return min(r_max, candidate)
 
 
 def channel_coherence(
@@ -180,8 +215,14 @@ def channel_coherence(
     Returns:
         Coherence ratio in [0, 1].
     """
-    if i < 1 or i > 12 or j < 1 or j > 12:
+    if (isinstance(i, bool) or not isinstance(i, int) or isinstance(j, bool)
+            or not isinstance(j, int) or i < 1 or i > 12 or j < 1 or j > 12):
         raise ValueError("String indices i and j must be in range [1, 12].")
+    if isinstance(samples, bool) or not isinstance(samples, int) or samples <= 0:
+        raise ValueError("samples must be a positive integer.")
+    epsilon = require_finite_real(epsilon, "epsilon")
+    if epsilon <= 0.0:
+        raise ValueError("epsilon must be strictly positive.")
 
     theta_i = membrane.strings[i - 1].theta
     theta_j = membrane.strings[j - 1].theta
@@ -200,7 +241,10 @@ def channel_coherence(
     bar_phi = total_field / len(angles)
 
     phi_max = max_field_activation(membrane)
-    return bar_phi / (phi_max + epsilon)
+    result = bar_phi / (phi_max + epsilon)
+    if not math.isfinite(result):
+        raise ValueError("channel coherence must remain finite.")
+    return min(1.0, max(0.0, result))
 
 
 def max_field_activation(membrane: RadialMembrane, samples: int = 256) -> float:
@@ -215,10 +259,12 @@ def max_field_activation(membrane: RadialMembrane, samples: int = 256) -> float:
     Returns:
         Maximum field activation.
     """
+    if isinstance(samples, bool) or not isinstance(samples, int) or samples <= 0:
+        raise ValueError("samples must be a positive integer.")
     max_val = 0.0
     for k in range(samples):
         theta = (2.0 * math.pi * k) / samples
-        val = membrane.field_value(theta)
+        val = require_finite_real(membrane.field_value(theta), "membrane field value")
         if val > max_val:
             max_val = val
     return max_val

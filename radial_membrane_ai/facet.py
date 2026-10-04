@@ -11,6 +11,7 @@ and typed state-aware V-channel routing rules as described in Feeney (2026).
 from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum, auto
+from radial_membrane_ai.numeric import require_finite_real
 
 
 class TensionState(Enum):
@@ -88,6 +89,12 @@ class TensionAutomaton:
         - If 0.2 < closure_ratio <= 0.7: ADMISSIBLE
         - If closure_ratio <= 0.2: RELAXED
         """
+        if not isinstance(current_state, TensionState):
+            raise ValueError("current_state must be a TensionState.")
+        closure_ratio = require_finite_real(closure_ratio, "closure_ratio")
+        residual = require_finite_real(residual, "residual")
+        if closure_ratio < 0.0 or residual < 0.0:
+            raise ValueError("closure_ratio and residual must be non-negative.")
         if closure_ratio >= self.collapse_threshold or residual >= 0.5:
             return TensionState.BOUNDARY_COLLAPSE
         elif closure_ratio >= self.critical_threshold:
@@ -111,6 +118,11 @@ def route_signal(source: FacetVector, target: FacetVector, base_weight: float) -
     - If source is in STRETCHED or CRITICAL and target is in ADMISSIBLE, boost routing (1.2).
     - Otherwise, returns base_weight.
     """
+    base_weight = require_finite_real(base_weight, "base_weight")
+    if base_weight < 0.0:
+        raise ValueError("base_weight must be non-negative.")
+    if not isinstance(source.state, TensionState) or not isinstance(target.state, TensionState):
+        raise ValueError("facet states must be TensionState values.")
     if source.state == TensionState.BOUNDARY_COLLAPSE or target.state == TensionState.BOUNDARY_COLLAPSE:
         return 0.0
 

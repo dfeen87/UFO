@@ -28,6 +28,7 @@ from typing import Any, Dict, Sequence, Tuple, Union
 import numpy as np
 
 from radial_membrane_ai.exceptions import GovernanceError
+from radial_membrane_ai.numeric import finite_real
 
 
 @dataclass
@@ -76,8 +77,10 @@ def tensor_stress(ai_input: AIInput) -> float:
     """
     Calculates total tensor-side stress including representation conversion cost.
     """
-    b_val = float(ai_input.b) if math.isfinite(float(ai_input.b)) else 0.0
-    conv_val = float(ai_input.conversion) if math.isfinite(float(ai_input.conversion)) else 0.0
+    b_val = finite_real(ai_input.b)
+    conv_val = finite_real(ai_input.conversion)
+    b_val = b_val if b_val is not None else 0.0
+    conv_val = conv_val if conv_val is not None else 0.0
     return b_val + conv_val
 
 
@@ -250,10 +253,14 @@ def map_ufo_state_to_handshake_inputs(
     if not math.isfinite(act_norm):
         act_norm = 0.001
 
-    c_cost = float(compute_cost) if math.isfinite(float(compute_cost)) else 0.001
-    lyap = float(lyapunov_energy) if math.isfinite(float(lyapunov_energy)) else 0.001
-    v_press = float(v_channel_pressure) if math.isfinite(float(v_channel_pressure)) else 1e-9
-    conv_cost = float(conversion_cost) if math.isfinite(float(conversion_cost)) else 0.0
+    c_cost = finite_real(compute_cost)
+    lyap = finite_real(lyapunov_energy)
+    v_press = finite_real(v_channel_pressure)
+    conv_cost = finite_real(conversion_cost)
+    c_cost = c_cost if c_cost is not None else 0.001
+    lyap = lyap if lyap is not None else 0.001
+    v_press = v_press if v_press is not None else 1e-9
+    conv_cost = conv_cost if conv_cost is not None else 0.0
 
     leg_a = max(0.001, act_norm)
     leg_b = max(0.001, c_cost)

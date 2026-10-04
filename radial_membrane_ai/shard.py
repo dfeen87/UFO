@@ -9,10 +9,10 @@ Quarantined, Revoked, Expired.
 """
 
 from __future__ import annotations
-import math
 from enum import Enum, auto
 from dataclasses import dataclass
 from typing import Dict, Any
+from radial_membrane_ai.numeric import finite_real
 
 
 ADMISSIBILITY_EVIDENCE_FIELDS = frozenset({"capacity", "privacy", "latency", "cost"})
@@ -73,12 +73,7 @@ class FederatedShard:
             self.capacity, self.privacy_level, self.latency, self.cost_factor,
             self.trust_score, self.policy_compliance, self.quality_score,
         )
-        if any(
-            isinstance(value, bool)
-            or not isinstance(value, (int, float))
-            or not math.isfinite(float(value))
-            for value in shard_evidence
-        ):
+        if any(finite_real(value) is None for value in shard_evidence):
             return False
         if any(value < 0.0 for value in shard_evidence):
             return False
@@ -94,13 +89,7 @@ class FederatedShard:
         max_cost = workload.get("cost", 5.0)
 
         requirements = (required_capacity, required_privacy, max_latency, max_cost)
-        if any(
-            isinstance(value, bool)
-            or not isinstance(value, (int, float))
-            or not math.isfinite(float(value))
-            or value < 0.0
-            for value in requirements
-        ):
+        if any(finite_real(value) is None or value < 0.0 for value in requirements):
             return False
 
         if not self.consent_granted:

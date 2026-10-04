@@ -56,18 +56,18 @@ systems guarantee is made.
 | Paper/source and claim/operator | Executable invariant | Implementation mechanism | Regression proof | Status and discrepancy/risk |
 |---|---|---|---|---|
 | Dynamic/Governed Membrane — radial behavioral field | Twelve stable phases; activation `[0,1]`; candidate delta finite before commit | `membrane.RadialMembrane`, `BehavioralString` | `test_bedrock_invariants.py`; `test_paper_conformance.py::test_twelve_facet_basis_has_stable_identity_phase_and_order` | **Implemented and tested.** The early unit/fixed picture is an abstraction; `BoundaryGeometry` is the later deformable surface. |
-| Governed Membrane — deformable boundary | Radius clamped to configured positive range; tangent/curvature are finite-difference diagnostics | `boundary.BoundaryGeometry` | `test_model.py`, `test_pre_launch_sweep.py` | **Implemented but weakly tested.** Numerical curvature is diagnostic, not a smoothness theorem; constructor domains are not uniformly hardened. |
+| Governed Membrane — deformable boundary | Finite positive construction domain; radius clamped to configured positive range; a complete finite candidate deformation commits atomically; tangent/curvature are finite-difference diagnostics | `boundary.BoundaryGeometry` | `test_model.py`, `test_pre_launch_sweep.py`, `test_bedrock_iii.py` | **Implemented and tested for the numerical model.** Failed updates preserve the prior boundary. Numerical curvature remains diagnostic, not a smoothness or differentiability theorem. |
 | Twelve Strings — computational facets | Exact ordered basis: depth, precision, technical detail, structural rigor, context sensitivity, transparency, initiative, exploration, creativity, tone, emotional warmth, conciseness | `RadialMembrane.strings`; `FacetVector`; `TensionAutomaton` | explicit basis regression in `test_paper_conformance.py` | **Implemented and tested** for identity/order. Persistence and policy fields are later implementation extensions. |
-| V-Channel — aligned low-resistance corridor | Propagation multiplies target activation, angular alignment/coherence and inverse-cost weight; higher otherwise-equivalent cost cannot increase weight | `channels.cost_aware_propagation`, `governor.governed_propagation`, `facet.route_signal` | `test_model.py`, `test_pythagorean.py`, `test_architectural_governance.py` | **Partial.** Functions implement deterministic local scores; they do not solve a global optimal-route problem. Zero-cost is allowed, malformed values are not uniformly validated at every low-level helper. |
-| Kernel regimes — behavioral physics selection | Enum-limited regimes and deterministic trigger order; multiphase state advances on explicit ticks | `kernel_regimes.RegimeManager`, `KernelRegimeType`; legacy `kernels.KernelRegimeManager` | `test_kernel_regimes.py` | **Implemented but weakly tested.** Threshold switching is implemented; no general hysteresis claim or anti-thrashing guarantee is established. Two manager abstractions remain a mapping risk. |
+| V-Channel — aligned low-resistance corridor | Propagation multiplies validated target activation, bounded angular alignment/coherence and monotone inverse-cost weight; bounded depth cannot exceed `r_max` | `channels.cost_aware_propagation`, `governor.governed_propagation`, `facet.route_signal` | `test_model.py`, `test_pythagorean.py`, `test_architectural_governance.py`, `test_bedrock_iii.py` | **Implemented and tested for local numerical operators; broader claim partial.** Public channel helpers reject non-finite/out-of-domain evidence and custom non-finite mappings. They remain deterministic local scores, not a global optimal-route solver. |
+| Kernel regimes — behavioral physics selection | Enum-limited regimes and deterministic trigger precedence; strict/equality threshold behavior is explicit in source; multiphase state advances on explicit ticks | `kernel_regimes.RegimeManager`, `KernelRegimeType`; legacy `kernels.KernelRegimeManager` | `test_kernel_regimes.py` | **Implemented and tested at the simulation layer.** `kernels.KernelRegimeManager` is the original three-selector mathematical layer; `kernel_regimes.RegimeManager` is the later named operational layer. Threshold switching is the reference behavior; general anti-thrashing hysteresis is not part of the present research model. |
 | Bounded Compute Envelope — geometric/cost bound | Brim energy and sampled capacity violations produce a configured admission verdict and ledger evidence | `envelope.BrimEnvelope`, `FalsificationStack`, `cost.RuntimeCostVector`, `AdmissibilityGate` | `test_envelope.py`, `test_architectural_governance.py` | **Simulation-only / partial.** Bounded quantities are model proxies and configured budgets, not CPU time, memory, or asymptotic compute. |
-| Holistic Governor — suppression/control | Task, coherence and local cost influence activation delta; costly low-value expansion is suppressed | `Governor.update_membrane`; `HolisticGovernorField` diagnostics/triggers | `test_model.py`, `test_temporal_governance.py` | **Partial.** The local Governor commits control. Several holistic field outputs are trigger/diagnostic signals and do not independently mutate every execution path (“diagnostic-only,” not hidden control). |
-| Governor — Lyapunov-style energy | Non-negative weighted energy for valid non-negative state; history trend/variance heuristic and optional dissipation | `Governor.compute_lyapunov_energy`, `is_stable`; `apply_lyapunov_dissipation` | `test_model.py`, `test_pre_launch_sweep.py` | **Heuristic, implemented and tested.** No proof of positive definiteness about a unique equilibrium or monotonic discrete-time decrease; temporary increases are permitted. Never read “stable” here as formal Lyapunov stability. |
-| SAO — symmetric ascension | Opposite facets align; projection precedes verdict; only `ascend` appends promotion ledger evidence | `saopromotion.SAOPromotor.promote`; `collective_sao_promote` | `test_saopromotion.py`, `test_collective_reasoning.py` | **Partial.** Local promotion ledger mutation is atomic for rejection; the receiving “layer” is represented by evidence, not a transactional external datastore. Multi-agent all-party symmetry/policy is separately governed. |
-| Federated Shards — workload projection/admission/routing | Evidence is finite/non-negative; only known evidence plus strict routing metadata accepted; terminal shard states override evidence | `routing.FederatedRoutingChannel`; `shard.FederatedShard.evaluate_admissibility`; `mesh.FederatedShardMesh` | projection/admission/routing falsification cases in `test_paper_conformance.py`; `test_federated_mesh.py` | **Implemented and tested** as an in-process simulation. `routed=True` is informational and never attestation. There is no network transport, freshness protocol, Byzantine tolerance, or distributed consistency guarantee. |
-| Federated mesh — global coherence | Deterministic aggregate of route/trust/economic positives and residual/policy/latency/failure penalties | `FederatedShardMesh.compute_mesh_coherence`; collective mesh coherence | `test_federated_mesh.py`, `test_collective_reasoning.py` | **Partial.** Quarantine gates routing; the scalar coherence report is not itself global authorization and currently includes all shards in some averages. |
+| Holistic Governor — suppression/control | Task, coherence and local cost influence activation delta; costly low-value expansion is suppressed; holistic fields accept exactly twelve finite facets and a finite 12×12 coherence matrix | `Governor.update_membrane`; `HolisticGovernorField` diagnostics/triggers | `test_model.py`, `test_temporal_governance.py`, `test_bedrock_iii.py` | **Partial by paper role, numerically hardened.** Local Governor suppression commits control. H/coherence/band/drift/overload/policy-tension remain observations; kernel modulation is a suppression input; reconfiguration is a trigger. They are not universal authorization gates, and observing them alone does not mutate membrane state. |
+| Governor — Lyapunov-style energy | Non-negative weighted energy for valid non-negative state; history trend/variance heuristic; bounded finite dissipation cannot increase energy in the controlled no-pressure scenario | `Governor.compute_lyapunov_energy`, `is_stable`; `apply_lyapunov_dissipation` | `test_model.py`, `test_pre_launch_sweep.py`, `test_bedrock_iii.py` | **Heuristic, implemented and tested under a restricted recovery scenario.** The present dissipation directly damps activation, which the stated energy does not contain, so the proven executable inequality is non-increase (often equality), not strict decay. There is no proof of positive definiteness, unique equilibrium, or global asymptotic stability; legitimate task pressure may increase energy. |
+| SAO — symmetric ascension | Opposite facets align; admissibility/projection/residual verdict precede temporal gating; only the final authorized `ascend` commits ledger evidence | `saopromotion.SAOPromotor.promote`; `collective_sao_promote` | `test_saopromotion.py`, `test_collective_reasoning.py`, `test_bedrock_iii.py` | **Implemented and tested for the local simulation chain.** Temporal constrain/block cannot leave false promotion evidence, including repeated rejection. The receiving “layer” remains ledger evidence, not a transactional external datastore; multi-agent all-party symmetry/policy is separately governed. |
+| Federated Shards — workload projection/admission/routing | Evidence is finite/non-negative and representable in model arithmetic; failed integer→float conversion remains untrusted; only known evidence plus strict routing metadata accepted; terminal states override evidence | `numeric.finite_real`; `routing.FederatedRoutingChannel`; `shard.FederatedShard.evaluate_admissibility`; `mesh.FederatedShardMesh` | projection/admission/routing falsification cases in `test_paper_conformance.py` and `test_bedrock_iii.py`; `test_federated_mesh.py` | **Implemented and tested** as an in-process simulation. Arbitrarily large integers cannot crash projection or be silently clamped into admissibility. `routed=True` is informational, never attestation. There is no network transport, freshness protocol, Byzantine tolerance, or distributed consistency guarantee. |
+| Federated mesh — global coherence | Deterministic aggregate separates eligible positive trust/economic/route evidence from retained all-shard residual/policy/failure penalties; weights and normalization are finite/domain-safe | `FederatedShardMesh.compute_mesh_coherence`; collective mesh coherence | `test_federated_mesh.py`, `test_collective_reasoning.py`, `test_bedrock_iii.py` | **Implemented and tested for in-process aggregation; deployment claim remains partial.** Quarantined/revoked/expired shards cannot add positive evidence, while terminal failure/policy evidence remains visible. The scalar is diagnostic and not itself global authorization. |
 | L.D.E. — geometry-enriched representation | Dimensions match; generated geometry finite for validated normal configs; directed symbol transitions preserved | `lde_encode`, `LDEState`, `LDEBoundaryGeometry` | `test_lde_pipeline.py`; dimensional falsification regression | **Implemented and tested** as symbolic simulation. Depth is a weighted descriptive feature, not semantic understanding. |
-| L.D.E. — full reconstruction | Full mode retains ordering, casing, punctuation/spacing/boundaries and satisfies `reconstruct(encode(T)) == T`; compressed mode refuses lossless API | `lde_encode`, new `lde_reconstruct` | adversarial round-trip and compressed-mode regressions in `test_paper_conformance.py` | **Implemented and tested.** Losslessness comes from reconstruction metadata, explicitly not from depth/boundary geometry alone. Alphabet normalization has known Unicode edge cases which fail rather than corrupt silently. |
+| L.D.E. — full reconstruction | Full mode retains raw ordering, casing, punctuation, whitespace/newline forms, Unicode code points and satisfies `reconstruct(encode(T)) == T`; compressed mode refuses lossless API | `lde_encode`, `lde_reconstruct` | adversarial round-trip and compressed-mode regressions in `test_paper_conformance.py` and `test_bedrock_iii.py` | **Implemented and tested.** Unicode letters, emoji, combining marks, mixed scripts, CR/LF, tabs, repeated whitespace, empty and punctuation-only text round-trip because raw reconstruction metadata is retained. Symbolic geometry still uses its defined alphabet; geometry alone is explicitly not lossless and no Unicode normalization claim is made. |
 | Temporal governance — short/durable horizons | Bounded deques, explicit tick order, decay/recovery, and promotion gates distinguish transient from durable evidence | `temporal.TemporalMembraneState`; SAO temporal gates | `test_temporal_governance.py` | **Implemented simulation.** No durable user-profile store, event-time clock, stale/future timestamp protocol, or production personalization claim. |
 | Multi-agent design note — governed coupling | Policy envelopes intersect and collective admissibility precedes promotion; correction can roll back simulation state | `multi_agent`, `collective_reasoning`, `MeshCorrectness` | `test_multi_agent.py`, `test_multi_cluster.py`, `test_collective_reasoning.py` | **Later architectural extension / simulation-only.** Not a federated deployment protocol. |
 | Semantic memory | Writes/reads/promotions use policy/admissibility contexts and curvature state is bounded by its operator rules | `semantic_memory` package and integration hooks | `test_semantic_memory.py` | **Later architectural extension.** In-memory governed records are not a secure persistent memory service. |
@@ -118,10 +118,16 @@ mapping above is required whenever those values cross modules.
 3. **Fixed:** the documentation index called 11 paths “the complete set” without
    disclosing that two are identical. It now reports filename and unique-document
    counts and identifies the absent Invariant Handshake PDF.
-4. **Not silently fixed:** boundary constructor validation, complete low-level
-   channel validation, global mesh evidence filtering, regime hysteresis, and
-   transactional receiving layers require separate design decisions. Their
-   limits are recorded rather than equations being invented.
+4. **Fixed in BEDROCK III:** integer-to-float overflow at routing and shard trust
+   boundaries now remains invalid evidence instead of an exception or clamp.
+5. **Fixed in BEDROCK III:** SAO ledger evidence is committed only after the
+   temporal gate determines the final verdict.
+6. **Fixed in BEDROCK III:** boundary construction and complete-candidate update,
+   low-level channel contracts, holistic dimensions, mesh weights and terminal
+   positive-evidence filtering are explicit and falsification-tested.
+7. **Intentionally not invented:** regime hysteresis, transactional external
+   receiving layers, distributed attestation and strict Lyapunov decrease need
+   theory or systems that the checked-in papers/repository do not supply.
 
 ## Claims deliberately left research-only
 
@@ -159,3 +165,72 @@ mapping above is required whenever those values cross modules.
 7. Should the duplicate publication alias remain for stable links, or be marked
    in external release metadata as an alias while preserving both published
    files?
+
+## BEDROCK III closure status
+
+### Gaps closed
+
+* **Numeric projection trust boundary.** A shared non-coercing finite-real check
+  catches conversion/domain failure, including `OverflowError` from unbounded
+  Python integers. Projection preserves invalid workload evidence for the
+  authoritative admission rejection and never turns it into a trusted clamp.
+* **SAO final-verdict transaction.** Geometric, residual and temporal decisions
+  now finish before the promotion ledger commit. Constrain/block/admit/reproject
+  outcomes leave that promotion state unchanged.
+* **Deformable boundary transaction.** Construction rejects impossible geometry;
+  updates build and validate all twelve deviations before one commit. Valid
+  finite states remain within configured positive radius bounds, with finite
+  numerical tangent and curvature diagnostics.
+* **Low-level V-Channel contracts.** Angles, activation, costs, decay, bounded
+  depth, custom mappings, sample counts, epsilon and indexes now have explicit
+  finite domains. Alignment/coherence remain bounded and inverse-cost scores are
+  non-increasing under otherwise identical non-negative cost.
+* **Mesh evidence separation.** Terminal shards are excluded from positive
+  route/trust/economic evidence but retained in failure, residual and policy
+  penalties. Public weights and sigmoid normalization are finite-safe.
+* **Holistic numeric shape.** The twelve-facet/12×12 basis is executable at the
+  holistic field boundary. Signal roles are recorded rather than promoting every
+  observation to authorization.
+* **Reconstruction edge cases.** Full-mode raw metadata has executable proofs for
+  Unicode, combining sequences, emoji, mixed scripts and exact whitespace/newline
+  preservation; compressed mode and geometry retain their explicit limits.
+
+### Gaps intentionally remaining
+
+* The two kernel managers remain distinct abstraction levels. Merging them would
+  be cleanup, not a paper-backed invariant. Reference transitions remain ordered
+  threshold switches; no unresearched hysteresis was added.
+* Holistic diagnostic values and triggers do not become universal admission
+  gates. Newer agentic, semantic-memory, collective and multi-agent components
+  retain their documented experimental governance paths rather than being
+  represented as original-paper mechanisms.
+* SAO does not create a transactional remote receiving system, and the shard mesh
+  does not create transport, consensus, cryptographic attestation, freshness or
+  Byzantine guarantees.
+
+### Claims still research-only
+
+The U.F.O. stack remains an inspectable mathematical simulation. “Bounded
+compute” is a configured proxy/envelope, mesh coherence is a diagnostic scalar,
+L.D.E. geometry is not independently lossless, local deterministic propagation
+is not globally optimal routing, and Project Rainbow results are not empirical
+production validation.
+
+### Mathematical claims not formally proven
+
+The tests establish bounded arithmetic, deterministic replay, fail-closed trust
+boundaries, atomic local commits and a restricted no-pressure Lyapunov-style
+non-increase result. They do **not** prove smooth boundary differentiability,
+positive definiteness about a unique equilibrium, strict energy decay, global
+asymptotic stability, optimal routing, or semantic equivalence across arbitrary
+receiving layers. Temporary energy growth under legitimate task pressure remains
+part of the simulation model.
+
+### Design questions intentionally not resolved
+
+Cost-unit calibration, researched regime hysteresis, universally mandatory
+holistic gates, distributed evidence freshness, a stronger discrete-time
+Lyapunov argument, canonical Unicode normalization and external treatment of the
+duplicate publication alias remain open. Closing any of these in code today
+would choose theory or deployment semantics not established by the checked-in
+corpus.
