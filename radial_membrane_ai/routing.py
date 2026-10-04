@@ -9,6 +9,7 @@ and data-plane V-Channels: Type-W, Type-R, Type-T, Type-A, Type-E.
 """
 
 from __future__ import annotations
+import math
 from typing import Dict, Any, List, Optional
 from radial_membrane_ai.shard import FederatedShard, ShardState
 
@@ -35,9 +36,23 @@ class FederatedRoutingChannel:
         """
         Calculates II_{G_shard}(W(t)) - projecting workload weights onto the shard limits.
         """
-        # A simple mathematical projection of workload parameters into shard capacity bounds
+        if not isinstance(workload, dict):
+            raise TypeError("workload must be a dictionary")
+        # A simple mathematical projection of workload parameters into shard capacity bounds.
+        # Admission remains authoritative: this marker records that projection
+        # was requested, but is not proof of trust or admissibility.
         workload_cap = workload.get("capacity", 0.5)
-        projected_cap = min(workload_cap, shard.capacity)
+        if (
+            isinstance(workload_cap, bool)
+            or not isinstance(workload_cap, (int, float))
+            or not isinstance(shard.capacity, (int, float))
+            or isinstance(shard.capacity, bool)
+            or not math.isfinite(float(workload_cap))
+            or not math.isfinite(float(shard.capacity))
+        ):
+            projected_cap = workload_cap
+        else:
+            projected_cap = min(workload_cap, shard.capacity)
 
         projected_workload = workload.copy()
         projected_workload["capacity"] = projected_cap

@@ -12,11 +12,14 @@ from radial_membrane_ai.lde.models import (
     LDEBoundaryGeometry,
     LDEState
 )
+from radial_membrane_ai.lde.pipeline import lde_encode, lde_reconstruct
 
 __all__ = [
     "LDEConfig",
     "LDEString",
     "LDEVChannel",
     "LDEBoundaryGeometry",
-    "LDEState"
+    "LDEState",
+    "lde_encode",
+    "lde_reconstruct",
 ]
