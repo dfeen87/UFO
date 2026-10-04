@@ -27,6 +27,7 @@ from radial_membrane_ai.agentic.contracts import (
     ClosureDecision,
     ExecutionRecord,
     ExecutionState,
+    GovernedFeedbackContext,
     IntentContract,
     GovernedRunResult,
     Observation,
@@ -129,8 +130,17 @@ class AgenticEngine:
         policy_allowed: bool = True,
         handshake: Any = None,
         require_action_local: bool = False,
+        feedback_context: GovernedFeedbackContext | None = None,
+        source_receipt: AgenticActionReceipt | None = None,
+        cycle_index: int = 0,
     ) -> AgenticActionReceipt:
         """Shared single-action primitive; the supplied budget remains runtime-owned."""
+        if feedback_context is not None:
+            self._validate_feedback_context(
+                intent, active_plan, budget, feedback_context, source_receipt, cycle_index
+            )
+        elif source_receipt is not None or cycle_index != 0:
+            raise ValidationError("a recurrent cycle requires its immediately preceding feedback context.")
         initial_fingerprint = self.state_fingerprint()
         exact_proposal = proposal or self.planner.propose_step(
             active_plan, intent, require_action_local=require_action_local
@@ -260,7 +270,58 @@ class AgenticEngine:
                 active_plan.revision, exact_proposal.proposal_digest, exact_proposal.action_id,
                 PlanTransitionType.NONE, active_plan.revision, ("PLAN_UNCHANGED",),
             ),
+            incoming_feedback_digest=(
+                feedback_context.feedback_context_digest if feedback_context is not None else None
+            ),
         )
+
+    def _build_feedback_context(
+        self,
+        intent: IntentContract,
+        receipt: AgenticActionReceipt,
+        cycle_index: int,
+    ) -> GovernedFeedbackContext:
+        """Bind reconciled state only after the receipt's plan transition is final."""
+        if receipt.memory is None or receipt.plan_transition is None:
+            raise ValidationError("finalized receipt evidence is required for feedback.")
+        return GovernedFeedbackContext(
+            intent.intent_id,
+            intent.intent_digest,
+            cycle_index,
+            stable_digest(receipt),
+            receipt.resulting_state_fingerprint,
+            receipt.residual,
+            receipt.memory.commit.memory_state_digest,
+            receipt.reconciliation.remaining_budget,
+            receipt.plan_transition,
+            receipt.plan_transition.resulting_plan_revision,
+            receipt.closure,
+        )
+
+    def _validate_feedback_context(
+        self,
+        intent: IntentContract,
+        active_plan: Plan,
+        budget: GovernedBudget,
+        feedback: GovernedFeedbackContext,
+        source_receipt: AgenticActionReceipt | None,
+        cycle_index: int,
+    ) -> None:
+        """Fail closed before proposal generation, admission, or reservation."""
+        if not isinstance(feedback, GovernedFeedbackContext) or source_receipt is None:
+            raise ValidationError("recurrent feedback requires typed source evidence.")
+        expected = self._build_feedback_context(intent, source_receipt, cycle_index - 1)
+        if feedback != expected:
+            raise ValidationError("incoming feedback is not bound to the immediately preceding receipt.")
+        if feedback.prior_closure.decision not in {ClosureDecision.CONTINUE, ClosureDecision.REPLAN}:
+            raise ValidationError("terminal closure feedback cannot initiate an autonomous cycle.")
+        if (
+            feedback.resulting_state_fingerprint != self.state_fingerprint()
+            or feedback.memory_state_digest != semantic_memory_digest(self.engine.semantic_memory)
+            or feedback.remaining_budget != budget.remaining
+            or feedback.resulting_plan_revision != active_plan.revision
+        ):
+            raise ValidationError("incoming feedback is stale relative to authoritative runtime state.")
 
     def run_governed_intent(
         self,
@@ -280,12 +341,16 @@ class AgenticEngine:
         active_plan = plan or self.planner.create_plan(intent.goal)
         budget = GovernedBudget(intent.initial_budget)
         receipts: list[AgenticActionReceipt] = []
+        feedback_contexts: list[GovernedFeedbackContext] = []
         termination = "MAX_CYCLES_REACHED"
 
-        for _ in range(max_cycles):
+        for cycle_index in range(max_cycles):
             receipt = self._run_governed_transaction(
                 intent, active_plan, budget, stability_allowed=stability_allowed,
                 policy_allowed=policy_allowed, handshake=handshake, require_action_local=True,
+                feedback_context=(feedback_contexts[-1] if feedback_contexts else None),
+                source_receipt=(receipts[-1] if receipts else None),
+                cycle_index=cycle_index,
             )
             decision = receipt.closure.decision
             prior_revision = active_plan.revision
@@ -303,6 +368,7 @@ class AgenticEngine:
                     transition_type, active_plan.revision, transition_reasons,
                 ))
                 receipts.append(receipt)
+                feedback_contexts.append(self._build_feedback_context(intent, receipt, cycle_index))
                 if active_plan.current_step() is None:
                     termination = "PLAN_EXHAUSTED_WITH_INTENT_UNRESOLVED"
                     break
@@ -316,6 +382,7 @@ class AgenticEngine:
                     transition_type, active_plan.revision, transition_reasons,
                 ))
                 receipts.append(receipt)
+                feedback_contexts.append(self._build_feedback_context(intent, receipt, cycle_index))
                 if active_plan.status == "FAILED":
                     termination = "REPLAN_FAILED_CLOSED"
                     break
@@ -326,6 +393,7 @@ class AgenticEngine:
                 transition_type, active_plan.revision, transition_reasons,
             ))
             receipts.append(receipt)
+            feedback_contexts.append(self._build_feedback_context(intent, receipt, cycle_index))
             termination = {
                 ClosureDecision.HALT_SUCCESS: "INTENT_SATISFIED",
                 ClosureDecision.HALT_FAILURE: "GOVERNED_FAILURE",
@@ -341,6 +409,7 @@ class AgenticEngine:
             final_closure, termination,
             bool(final_closure and final_closure.decision is ClosureDecision.HALT_SUCCESS),
             active_plan.revision,
+            tuple(feedback_contexts),
         )
 
     def run_goal(self, goal: str, max_steps: int = 10) -> AgenticRunResult:
