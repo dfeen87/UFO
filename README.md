@@ -3,7 +3,6 @@
 **Current release: 4.0.0 (BEDROCK engineering baseline).** Version 4 preserves
 the governed membrane architecture while making finite numerical state,
 atomic activation updates, and fail-closed shard admission explicit contracts.
-See the [Version 4 release notes](docs/releases/4.0.0.md).
 
 **A compute-aware AI personalization architecture that treats behavior as a living, saucer-shaped control surface — not a static personality preset.**
 
