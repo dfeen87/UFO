@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Don Michael Feeney Jr.
 # Standard MIT License applies.
 
-"""Agentic AI subsystem for the Version 4.0.0 U.F.O. runtime."""
+"""Agentic AI subsystem for the Version 5.0.0 U.F.O. runtime."""
 
 from radial_membrane_ai.agentic.contracts import (
     ActionProposal,
@@ -38,10 +38,19 @@ from radial_membrane_ai.agentic.contracts import (
 )
 from radial_membrane_ai.agentic.engine import AgenticEngine, AgenticSwarmEngine
 from radial_membrane_ai.agentic.memory import GovernedMemoryConfig, GovernedMemoryPipeline
-from radial_membrane_ai.agentic.successor import build_transition_signature
+from radial_membrane_ai.agentic.successor import (
+    build_transition_signature,
+    validate_transition_signature_binding,
+)
 from radial_membrane_ai.agentic.planner import GoalPlanner, Plan, PlanStep
 from radial_membrane_ai.agentic.reflection import ReflectionEngine, ReflectionRecord
-from radial_membrane_ai.agentic.swarm import AgentBid, SwarmAuctioneer, SwarmContract
+from radial_membrane_ai.agentic.swarm import (
+    AgentBid,
+    GovernedSwarmResult,
+    GovernedSwarmTask,
+    SwarmAuctioneer,
+    SwarmContract,
+)
 from radial_membrane_ai.agentic.tools import (
     APIRequestTool,
     BaseTool,
@@ -73,6 +82,8 @@ __all__ = [
     "ExpectedPostcondition",
     "GoalPlanner",
     "GovernedRunResult",
+    "GovernedSwarmResult",
+    "GovernedSwarmTask",
     "GovernedFeedbackContext",
     "GovernedMemoryConfig",
     "GovernedMemoryPipeline",
@@ -108,4 +119,5 @@ __all__ = [
     "VerificationResult",
     "VerificationStatus",
     "build_transition_signature",
+    "validate_transition_signature_binding",
 ]

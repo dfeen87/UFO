@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import math
 from typing import Any, Dict, List, Optional, Sequence
+from radial_membrane_ai.agentic.contracts import GovernedRunResult, IntentContract, stable_digest
 from radial_membrane_ai.exceptions import ValidationError
 
 
@@ -73,6 +74,59 @@ class SwarmContract:
             raise ValidationError(f"max_budget must be positive, got {self.max_budget}.")
         if not self.contract_id or not self.goal:
             raise ValidationError("contract_id and goal cannot be empty.")
+
+
+@dataclass(frozen=True)
+class GovernedSwarmTask:
+    """Separates auction requirements from explicit execution authority."""
+
+    contract_id: str
+    goal: str
+    required_capabilities: tuple[str, ...]
+    max_selection_budget: float
+    intent: IntentContract
+
+    def __post_init__(self) -> None:
+        if not self.contract_id or not self.goal:
+            raise ValidationError("governed swarm task identity cannot be empty.")
+        object.__setattr__(self, "required_capabilities", tuple(self.required_capabilities))
+        if not all(isinstance(value, str) and value for value in self.required_capabilities):
+            raise ValidationError("selection capabilities must be identifiers.")
+        if not math.isfinite(self.max_selection_budget) or self.max_selection_budget <= 0.0:
+            raise ValidationError("selection budget must be positive and finite.")
+        if not isinstance(self.intent, IntentContract):
+            raise ValidationError("governed swarm execution requires an explicit IntentContract.")
+        if self.intent.goal != self.goal:
+            raise ValidationError("swarm task goal must exactly match its governing intent.")
+
+
+@dataclass(frozen=True)
+class GovernedSwarmResult:
+    """Distinct deterministic selection evidence and governed execution evidence."""
+
+    task: GovernedSwarmTask
+    selected_agent_id: str
+    winning_bid: AgentBid
+    selection_digest: str
+    governed_run: GovernedRunResult
+
+    def __post_init__(self) -> None:
+        if self.winning_bid.contract_id != self.task.contract_id:
+            raise ValidationError("winning bid is not bound to the governed swarm task.")
+        if self.winning_bid.agent_id != self.selected_agent_id:
+            raise ValidationError("selected agent and winning bid disagree.")
+        expected = stable_digest({
+            "task": self.task,
+            "selected_agent_id": self.selected_agent_id,
+            "winning_bid": self.winning_bid,
+        })
+        if self.selection_digest != expected:
+            raise ValidationError("governed swarm selection evidence is forged.")
+        if (
+            self.governed_run.intent_id != self.task.intent.intent_id
+            or self.governed_run.intent_digest != self.task.intent.intent_digest
+        ):
+            raise ValidationError("governed swarm run is not bound to its explicit intent.")
 
 
 class SwarmAuctioneer:

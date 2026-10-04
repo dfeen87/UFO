@@ -30,7 +30,7 @@ def build_transition_signature(
     else:
         if source_feedback is None or prior_signature is None or prior_receipt is None:
             raise ValidationError("a recurrent transition requires its immediate predecessor evidence.")
-        _validate_signature_binding(prior_signature, prior_receipt, source_feedback, cycle_index - 1)
+        validate_transition_signature_binding(prior_signature, prior_receipt, source_feedback, cycle_index - 1)
         if (
             receipt.incoming_feedback_digest != source_feedback.feedback_context_digest
             or receipt.initial_state_fingerprint != source_feedback.resulting_state_fingerprint
@@ -94,7 +94,7 @@ def build_transition_signature(
     )
 
 
-def _validate_signature_binding(
+def validate_transition_signature_binding(
     signature: TransitionSignature,
     receipt: AgenticActionReceipt,
     feedback: GovernedFeedbackContext,

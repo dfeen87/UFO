@@ -15,7 +15,13 @@ import numpy as np
 
 from radial_membrane_ai.agentic.planner import GoalPlanner, Plan
 from radial_membrane_ai.agentic.reflection import ReflectionEngine, ReflectionRecord
-from radial_membrane_ai.agentic.swarm import AgentBid, SwarmAuctioneer, SwarmContract
+from radial_membrane_ai.agentic.swarm import (
+    AgentBid,
+    GovernedSwarmResult,
+    GovernedSwarmTask,
+    SwarmAuctioneer,
+    SwarmContract,
+)
 from radial_membrane_ai.agentic.tools import ToolRegistry
 from radial_membrane_ai.agentic.admission import GovernedBudget, ProspectiveAgenticAdmission
 from radial_membrane_ai.agentic.closure import AgenticClosure
@@ -47,7 +53,10 @@ from radial_membrane_ai.agentic.memory import (
     GovernedMemoryPipeline,
     semantic_memory_digest,
 )
-from radial_membrane_ai.agentic.successor import build_transition_signature
+from radial_membrane_ai.agentic.successor import (
+    build_transition_signature,
+    validate_transition_signature_binding,
+)
 from radial_membrane_ai.exceptions import ValidationError
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.ufo_engine.multi_agent import MultiAgentEngine, MultiAgentRunResult
@@ -134,6 +143,7 @@ class AgenticEngine:
         handshake: Any = None,
         require_action_local: bool = False,
         feedback_context: GovernedFeedbackContext | None = None,
+        transition_signature: TransitionSignature | None = None,
         source_receipt: AgenticActionReceipt | None = None,
         cycle_index: int = 0,
     ) -> AgenticActionReceipt:
@@ -142,13 +152,33 @@ class AgenticEngine:
             self._validate_feedback_context(
                 intent, active_plan, budget, feedback_context, source_receipt, cycle_index
             )
-        elif source_receipt is not None or cycle_index != 0:
+            if transition_signature is None or source_receipt is None:
+                raise ValidationError("recurrent planning requires successor evidence.")
+            validate_transition_signature_binding(
+                transition_signature, source_receipt, feedback_context, cycle_index - 1
+            )
+        elif transition_signature is not None or source_receipt is not None or cycle_index != 0:
             raise ValidationError("a recurrent cycle requires its immediately preceding feedback context.")
         initial_fingerprint = self.state_fingerprint()
         initial_memory_digest = semantic_memory_digest(self.engine.semantic_memory)
         exact_proposal = proposal or self.planner.propose_step(
-            active_plan, intent, require_action_local=require_action_local
+            active_plan,
+            intent,
+            require_action_local=require_action_local,
+            feedback_context=feedback_context,
+            transition_signature=transition_signature,
         )
+        expected_feedback_digest = (
+            feedback_context.feedback_context_digest if feedback_context is not None else None
+        )
+        expected_transition_digest = (
+            transition_signature.transition_signature_digest if transition_signature is not None else None
+        )
+        if (
+            exact_proposal.source_feedback_digest != expected_feedback_digest
+            or exact_proposal.source_transition_signature_digest != expected_transition_digest
+        ):
+            raise ValidationError("proposal planning context is missing, stale, or forged.")
         if exact_proposal.plan_revision != active_plan.revision:
             raise ValueError("proposal is not bound to the supplied plan revision.")
 
@@ -358,6 +388,7 @@ class AgenticEngine:
                 intent, active_plan, budget, stability_allowed=stability_allowed,
                 policy_allowed=policy_allowed, handshake=handshake, require_action_local=True,
                 feedback_context=source_feedback,
+                transition_signature=prior_signature,
                 source_receipt=source_receipt,
                 cycle_index=cycle_index,
             )
@@ -531,6 +562,68 @@ class AgenticSwarmEngine:
 
         self.multi_engine = multi_engine or MultiAgentEngine(custom_agents=self.agents)
         self.auctioneer = auctioneer or SwarmAuctioneer()
+
+    def run_governed_swarm_tasks(
+        self,
+        tasks: Sequence[GovernedSwarmTask],
+        *,
+        max_cycles: int,
+    ) -> tuple[GovernedSwarmResult, ...]:
+        """Select deterministically, then govern the winner under explicit authority."""
+        if isinstance(max_cycles, bool) or not isinstance(max_cycles, int) or max_cycles <= 0:
+            raise ValueError("max_cycles must be a positive integer.")
+        results: list[GovernedSwarmResult] = []
+        for task in tasks:
+            if not isinstance(task, GovernedSwarmTask):
+                raise ValidationError("governed swarm execution requires typed tasks.")
+            contract = self.auctioneer.create_contract(
+                task.contract_id,
+                task.goal,
+                task.required_capabilities,
+                task.max_selection_budget,
+            )
+            bids = []
+            for agent in self.agents:
+                tension = float(agent.membrane.temporal_state.accumulated_tension)
+                bid = self.auctioneer.calculate_agent_bid(
+                    agent.agent_id,
+                    contract,
+                    agent.capabilities,
+                    tension,
+                    2.0 - min(1.9, tension),
+                )
+                if bid is not None:
+                    bids.append(bid)
+            awarded = self.auctioneer.run_auction(task.contract_id, bids)
+            if awarded.winning_bid is None or awarded.assigned_agent_id is None:
+                continue
+            winner = next(agent for agent in self.agents if agent.agent_id == awarded.assigned_agent_id)
+            # Preserve every authoritative component shared by UFOAgent and the
+            # v5 engine. Selection labels and scalar budget are deliberately not
+            # copied into execution authority or GovernedBudget.
+            selected_engine = SingleAgentEngine(
+                membrane=winner.membrane,
+                governor=winner.governor,
+                boundary=winner.boundary,
+            )
+            selected_engine.semantic_memory = winner.semantic_memory
+            governed = AgenticEngine(engine=selected_engine).run_governed_intent(
+                task.intent,
+                max_cycles=max_cycles,
+            )
+            selection_digest = stable_digest({
+                "task": task,
+                "selected_agent_id": winner.agent_id,
+                "winning_bid": awarded.winning_bid,
+            })
+            results.append(GovernedSwarmResult(
+                task,
+                winner.agent_id,
+                awarded.winning_bid,
+                selection_digest,
+                governed,
+            ))
+        return tuple(results)
 
     def run_swarm_goals(
         self,

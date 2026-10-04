@@ -217,6 +217,8 @@ class ActionProposal:
     required_capabilities: frozenset[str]
     provenance: str
     handshake_required: bool = False
+    source_feedback_digest: str | None = None
+    source_transition_signature_digest: str | None = None
     proposal_digest: str = field(init=False)
 
     def __post_init__(self) -> None:
@@ -237,6 +239,11 @@ class ActionProposal:
             raise ValidationError("proposal requires capability identifiers.")
         if not isinstance(self.handshake_required, bool):
             raise ValidationError("handshake_required must be Boolean.")
+        if (self.source_feedback_digest is None) != (self.source_transition_signature_digest is None):
+            raise ValidationError("proposal recurrent context digests must be present or absent together.")
+        if self.source_feedback_digest is not None:
+            _digest(self.source_feedback_digest, "source_feedback_digest")
+            _digest(self.source_transition_signature_digest, "source_transition_signature_digest")
         identity = {
             "intent_id": self.intent_id, "plan_revision": self.plan_revision, "action_id": self.action_id,
             "tool_name": self.tool_name, "parameters": self.parameters,
@@ -244,6 +251,8 @@ class ActionProposal:
             "predicted_cost": self.predicted_cost, "side_effect_class": self.side_effect_class,
             "required_capabilities": sorted(self.required_capabilities), "provenance": self.provenance,
             "handshake_required": self.handshake_required,
+            "source_feedback_digest": self.source_feedback_digest,
+            "source_transition_signature_digest": self.source_transition_signature_digest,
         }
         object.__setattr__(self, "proposal_digest", stable_digest(identity))
 
@@ -893,6 +902,16 @@ class GovernedRunResult:
                 raise ValidationError("final closure must be the last receipt closure.")
             if self.final_remaining_budget != self.receipts[-1].reconciliation.remaining_budget:
                 raise ValidationError("final run budget does not match the trajectory.")
+        for index, receipt in enumerate(self.receipts):
+            expected_feedback = None if index == 0 else self.feedback_contexts[index - 1].feedback_context_digest
+            expected_signature = (
+                None if index == 0 else self.transition_signatures[index - 1].transition_signature_digest
+            )
+            if (
+                receipt.proposal.source_feedback_digest != expected_feedback
+                or receipt.proposal.source_transition_signature_digest != expected_signature
+            ):
+                raise ValidationError("proposal is not bound to its immediate planning predecessor.")
         expected_success = bool(
             self.final_closure and self.final_closure.decision is ClosureDecision.HALT_SUCCESS
         )
