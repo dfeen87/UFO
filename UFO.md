@@ -572,13 +572,13 @@ Execution may result in several states:
 
 $$S_{t}^{E} \in \lbrace \text{NOT\_EXECUTED},\text{EXECUTED},\text{FAILED},\text{OUTCOME\_UNKNOWN}\rbrace .$$
 
-NOT_EXECUTED indicates that the action never crossed the execution boundary.
+`NOT_EXECUTED` indicates that the action never crossed the execution boundary.
 
 EXECUTED indicates that the tool or external mechanism reports completion.
 
 FAILED indicates an observed execution failure.
 
-OUTCOME_UNKNOWN represents an important third condition: the system cannot reliably determine whether the external side effect occurred.
+`OUTCOME_UNKNOWN` represents an important third condition: the system cannot reliably determine whether the external side effect occurred.
 
 This last state prevents a common agentic failure mode. If a consequential external action is transmitted but confirmation is lost, absence of confirmation must not automatically be interpreted as absence of effect.
 
@@ -1125,7 +1125,7 @@ The exact representation may differ between tools, but the execution state must 
 
 $$\lbrace \text{NOT\_EXECUTED},\text{EXECUTED},\text{FAILED},\text{OUTCOME\_UNKNOWN}\rbrace .$$
 
-The distinction between FAILED and OUTCOME_UNKNOWN is mandatory whenever external side effects may exist.
+The distinction between FAILED and `OUTCOME_UNKNOWN` is mandatory whenever external side effects may exist.
 
 ### Side-effect classification
 
@@ -2612,7 +2612,7 @@ Uncertainty remains represented until evidence resolves it or policy determines 
 
 ## 6.9 Unknown-Outcome Branch
 
-OUTCOME_UNKNOWN deserves its own path because it is fundamentally different from ordinary tool failure.
+`OUTCOME_UNKNOWN` deserves its own path because it is fundamentally different from ordinary tool failure.
 
 Suppose an irreversible or non-idempotent operation is submitted to an external system. Communication then fails before confirmation is received.
 
@@ -3363,7 +3363,7 @@ while
 
 $$q_{t} = \text{FAILED}.$$
 
-The closure operator must not return HALT_SUCCESS solely because execution reported success.
+The closure operator must not return `HALT_SUCCESS` solely because execution reported success.
 
 This test validates that success authority belongs to the appropriate layer.
 
@@ -4045,7 +4045,7 @@ COMPENSATABLE
 IRREVERSIBLE
 ```
 
-For an irreversible or non-idempotent action returning OUTCOME_UNKNOWN, automatic retry MUST be prohibited unless independent policy explicitly establishes retry safety.
+For an irreversible or non-idempotent action returning `OUTCOME_UNKNOWN`, automatic retry MUST be prohibited unless independent policy explicitly establishes retry safety.
 
 This requirement applies even when retry would make task completion more likely.
 
@@ -4204,7 +4204,7 @@ HALT_FAILURE
 
 The closure operator MUST NOT simply return CONTINUE because the plan contains another step.
 
-Likewise, it MUST NOT return HALT_SUCCESS merely because the final tool invocation reported success.
+Likewise, it MUST NOT return `HALT_SUCCESS` merely because the final tool invocation reported success.
 
 This operator is the primary new behavioral boundary introduced by Paper XII.
 
