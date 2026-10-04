@@ -5136,7 +5136,65 @@ A conforming closed-loop implementation should therefore preserve the following 
 
 This refinement does not replace Governed Agentic Closure. It clarifies what Closure closes. Closure closes the authority-bearing transaction for the current cycle. When continuation or governed replanning is permitted, it opens only a feedback path from the reconciled state into a new proposal. The architecture therefore becomes more than a sequence that repeats: **it becomes a bounded adaptive recurrence in which verified consequences can reshape what the system proposes next without allowing adaptation to self-authorize.**
 
-## 9.15 Conclusion
+## 9.15 Future Direction: Governed Machine-Learning Compartments
+
+Governed Adaptive Recurrence establishes a bounded feedback architecture in which U.F.O. can act, reconcile consequences, adapt authoritative state, and generate subsequent proposals without allowing adaptation to inherit execution authority. A natural future direction is to extend this recurrent substrate toward **compartmentalized machine-learning computation at the upper boundaries of the V-Channel architecture**. Rather than embedding one monolithic learning system into the U.F.O. core, specialized machine-learning capabilities may be attached to governed V-Channel interfaces, allowing distinct functions such as classification, prediction, anomaly detection, perception, language processing, control, or optimization to remain computationally specialized while participating in a common governance substrate.
+
+Conceptually, a V-Channel \(V_k\) may expose a bounded interface to a machine-learning compartment \(\mathcal{M}_k\):
+
+\[
+V_k \rightarrow \mathcal{M}_k \rightarrow E_k \rightarrow V_k^{-1},
+\]
+
+where \(E_k\) represents the evidence returned by the compartment rather than an automatically authoritative conclusion. Such evidence may include model output, uncertainty, provenance, resource consumption, confidence information, or other declared diagnostic state. The architectural distinction established throughout Paper XII would remain intact:
+
+\[
+\text{Model Output} \neq \text{Verified Evidence},
+\]
+
+\[
+\text{Model Confidence} \neq \text{Authorization},
+\]
+
+\[
+\text{Model Selection} \neq \text{Execution Authority}.
+\]
+
+A machine-learning compartment would therefore remain subordinate to the same proposal, admission, verification, residual, memory, and Closure semantics established for governed agentic execution. Learned computation may influence what U.F.O. proposes or how it interprets evidence, but it would not inherit global authority merely because a model produced a high-confidence result.
+
+This approach also creates a potential relationship between U.F.O.'s deformable geometry and learned computation. The authoritative state \(X_t\), current intent \(I\), residual evidence \(\rho_t\), and resource state \(B_t\) may eventually influence which V-Channel or specialized learning compartment receives computational attention:
+
+\[
+k^{*}=R_V(I,X_t,\rho_t,B_t),
+\]
+
+followed by
+
+\[
+E_t=\mathcal{M}_{k^{*}}(x_t).
+\]
+
+The resulting evidence would then return through the governed recurrent architecture rather than bypass it:
+
+\[
+X_t
+\rightarrow
+R_V
+\rightarrow
+\mathcal{M}_{k^{*}}
+\rightarrow
+E_t
+\rightarrow
+\rho_t
+\rightarrow
+X_{t+1}.
+\]
+
+This future direction would preserve a central U.F.O. design principle: **specialization should occur at declared computational boundaries without duplicating or weakening the governing substrate**. Different machine-learning compartments could employ different internal techniques or model families while exposing a common bounded contract to U.F.O. The radial membrane and V-Channels would therefore remain model-agnostic at the architectural core while providing governed pathways through which specialized learned computation may participate.
+
+This extension is deliberately left outside the implementation requirements of U.F.O. v5.0.0. It represents a possible subsequent research direction rather than a claim of functionality established by Paper XII. The immediate purpose of v5 remains the implementation and falsification of Governed Agentic Closure and adaptive recurrence. Once that foundation has been experimentally exercised, compartmentalized learned computation provides one natural path for investigating how the same governance laws behave when coupled to increasingly specialized machine-learning systems.
+
+## 9.16 Conclusion
 
 Agentic systems become difficult to govern precisely where individually reasonable components begin interacting.
 
