@@ -86,7 +86,13 @@ class AgenticEngine:
         reflection_engine: Optional[ReflectionEngine] = None,
         memory_config: GovernedMemoryConfig | None = None,
         memory_failure_injector: Any = None,
+        execution_principal_id: str | None = None,
     ) -> None:
+        if execution_principal_id is not None and (
+            not isinstance(execution_principal_id, str) or not execution_principal_id.strip()
+        ):
+            raise ValidationError("execution principal identity must be a non-empty string.")
+        self.execution_principal_id = execution_principal_id
         self.engine = engine or SingleAgentEngine()
         self.tool_registry = tool_registry or ToolRegistry()
         self.planner = planner or GoalPlanner(tool_registry=self.tool_registry)
@@ -308,6 +314,7 @@ class AgenticEngine:
             incoming_feedback_digest=(
                 feedback_context.feedback_context_digest if feedback_context is not None else None
             ),
+            execution_principal_id=self.execution_principal_id,
         )
 
     def _build_feedback_context(
@@ -469,6 +476,7 @@ class AgenticEngine:
             active_plan.revision,
             tuple(feedback_contexts),
             tuple(transition_signatures),
+            self.execution_principal_id,
         )
 
     def run_goal(self, goal: str, max_steps: int = 10) -> AgenticRunResult:
@@ -594,25 +602,6 @@ class AgenticSwarmEngine:
                 )
                 if bid is not None:
                     bids.append(bid)
-            awarded = self.auctioneer.run_auction(task.contract_id, bids)
-            if awarded.winning_bid is None or awarded.assigned_agent_id is None:
-                continue
-            winner = next(agent for agent in self.agents if agent.agent_id == awarded.assigned_agent_id)
-            # Preserve every authoritative component shared by UFOAgent and the
-            # v5 engine. Selection labels and scalar budget are deliberately not
-            # copied into execution authority or GovernedBudget.
-            selected_engine = SingleAgentEngine(
-                membrane=winner.membrane,
-                governor=winner.governor,
-                boundary=winner.boundary,
-            )
-            selected_engine.semantic_memory = winner.semantic_memory
-            governed_engine = AgenticEngine(engine=selected_engine)
-            pre_execution_state_fingerprint = governed_engine.state_fingerprint()
-            governed = governed_engine.run_governed_intent(
-                task.intent,
-                max_cycles=max_cycles,
-            )
             admissible_bids = tuple(sorted(
                 (
                     bid for bid in bids
@@ -623,6 +612,50 @@ class AgenticSwarmEngine:
                 ),
                 key=lambda bid: (-bid.bid_score, bid.agent_id),
             ))
+            awarded = self.auctioneer.run_auction(task.contract_id, bids)
+            if awarded.winning_bid is None or awarded.assigned_agent_id is None:
+                continue
+            if not admissible_bids:
+                raise ValidationError("auction awarded a task without an admissible bid.")
+            expected_winner = admissible_bids[0]
+            if (
+                awarded.contract_id != task.contract_id
+                or awarded.goal != task.goal
+                or tuple(awarded.required_capabilities) != task.required_capabilities
+                or awarded.max_budget != task.max_selection_budget
+                or awarded.status != "AWARDED"
+            ):
+                raise ValidationError("auction award does not match the governed task contract.")
+            if awarded.winning_bid not in admissible_bids:
+                raise ValidationError("auction winning bid is not in the authoritative admissible set.")
+            if awarded.winning_bid != expected_winner:
+                raise ValidationError("auction winning bid is not the deterministic winner.")
+            if awarded.assigned_agent_id != expected_winner.agent_id:
+                raise ValidationError("auction assigned agent is not the deterministic winner.")
+            matching_agents = [agent for agent in self.agents if agent.agent_id == expected_winner.agent_id]
+            if len(matching_agents) != 1:
+                raise ValidationError("auction winner does not identify exactly one swarm agent.")
+            winner = matching_agents[0]
+            if not set(task.required_capabilities).issubset(winner.capabilities):
+                raise ValidationError("auction winner no longer satisfies required capabilities.")
+            # Preserve every authoritative component shared by UFOAgent and the
+            # v5 engine. Selection labels and scalar budget are deliberately not
+            # copied into execution authority or GovernedBudget.
+            selected_engine = SingleAgentEngine(
+                membrane=winner.membrane,
+                governor=winner.governor,
+                boundary=winner.boundary,
+            )
+            selected_engine.semantic_memory = winner.semantic_memory
+            governed_engine = AgenticEngine(
+                engine=selected_engine,
+                execution_principal_id=winner.agent_id,
+            )
+            pre_execution_state_fingerprint = governed_engine.state_fingerprint()
+            governed = governed_engine.run_governed_intent(
+                task.intent,
+                max_cycles=max_cycles,
+            )
             selection_digest = stable_digest({
                 "task": task,
                 "selected_agent_id": winner.agent_id,
@@ -632,6 +665,7 @@ class AgenticSwarmEngine:
             execution_binding_digest = stable_digest({
                 "selection_digest": selection_digest,
                 "selected_agent_id": winner.agent_id,
+                "execution_principal_id": governed.execution_principal_id,
                 "pre_execution_state_fingerprint": pre_execution_state_fingerprint,
                 "initial_receipt_digest": stable_digest(governed.receipts[0]),
                 "intent_digest": task.intent.intent_digest,
