@@ -5081,25 +5081,7 @@ $$
 
 This distinction turns recurrence into a closed governed feedback loop. Execution changes the world or produces evidence about it; verification and residual formation characterize the consequence; reflection may alter validated internal state; memory governance determines what becomes durable; resource reconciliation changes the remaining envelope; and Closure determines whether those reconciled results may participate in another planning cycle.
 
-$$
-Z_t
-\rightarrow
-\text{Proposal}
-\rightarrow
-\text{Admission}
-\rightarrow
-\text{Action}
-\rightarrow
-\text{Evidence}
-\rightarrow
-\text{Reconciliation}
-\rightarrow
-\text{Closure}
-\rightarrow
-Z_{t+1}
-\rightarrow
-\text{Proposal}.
-$$
+$$Z_t \rightarrow \text{Proposal} \rightarrow \text{Admission} \rightarrow \text{Action} \rightarrow \text{Evidence} \rightarrow \text{Reconciliation} \rightarrow \text{Closure} \rightarrow Z_{t+1} \rightarrow \text{Proposal}.$$
 
 Informally, this can be interpreted as an expansion-contraction rhythm. Planning, admission, and execution push a bounded candidate action outward toward an environment. Observation, verification, residual formation, reflection, memory, and Closure draw the consequences back into authoritative state. The next cycle begins from that changed state. This interpretation is architectural rather than biological; it does not imply consciousness, organic behavior, or continuous self-modification.
 
@@ -5176,19 +5158,7 @@ $$
 
 The resulting evidence would then return through the governed recurrent architecture rather than bypass it:
 
-$$
-X_t
-\rightarrow
-R_V
-\rightarrow
-\mathcal{M}_{k^{*}}
-\rightarrow
-E_t
-\rightarrow
-\rho_t
-\rightarrow
-X_{t+1}.
-$$
+$$X_t \rightarrow R_V \rightarrow \mathcal{M}_{k^{*}} \rightarrow E_t \rightarrow \rho_t \rightarrow X_{t+1}.$$
 
 This future direction would preserve a central U.F.O. design principle: **specialization should occur at declared computational boundaries without duplicating or weakening the governing substrate**. Different machine-learning compartments could employ different internal techniques or model families while exposing a common bounded contract to U.F.O. The radial membrane and V-Channels would therefore remain model-agnostic at the architectural core while providing governed pathways through which specialized learned computation may participate.
 
