@@ -38,3 +38,19 @@ __all__ = [
     "AgenticEngine",
     "AgenticSwarmEngine",
 ]
+"""Agentic APIs, including the explicit v5 governed single-cycle contracts."""
+
+from radial_membrane_ai.agentic.contracts import (
+    ActionProposal, AdmissionDecision, AdmissionVerdict, AgenticActionReceipt, AgenticResidual,
+    ClosureDecision, ClosureResult, ExecutionRecord, ExecutionState, ExpectedPostcondition,
+    IntentContract, Observation, ReflectionCandidate, ReflectionResult, ResourceBudget,
+    ResourceReservation, SideEffectClass, VerificationResult, VerificationStatus,
+)
+
+__all__ = [
+    "ActionProposal", "AdmissionDecision", "AdmissionVerdict", "AgenticActionReceipt",
+    "AgenticResidual", "ClosureDecision", "ClosureResult", "ExecutionRecord", "ExecutionState",
+    "ExpectedPostcondition", "IntentContract", "Observation", "ReflectionCandidate",
+    "ReflectionResult", "ResourceBudget", "ResourceReservation", "SideEffectClass",
+    "VerificationResult", "VerificationStatus",
+]

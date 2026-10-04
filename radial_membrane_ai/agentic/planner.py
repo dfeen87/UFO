@@ -13,6 +13,7 @@ import math
 from typing import Any, Dict, List, Optional
 
 from radial_membrane_ai.agentic.tools import ToolCallResult, ToolRegistry
+from radial_membrane_ai.agentic.contracts import ActionProposal, IntentContract, stable_digest
 from radial_membrane_ai.exceptions import ValidationError
 
 
@@ -53,6 +54,7 @@ class Plan:
     status: str = "PENDING"  # PENDING, IN_PROGRESS, COMPLETED, REPLANNING, FAILED
     total_cost: float = 0.0
     total_tension: float = 0.0
+    revision: str = ""
 
     def __post_init__(self) -> None:
         self.validate()
@@ -70,6 +72,9 @@ class Plan:
             raise ValidationError(f"total_cost cannot be negative, got {self.total_cost}.")
         if not math.isfinite(self.total_tension) or self.total_tension < 0.0:
             raise ValidationError(f"total_tension cannot be negative, got {self.total_tension}.")
+        if not self.revision:
+            identity = [(s.step_id, s.description, s.tool_name, s.tool_params) for s in self.steps]
+            self.revision = stable_digest({"goal": self.goal, "steps": identity})[:24]
 
     def current_step(self) -> Optional[PlanStep]:
         """Returns the next incomplete step in the plan."""
@@ -81,6 +86,11 @@ class Plan:
     def is_finished(self) -> bool:
         """Checks if all steps in the plan are completed."""
         return all(step.completed for step in self.steps) and len(self.steps) > 0
+
+    def refresh_revision(self) -> None:
+        """Assign a new stable identity after a material plan change."""
+        identity = [(s.step_id, s.description, s.tool_name, s.tool_params, s.completed) for s in self.steps]
+        self.revision = stable_digest({"goal": self.goal, "steps": identity})[:24]
 
 
 class GoalPlanner:
@@ -209,6 +219,26 @@ class GoalPlanner:
                 plan.status = "COMPLETED"
             return None
 
+    def propose_step(self, plan: Plan, intent: IntentContract) -> ActionProposal:
+        """Create, but never execute or authorize, the current step proposal."""
+        step = plan.current_step()
+        if step is None or step.tool_name is None:
+            raise ValidationError("plan has no executable current step.")
+        metadata = self.tool_registry.get_metadata(step.tool_name)
+        return ActionProposal(
+            intent_id=intent.intent_id,
+            plan_revision=plan.revision,
+            action_id=f"step-{step.step_id}",
+            tool_name=step.tool_name,
+            parameters=step.tool_params,
+            expected_postconditions=intent.success_conditions,
+            predicted_cost=metadata.predicted_cost,
+            side_effect_class=metadata.side_effect_class,
+            required_capabilities=frozenset({metadata.capability_id}),
+            provenance=f"GoalPlanner:{plan.revision}:{step.step_id}",
+            handshake_required=metadata.handshake_applicable,
+        )
+
     def replan(self, plan: Plan, reason: str) -> None:
         """Adjusts remaining steps in response to execution failures or envelope pressure."""
         plan.status = "REPLANNING"
@@ -234,3 +264,4 @@ class GoalPlanner:
                 step.tool_params = {"code": "result = 'RECOVERED_SAFE_EXECUTION'"}
 
         plan.status = "IN_PROGRESS"
+        plan.refresh_revision()

@@ -17,6 +17,15 @@ from radial_membrane_ai.agentic.planner import GoalPlanner, Plan
 from radial_membrane_ai.agentic.reflection import ReflectionEngine, ReflectionRecord
 from radial_membrane_ai.agentic.swarm import AgentBid, SwarmAuctioneer, SwarmContract
 from radial_membrane_ai.agentic.tools import ToolRegistry
+from radial_membrane_ai.agentic.admission import GovernedBudget, ProspectiveAgenticAdmission
+from radial_membrane_ai.agentic.closure import AgenticClosure
+from radial_membrane_ai.agentic.contracts import (
+    ActionProposal, AdmissionDecision, AgenticActionReceipt, AgenticResidual, ExecutionRecord,
+    ExecutionState, IntentContract, Observation, ReflectionResult, ResourceReconciliation,
+    VerificationStatus, stable_digest,
+)
+from radial_membrane_ai.agentic.verification import VerificationRegistry
+from radial_membrane_ai.exceptions import ValidationError
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 from radial_membrane_ai.ufo_engine.multi_agent import MultiAgentEngine, MultiAgentRunResult
 from radial_membrane_ai.ufo_engine.single_agent import SingleAgentEngine, SingleAgentRunResult
@@ -49,6 +58,116 @@ class AgenticEngine:
         self.planner = planner or GoalPlanner(tool_registry=self.tool_registry)
         self.reflection_engine = reflection_engine or ReflectionEngine(
             residual_ledger=getattr(self.engine.governor, "residual_ledger", None) or self.engine.ledger
+        )
+        self.admission = ProspectiveAgenticAdmission()
+        self.verifiers = VerificationRegistry()
+        self.closure = AgenticClosure()
+
+    def state_fingerprint(self) -> str:
+        """Fingerprint only the authoritative state relevant to a v5 action."""
+        state = {
+            "activations": tuple(float(s.activation) for s in self.engine.membrane.strings),
+            "tension": float(self.engine.membrane.temporal_state.accumulated_tension),
+            "boundary": tuple(float(self.engine.boundary.get_radius(s.theta)) for s in self.engine.membrane.strings),
+        }
+        return stable_digest(state)
+
+    def run_governed_cycle(
+        self,
+        intent: IntentContract,
+        *,
+        plan: Plan | None = None,
+        proposal: ActionProposal | None = None,
+        stability_allowed: bool = True,
+        policy_allowed: bool = True,
+        handshake: Any = None,
+    ) -> AgenticActionReceipt:
+        """Execute exactly one v5 governed transaction; never recur."""
+        if not isinstance(intent, IntentContract):
+            raise ValueError("run_governed_cycle requires an IntentContract.")
+        active_plan = plan or self.planner.create_plan(intent.goal)
+        initial_fingerprint = self.state_fingerprint()
+        exact_proposal = proposal or self.planner.propose_step(active_plan, intent)
+        if exact_proposal.plan_revision != active_plan.revision:
+            raise ValueError("proposal is not bound to the supplied plan revision.")
+
+        budget = GovernedBudget(intent.initial_budget)
+        admission = self.admission.evaluate(
+            intent, exact_proposal, initial_fingerprint, budget,
+            stability_allowed=stability_allowed, policy_allowed=policy_allowed, handshake=handshake,
+        )
+        admission_digest = stable_digest({
+            "proposal": admission.proposal_digest, "state": admission.state_fingerprint,
+            "reservation": admission.reservation.reservation_id if admission.reservation else None,
+        })
+        observation = None
+        if admission.decision is AdmissionDecision.ADMIT:
+            execution, tool_result = self.tool_registry.execute_admitted(
+                exact_proposal, admission, intent, self.state_fingerprint()
+            )
+            observation = Observation(
+                observation_id=f"observation-{exact_proposal.proposal_digest[:16]}",
+                execution_id=execution.execution_id,
+                evidence={"output": tool_result.output, "data": tool_result.data},
+                complete=True,
+            )
+            assert admission.reservation is not None
+            budget.reconcile(admission.reservation, execution.observed_cost or (0.0,) * 8)
+        else:
+            execution = ExecutionRecord(
+                execution_id=f"execution-{exact_proposal.proposal_digest[:16]}",
+                proposal_digest=exact_proposal.proposal_digest,
+                admission_digest=admission_digest,
+                state=ExecutionState.NOT_EXECUTED,
+                tool_name=exact_proposal.tool_name,
+                success_reported=None,
+            )
+
+        verification = self.verifiers.verify(exact_proposal, observation)
+        observed = execution.observed_cost
+        resource_residual = tuple(
+            max(0.0, observed_value - predicted)
+            for observed_value, predicted in zip(observed or (0.0,) * 8, exact_proposal.predicted_cost)
+        )
+        policy_residual = tuple(
+            code for code in admission.reason_codes
+            if "AUTHORITY" in code or "POLICY" in code or "SIDE_EFFECT" in code
+        )
+        residual = AgenticResidual(
+            proposal_digest=exact_proposal.proposal_digest,
+            goal=() if verification.status is VerificationStatus.VERIFIED else tuple(verification.reason_codes),
+            resource=resource_residual,
+            policy_authority=policy_residual,
+            stability=tuple(code for code in admission.reason_codes if "STABILITY" in code),
+            uncertainty=("OUTCOME_UNVERIFIED",) if verification.status is VerificationStatus.UNKNOWN else (),
+        )
+
+        reflection = ReflectionResult(False, False, None, ("NO_REFLECTION_REQUIRED",))
+        should_reflect = execution.state is ExecutionState.FAILED or bool(residual.stability)
+        if should_reflect:
+            before = [float(s.activation) for s in self.engine.membrane.strings]
+            deltas = {1: 0.2, 9: 0.15} if execution.state is ExecutionState.FAILED else {4: -0.2, 5: -0.2}
+            try:
+                candidate = self.reflection_engine.build_candidate(
+                    exact_proposal.proposal_digest, before, deltas, "governed-cycle residual"
+                )
+                reflection = self.reflection_engine.commit_candidate(self.engine.membrane, candidate)
+            except ValidationError:
+                reflection = ReflectionResult(True, False, None, ("CANDIDATE_VALIDATION_REJECTED",))
+
+        resulting_fingerprint = self.state_fingerprint()
+        closure = self.closure.evaluate(
+            admission=admission, execution_state=execution.state, verification=verification,
+            residual=residual, remaining_budget=budget.remaining,
+            authority_valid=not policy_residual, reflection=reflection,
+        )
+        reconciliation = ResourceReconciliation(
+            admission.reservation, exact_proposal.predicted_cost, observed, budget.remaining
+        )
+        return AgenticActionReceipt(
+            intent.intent_id, active_plan.revision, exact_proposal, initial_fingerprint, admission,
+            reconciliation, execution, observation, verification, residual, reflection,
+            resulting_fingerprint, closure, durable_memory_attempted=False,
         )
 
     def run_goal(self, goal: str, max_steps: int = 10) -> AgenticRunResult:
