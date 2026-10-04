@@ -4,6 +4,7 @@ A Bounded Intent–Action–Evidence Architecture for Governed Agentic AI
 
 Don Michael Feeney Jr.
 
+DOI: https://doi.org/10.5281/zenodo.23142803
 
 ### Note / Research Disclaimer
 
@@ -5136,63 +5137,93 @@ A conforming closed-loop implementation should therefore preserve the following 
 
 This refinement does not replace Governed Agentic Closure. It clarifies what Closure closes. Closure closes the authority-bearing transaction for the current cycle. When continuation or governed replanning is permitted, it opens only a feedback path from the reconciled state into a new proposal. The architecture therefore becomes more than a sequence that repeats: **it becomes a bounded adaptive recurrence in which verified consequences can reshape what the system proposes next without allowing adaptation to self-authorize.**
 
-## 9.15 Future Direction: Governed Machine-Learning Compartments
+# 9.15 Trust Feedback and the Governed Successor Boundary
 
-Governed Adaptive Recurrence establishes a bounded feedback architecture in which U.F.O. can act, reconcile consequences, adapt authoritative state, and generate subsequent proposals without allowing adaptation to inherit execution authority. A natural future direction is to extend this recurrent substrate toward **compartmentalized machine-learning computation at the upper boundaries of the V-Channel architecture**. Rather than embedding one monolithic learning system into the U.F.O. core, specialized machine-learning capabilities may be attached to governed V-Channel interfaces, allowing distinct functions such as classification, prediction, anomaly detection, perception, language processing, control, or optimization to remain computationally specialized while participating in a common governance substrate.
+Section 9.14 defines Governed Adaptive Recurrence as a closed feedback architecture in which the reconciled result of one action cycle becomes the lawful context for the next. The current U.F.O. v5.0.0 engineering scope sharpens that idea into a more explicit requirement: Trust Feedback. The purpose of Trust Feedback is not to grant the system additional authority or to make learning true by declaration. Its purpose is to make the information crossing from cycle $t$ to cycle $t+1$ explicit, deterministic, provenance-bound, and falsifiable.
 
-Conceptually, a V-Channel $V_k$ may expose a bounded interface to a machine-learning compartment $\mathcal{M}_k$:
-
-$$
-V_k \rightarrow \mathcal{M}_k \rightarrow E_k \rightarrow V_k^{-1},
-$$
-
-where $E_k$ represents the evidence returned by the compartment rather than an automatically authoritative conclusion. Such evidence may include model output, uncertainty, provenance, resource consumption, confidence information, or other declared diagnostic state. The architectural distinction established throughout Paper XII would remain intact:
+The feedback context remains the post-cycle state introduced in Section 9.14:
 
 $$
-\text{Model Output} \neq \text{Verified Evidence},
+Z_{t+1} = \left(X_{t+1},\, \rho_t,\, M_{t+1},\, B_{t+1},\, \Pi_{t+1},\, D_t\right),
 $$
 
-$$
-\text{Model Confidence} \neq \text{Authorization},
-$$
+but the implementation consequence is stronger than simply carrying these quantities in memory. A conforming recurrent path should be able to prove that the context supplied to cycle $t+1$ was produced by the immediately preceding finalized cycle. The context should therefore bind the resulting authoritative state, residual evidence, governed memory state, remaining resource budget, finalized plan transition, and Closure decision to the final receipt from which they were derived. It should be constructed only after the cycle has completed all authoritative post-action transitions, including any verified plan-step commit or governed replan.
+
+Within the present v5 scope, Trust Feedback is therefore a continuity and provenance substrate. The first governed cycle begins without prior feedback; every later autonomous cycle should receive exactly one validated context from its immediate predecessor. A stale state fingerprint, altered memory digest, reset budget, forged residual, mismatched plan revision, or substituted Closure result should invalidate the context before the next consequential action can obtain fresh authority.
 
 $$
-\text{Model Selection} \neq \text{Execution Authority}.
+\begin{aligned}
+\text{Feedback Context} &\neq \text{Authority}, \\
+\text{Closure}_t &\neq \text{Admission}_{t+1}.
+\end{aligned}
 $$
 
-A machine-learning compartment would therefore remain subordinate to the same proposal, admission, verification, residual, memory, and Closure semantics established for governed agentic execution. Learned computation may influence what U.F.O. proposes or how it interprets evidence, but it would not inherit global authority merely because a model produced a high-confidence result.
-
-This approach also creates a potential relationship between U.F.O.'s deformable geometry and learned computation. The authoritative state $X_t$, current intent $I$, residual evidence $\rho_t$, and resource state $B_t$ may eventually influence which V-Channel or specialized learning compartment receives computational attention:
+This distinction creates a useful additional interpretation of recurrence. The logical index $t+1$ remains an ordinary successor index; the numeral $1$ is not redefined as a variable, learned quantity, or new mathematical object. What may be treated as computationally rich is the governed transition that produces the successor state. Denote that transition by a Governed Successor operator $S_t$:
 
 $$
-k^{*}=R_V(I,X_t,\rho_t,B_t),
+\begin{aligned}
+S_t &: Z_t \to Z_{t+1}, \\
+Z_{t+1} &= S_t\left(I,\, Z_t,\, a_t,\, R_t^{A}\right).
+\end{aligned}
 $$
 
-followed by
+Here, $R_t^{A}$ denotes the finalized Agentic Action Receipt for cycle $t$. The operator $S_t$ is not a new authorization mechanism. It is a compact representation of the complete governed transformation through proposal, admission, execution, observation, verification, residual formation, reflection, memory qualification, resource reconciliation, plan transition, and Closure. One logical successor step may therefore contain substantially different computational work, evidence, uncertainty, resource expenditure, and state change from another even though both advance the discrete execution index by one.
+
+> The successor state is not merely the next point in an execution sequence; the governed transition that produces it is itself an information-bearing computational event.
+
+This observation suggests a more precise future learning surface than attaching machine learning to U.F.O. as an independent layer. A future implementation may derive a typed Transition Signature $\Theta_t$ from the before-action state, proposed action, finalized action receipt, and resulting authoritative state:
 
 $$
-E_t=\mathcal{M}_{k^{*}}(x_t).
+\Theta_t = \Psi\left(Z_t,\, a_t,\, R_t^{A},\, Z_{t+1}\right).
 $$
 
-The resulting evidence would then return through the governed recurrent architecture rather than bypass it:
+The Transition Signature is proposed here as a future evidence object, not as functionality required for the current v5 release. Its role would be to preserve information about how a governed transition behaved: which state dimensions changed, which remained stable, how predicted and observed resource use differed, which residuals persisted, what uncertainty was resolved or introduced, whether evidence qualified for durable memory, how the plan changed, which Closure decision resulted, and which V-Channel or membrane responses were most relevant. Because these quantities occupy different semantic domains, $\Theta_t$ need not be forced into one undifferentiated scalar or vector; a typed structured representation may be more faithful to the architecture.
+
+The same boundary may provide a natural training and evaluation signal for specialized learned computation. A future machine-learning compartment $\mathcal{M}_k$ could, for example, predict selected properties of the next governed state from the current state and proposed action:
 
 $$
-X_t
-\rightarrow
-R_V
-\rightarrow
-\mathcal{M}_{k^{*}}
-\rightarrow
-E_t
-\rightarrow
-\rho_t
-\rightarrow
-X_{t+1}.
+\begin{aligned}
+\hat{Z}_{t+1,k} &= \mathcal{M}_k\left(Z_t,\, a_t\right), \\
+\varepsilon_{t,k} &= d_k\left(\hat{Z}_{t+1,k},\, Z_{t+1}\right),
+\end{aligned}
 $$
 
-This future direction would preserve a central U.F.O. design principle: **specialization should occur at declared computational boundaries without duplicating or weakening the governing substrate**. Different machine-learning compartments could employ different internal techniques or model families while exposing a common bounded contract to U.F.O. The radial membrane and V-Channels would therefore remain model-agnostic at the architectural core while providing governed pathways through which specialized learned computation may participate.
+where $d_k$ is a declared comparison operator appropriate to that compartment rather than a universal distance over all U.F.O. state. The realized successor state then supplies governed evidence against which the prediction can be evaluated. In this way, learning may be anchored to verified transitions rather than to tool success alone, unqualified observations, or unconstrained self-generated labels.
 
-This extension is deliberately left outside the implementation requirements of U.F.O. v5.0.0. It represents a possible subsequent research direction rather than a claim of functionality established by Paper XII. The immediate purpose of v5 remains the implementation and falsification of Governed Agentic Closure and adaptive recurrence. Once that foundation has been experimentally exercised, compartmentalized learned computation provides one natural path for investigating how the same governance laws behave when coupled to increasingly specialized machine-learning systems.
+The V-Channel architecture provides one possible route for distributing such transition evidence into specialized learned computation:
+
+$$
+\Theta_t \to V_k \to \mathcal{M}_k \to E_t,
+$$
+
+where a compartment may specialize in prediction, anomaly detection, resource estimation, perception, language processing, control, planning support, or optimization while exposing a common bounded contract to U.F.O. The compartment result $E_t$ remains model evidence. It may later influence what the planner proposes or how the architecture interprets a transition, but it does not become verified truth merely because a model produced it.
+
+If future experiments support this direction, a feedback-aware planner could eventually consume both the reconciled successor state and admitted learned evidence:
+
+$$
+a_{t+1} = P\left(I,\, Z_{t+1},\, E_t\right),
+$$
+
+followed, without exception, by renewed prospective admission:
+
+$$
+V_{t+1}^{-} = A^{-}\left(a_{t+1},\, I,\, X_{t+1}\right).
+$$
+
+The architectural distinctions established throughout Paper XII must therefore continue to hold even if the successor boundary later becomes a learning boundary:
+
+$$
+\begin{aligned}
+\text{Model Output} &\neq \text{Verified Evidence}, \\
+\text{Learned Evidence} &\neq \text{Authorization}, \\
+\text{Transition Signature} &\neq \text{Intent}, \\
+\text{Model Selection} &\neq \text{Execution Authority}.
+\end{aligned}
+$$
+
+This reframes the earlier idea of governed machine-learning compartments. The research question is no longer only where specialized models should be attached. A deeper question is whether the governed successor transition itself can become the unit from which specialized computation learns, while the radial membrane, V-Channels, Intent Contract, admission boundary, memory governance, and Closure retain their distinct responsibilities. Under this interpretation, specialization still occurs at declared computational boundaries without duplicating or weakening the governing substrate.
+
+The current U.F.O. v5.0.0 scope remains narrower: establish trustworthy memory, trustworthy cross-cycle feedback, adaptive recurrence, and falsifiable authority boundaries. The Transition Signature, learned successor prediction, and V-Channel machine-learning compartments remain research directions rather than claims of implemented capability. Their significance is that Trust Feedback creates a governed source of training and evaluation evidence that did not exist when recurrence was treated merely as repetition. If experimental results support the idea, a subsequent U.F.O. release can investigate learning from governed transitions without allowing learned components to inherit global authority.
 
 ## 9.16 Conclusion
 
