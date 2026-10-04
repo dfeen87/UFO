@@ -237,17 +237,27 @@ class GoalPlanner:
             return None
 
     def propose_step(
-        self, plan: Plan, intent: IntentContract, *, require_action_local: bool = False
+        self,
+        plan: Plan,
+        intent: IntentContract,
+        *,
+        require_action_local: bool = False,
+        adapted_parameters: Dict[str, Any] | None = None,
     ) -> ActionProposal:
         """Create, but never execute or authorize, the current step proposal."""
         step = plan.current_step()
         if step is None or step.tool_name is None:
             raise ValidationError("plan has no executable current step.")
         metadata = self.tool_registry.get_metadata(step.tool_name)
-        postconditions = step.expected_postconditions
+        parameters = dict(step.tool_params if adapted_parameters is None else adapted_parameters)
+        parameters_changed = parameters != step.tool_params
+        # Explicit postconditions describe the original proposal.  Once recurrent
+        # feedback adapts its parameters, derive fresh action-local evidence so
+        # verification cannot compare the new invocation with stale selectors.
+        postconditions = () if parameters_changed else step.expected_postconditions
         if not postconditions:
             try:
-                postconditions = self._postconditions(step)
+                postconditions = self._postconditions_for(step.tool_name, parameters)
             except ValidationError:
                 if require_action_local:
                     raise
@@ -259,7 +269,7 @@ class GoalPlanner:
             plan_revision=plan.revision,
             action_id=f"step-{step.step_id}",
             tool_name=step.tool_name,
-            parameters=step.tool_params,
+            parameters=parameters,
             expected_postconditions=postconditions,
             predicted_cost=metadata.predicted_cost,
             side_effect_class=metadata.side_effect_class,
@@ -269,25 +279,33 @@ class GoalPlanner:
         )
 
     @staticmethod
-    def _postconditions(step: PlanStep) -> tuple[ExpectedPostcondition, ...]:
-        """Construct deterministic action-local evidence for built-in tools."""
-        params = step.tool_params
-        if step.tool_name == "SearchTool":
+    def _postconditions_for(
+        tool_name: str, params: Dict[str, Any]
+    ) -> tuple[ExpectedPostcondition, ...]:
+        """Construct deterministic action-local evidence for effective parameters."""
+        if tool_name == "SearchTool":
             return (ExpectedPostcondition("fields_equal", {"query": str(params.get("query", "")).lower()}),)
-        if step.tool_name == "MemoryRetrievalTool":
+        if tool_name == "MemoryRetrievalTool":
             return (ExpectedPostcondition("fields_equal", {
                 "type": params.get("type", "semantic"), "tag": params.get("tag", "all")
             }),)
-        if step.tool_name == "APIRequestTool":
+        if tool_name == "APIRequestTool":
             return (ExpectedPostcondition("fields_equal", {
                 "endpoint": params.get("endpoint"), "method": str(params.get("method", "GET")).upper(),
                 "status_code": 200,
             }),)
-        if step.tool_name == "PythonCodeExecutorTool":
+        if tool_name == "PythonCodeExecutorTool":
             return (ExpectedPostcondition("fields_present", {"fields": ("result",)}),)
-        if step.tool_name == "DatabaseQueryTool":
+        if tool_name == "DatabaseQueryTool":
             return (ExpectedPostcondition("fields_present", {"fields": ("records", "count")}),)
         raise ValidationError("plan step lacks a deterministic governed postcondition.")
+
+    @classmethod
+    def _postconditions(cls, step: PlanStep) -> tuple[ExpectedPostcondition, ...]:
+        """Construct deterministic action-local evidence for a plan step."""
+        if step.tool_name is None:
+            raise ValidationError("plan step lacks an executable tool.")
+        return cls._postconditions_for(step.tool_name, step.tool_params)
 
     @staticmethod
     def commit_verified_step(plan: Plan, receipt: AgenticActionReceipt) -> None:

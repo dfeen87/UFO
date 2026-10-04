@@ -41,7 +41,12 @@ from radial_membrane_ai.agentic.memory import GovernedMemoryConfig, GovernedMemo
 from radial_membrane_ai.agentic.successor import build_transition_signature
 from radial_membrane_ai.agentic.planner import GoalPlanner, Plan, PlanStep
 from radial_membrane_ai.agentic.reflection import ReflectionEngine, ReflectionRecord
-from radial_membrane_ai.agentic.swarm import AgentBid, SwarmAuctioneer, SwarmContract
+from radial_membrane_ai.agentic.swarm import (
+    AgentBid,
+    GovernedSwarmResult,
+    SwarmAuctioneer,
+    SwarmContract,
+)
 from radial_membrane_ai.agentic.tools import (
     APIRequestTool,
     BaseTool,
@@ -73,6 +78,7 @@ __all__ = [
     "ExpectedPostcondition",
     "GoalPlanner",
     "GovernedRunResult",
+    "GovernedSwarmResult",
     "GovernedFeedbackContext",
     "GovernedMemoryConfig",
     "GovernedMemoryPipeline",

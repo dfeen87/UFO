@@ -11,7 +11,37 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import math
 from typing import Any, Dict, List, Optional, Sequence
+from radial_membrane_ai.agentic.contracts import GovernedRunResult
 from radial_membrane_ai.exceptions import ValidationError
+
+
+@dataclass(frozen=True)
+class GovernedSwarmResult:
+    """A governed run cryptographically attributable to the auction winner."""
+
+    selected_agent_id: str
+    selected_initial_state_fingerprint: str
+    executing_agent_id: str
+    governed_run: GovernedRunResult
+
+    def __post_init__(self) -> None:
+        if not self.selected_agent_id or not self.executing_agent_id:
+            raise ValidationError("governed swarm agent IDs cannot be empty.")
+        if not self.selected_initial_state_fingerprint:
+            raise ValidationError("selected agent state fingerprint cannot be empty.")
+        if not isinstance(self.governed_run, GovernedRunResult):
+            raise ValidationError("governed swarm execution requires typed run evidence.")
+        if self.executing_agent_id != self.selected_agent_id:
+            raise ValidationError("governed run was not produced by the selected agent.")
+        if not self.governed_run.receipts:
+            raise ValidationError("governed swarm execution requires an initial receipt.")
+        if (
+            self.governed_run.receipts[0].initial_state_fingerprint
+            != self.selected_initial_state_fingerprint
+        ):
+            raise ValidationError(
+                "governed run is not bound to the selected agent's initial state."
+            )
 
 
 @dataclass
