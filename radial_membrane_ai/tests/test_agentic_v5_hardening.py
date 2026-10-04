@@ -55,6 +55,8 @@ def test_easier_action_postcondition_cannot_claim_intent_success():
     receipt = engine.run_governed_cycle(intent, plan=plan, proposal=proposal)
     assert receipt.verification.status.value == "VERIFIED"
     assert receipt.intent_satisfaction.status.value == "UNKNOWN"
+    assert receipt.residual.goal == ("INTENT_EVIDENCE_INSUFFICIENT",)
+    assert receipt.residual.uncertainty == ("INTENT_EVIDENCE_INSUFFICIENT",)
     assert receipt.closure.decision is not ClosureDecision.HALT_SUCCESS
 
 
@@ -142,6 +144,60 @@ def test_custom_tool_requires_explicit_v5_metadata_but_remains_legacy_usable():
     assert registry.execute_tool(tool.name, {}).success
     with pytest.raises(ValidationError, match="no trusted v5"):
         registry.get_metadata(tool.name)
+
+
+def custom_proposal(plan, *, capability="custom.test", effect=SideEffectClass.OBSERVATIONAL,
+                    cost=(0.1,) * 8, handshake=False):
+    return ActionProposal(
+        "cost-intent", plan.revision, "step-1", "CustomTool", {},
+        (ExpectedPostcondition("fields_equal", {"x": 1}),), cost, effect,
+        frozenset({capability}), "adversarial-test", handshake,
+    )
+
+
+def custom_intent():
+    return IntentContract(
+        "cost-intent", "custom", (ExpectedPostcondition("fields_equal", {"x": 1}),),
+        frozenset({"do-not-expand-authority"}), frozenset({"custom.test", "forged"}),
+        ResourceBudget((2.0,) * 8),
+        frozenset({SideEffectClass.OBSERVATIONAL, SideEffectClass.IRREVERSIBLE}),
+    )
+
+
+def test_unconfigured_custom_tool_proposal_cannot_execute_in_v5():
+    registry = ToolRegistry()
+    tool = CustomTool()
+    registry.register(tool)
+    engine = AgenticEngine(tool_registry=registry)
+    plan = Plan("custom", [PlanStep(1, "custom", tool.name, {})])
+    with pytest.raises(ValidationError, match="no trusted v5"):
+        engine.run_governed_cycle(custom_intent(), plan=plan, proposal=custom_proposal(plan))
+    assert tool.calls == 0
+
+
+@pytest.mark.parametrize(
+    "forgery",
+    [
+        {"capability": "forged"},
+        {"effect": SideEffectClass.IRREVERSIBLE},
+        {"cost": (0.0,) * 8},
+        {"handshake": True},
+    ],
+    ids=["capability", "side-effect", "predicted-cost", "handshake"],
+)
+def test_forged_tool_governance_metadata_cannot_execute(forgery):
+    registry = ToolRegistry()
+    tool = CustomTool()
+    registry.register(tool, metadata=ToolCapability(
+        "custom.test", SideEffectClass.OBSERVATIONAL, (0.1,) * 8
+    ))
+    engine = AgenticEngine(tool_registry=registry)
+    plan = Plan("custom", [PlanStep(1, "custom", tool.name, {})])
+    with pytest.raises(ValidationError, match="trusted tool capability"):
+        engine.run_governed_cycle(
+            custom_intent(), plan=plan, proposal=custom_proposal(plan, **forgery)
+        )
+    assert tool.calls == 0
 
 
 def run_custom_cost_cycle(observed_cost, budget):
