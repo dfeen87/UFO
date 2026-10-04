@@ -17,7 +17,9 @@ from radial_membrane_ai.agentic.contracts import (
     ActionProposal,
     AgenticActionReceipt,
     ExpectedPostcondition,
+    GovernedFeedbackContext,
     IntentContract,
+    TransitionSignature,
     VerificationStatus,
     stable_digest,
 )
@@ -237,17 +239,32 @@ class GoalPlanner:
             return None
 
     def propose_step(
-        self, plan: Plan, intent: IntentContract, *, require_action_local: bool = False
+        self,
+        plan: Plan,
+        intent: IntentContract,
+        *,
+        require_action_local: bool = False,
+        feedback_context: GovernedFeedbackContext | None = None,
+        transition_signature: TransitionSignature | None = None,
     ) -> ActionProposal:
         """Create, but never execute or authorize, the current step proposal."""
+        if (feedback_context is None) != (transition_signature is None):
+            raise ValidationError("adaptive planning context must be supplied as a validated pair.")
         step = plan.current_step()
         if step is None or step.tool_name is None:
             raise ValidationError("plan has no executable current step.")
         metadata = self.tool_registry.get_metadata(step.tool_name)
+        parameters = dict(step.tool_params)
+        if feedback_context is not None and transition_signature is not None:
+            parameters = self._adapt_parameters(step.tool_name, parameters, feedback_context)
         postconditions = step.expected_postconditions
         if not postconditions:
             try:
-                postconditions = self._postconditions(step)
+                projected_step = PlanStep(
+                    step.step_id, step.description, step.tool_name, parameters,
+                    expected_postconditions=step.expected_postconditions,
+                )
+                postconditions = self._postconditions(projected_step)
             except ValidationError:
                 if require_action_local:
                     raise
@@ -259,14 +276,45 @@ class GoalPlanner:
             plan_revision=plan.revision,
             action_id=f"step-{step.step_id}",
             tool_name=step.tool_name,
-            parameters=step.tool_params,
+            parameters=parameters,
             expected_postconditions=postconditions,
             predicted_cost=metadata.predicted_cost,
             side_effect_class=metadata.side_effect_class,
             required_capabilities=frozenset({metadata.capability_id}),
             provenance=f"GoalPlanner:{plan.revision}:{step.step_id}",
             handshake_required=metadata.handshake_applicable,
+            source_feedback_digest=(
+                feedback_context.feedback_context_digest if feedback_context is not None else None
+            ),
+            source_transition_signature_digest=(
+                transition_signature.transition_signature_digest
+                if transition_signature is not None else None
+            ),
         )
+
+    @staticmethod
+    def _adapt_parameters(
+        tool_name: str,
+        parameters: Dict[str, Any],
+        feedback: GovernedFeedbackContext,
+    ) -> Dict[str, Any]:
+        """Apply the sole declared v5 adaptation: bounded observational retrieval focus."""
+        if tool_name != "MemoryRetrievalTool":
+            return parameters
+        if "INTENT_PARTIALLY_SATISFIED" in feedback.residual.uncertainty:
+            focus = ("partial_intent_evidence", "verify")
+        elif feedback.residual.uncertainty:
+            focus = ("unresolved_uncertainty", "evidence")
+        elif feedback.residual.goal:
+            focus = ("unresolved_goal", "evidence")
+        elif any(value > 0.0 for value in feedback.residual.resource):
+            focus = ("resource_discrepancy", "audit")
+        else:
+            focus = ("verified_continuation", "context")
+        # Only the existing observational selector fields may change. Tool,
+        # capability, side-effect class, cost, and authority remain untouched.
+        parameters["type"], parameters["tag"] = focus
+        return parameters
 
     @staticmethod
     def _postconditions(step: PlanStep) -> tuple[ExpectedPostcondition, ...]:

@@ -17,7 +17,7 @@ def main() -> None:
     set_deterministic_env(seed=0)
 
     print("=" * 80)
-    print("🛸 UFO Version 4.0.0 — Governed Agentic AI Simulation Demonstration 🛸".center(80))
+    print("🛸 UFO Version 5.0.0 — Governed Agentic AI Simulation Demonstration 🛸".center(80))
     print("=" * 80)
     print()
 
@@ -86,7 +86,7 @@ def main() -> None:
             print(f"  Winning Estimated Cost: {contract.winning_bid.estimated_cost:.4f}")
 
     print("\n" + "=" * 80)
-    print("🛸 Version 4.0.0 Agentic AI Simulation Complete Successfully! 🛸")
+    print("🛸 Version 5.0.0 Agentic AI Simulation Complete Successfully! 🛸")
     print("=" * 80)
 
 

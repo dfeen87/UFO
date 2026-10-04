@@ -80,4 +80,4 @@ def test_cli_reports_authoritative_package_version(
         main()
 
     assert exc_info.value.code == 0
-    assert capsys.readouterr().out.strip() == "UFO 4.0.0"
+    assert capsys.readouterr().out.strip() == "UFO 5.0.0"

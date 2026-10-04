@@ -1,6 +1,10 @@
 # 🛸 The U.F.O. (User‑Formed Optimization) — Governed Deformable Radial Membrane
 
-**Current release: 4.0.0 (BEDROCK engineering baseline).** Version 4 preserves
+**Current release: 5.0.0 (governed adaptive recurrence).** Version 5 composes
+Governed Agentic Closure, recurrent governed execution, Trust Memory, Trust
+Feedback, governed successor evidence, bounded adaptive proposal generation,
+fresh prospective admission, and strict swarm selection/authorization separation.
+The historical Version 4 BEDROCK baseline preserves
 the governed membrane architecture while making finite numerical state,
 atomic activation updates, and fail-closed shard admission explicit contracts.
 

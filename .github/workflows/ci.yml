@@ -49,8 +49,8 @@ jobs:
 
       - name: Verify installed package and CLI
         run: |
-          python -c "import radial_membrane_ai; assert radial_membrane_ai.__version__ == '4.0.0'"
-          test "$(ufo --version)" = "UFO 4.0.0"
+          python -c "import radial_membrane_ai; assert radial_membrane_ai.__version__ == '5.0.0'"
+          test "$(ufo --version)" = "UFO 5.0.0"
           ufo --help
 
       - name: Upload coverage to Codecov
