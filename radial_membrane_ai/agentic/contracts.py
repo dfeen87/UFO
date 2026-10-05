@@ -672,6 +672,7 @@ class AgenticActionReceipt:
     plan_transition: PlanTransitionEvidence | None = None
     plan_transition_finalized: bool = False
     incoming_feedback_digest: str | None = None
+    execution_principal_id: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.durable_memory_attempted, bool):
@@ -682,6 +683,8 @@ class AgenticActionReceipt:
             raise ValidationError("a finalized plan transition requires typed evidence.")
         if self.incoming_feedback_digest is not None:
             _text(self.incoming_feedback_digest, "incoming_feedback_digest")
+        if self.execution_principal_id is not None:
+            _text(self.execution_principal_id, "execution_principal_id")
         _text(self.initial_memory_state_digest, "initial_memory_state_digest")
         if self.intent_id != self.proposal.intent_id or self.intent_id != self.admission.intent_id:
             raise ValidationError("receipt intent provenance mismatch.")
@@ -874,6 +877,7 @@ class GovernedRunResult:
     final_plan_revision: str
     feedback_contexts: tuple[GovernedFeedbackContext, ...] = ()
     transition_signatures: tuple[TransitionSignature, ...] = ()
+    execution_principal_id: str | None = None
 
     def __post_init__(self) -> None:
         _text(self.intent_id, "intent_id")
@@ -883,6 +887,8 @@ class GovernedRunResult:
         object.__setattr__(self, "receipts", tuple(self.receipts))
         object.__setattr__(self, "feedback_contexts", tuple(self.feedback_contexts))
         object.__setattr__(self, "transition_signatures", tuple(self.transition_signatures))
+        if self.execution_principal_id is not None:
+            _text(self.execution_principal_id, "execution_principal_id")
         if (
             isinstance(self.cycles_executed, bool)
             or not isinstance(self.cycles_executed, int)
@@ -903,6 +909,8 @@ class GovernedRunResult:
             if self.final_remaining_budget != self.receipts[-1].reconciliation.remaining_budget:
                 raise ValidationError("final run budget does not match the trajectory.")
         for index, receipt in enumerate(self.receipts):
+            if receipt.execution_principal_id != self.execution_principal_id:
+                raise ValidationError("run receipt execution principal provenance mismatch.")
             expected_feedback = None if index == 0 else self.feedback_contexts[index - 1].feedback_context_digest
             expected_signature = (
                 None if index == 0 else self.transition_signatures[index - 1].transition_signature_digest

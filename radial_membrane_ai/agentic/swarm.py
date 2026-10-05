@@ -151,12 +151,15 @@ class GovernedSwarmResult:
             raise ValidationError("governed swarm run is not bound to its explicit intent.")
         if not self.governed_run.receipts:
             raise ValidationError("governed swarm run requires initial execution evidence.")
+        if self.governed_run.execution_principal_id != self.selected_agent_id:
+            raise ValidationError("governed run execution principal is not the selected agent.")
         initial_receipt = self.governed_run.receipts[0]
         if initial_receipt.initial_state_fingerprint != self.pre_execution_state_fingerprint:
             raise ValidationError("governed run is not bound to the winner's pre-execution state.")
         expected_execution_binding = stable_digest({
             "selection_digest": self.selection_digest,
             "selected_agent_id": self.selected_agent_id,
+            "execution_principal_id": self.governed_run.execution_principal_id,
             "pre_execution_state_fingerprint": self.pre_execution_state_fingerprint,
             "initial_receipt_digest": stable_digest(initial_receipt),
             "intent_digest": self.task.intent.intent_digest,

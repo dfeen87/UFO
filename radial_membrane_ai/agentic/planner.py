@@ -370,11 +370,18 @@ class GoalPlanner:
         rebound: list[ExpectedPostcondition] = []
         for condition in postconditions:
             expected = dict(condition.expected)
+            if condition.verifier == "fields_present":
+                rebound.append(condition)
+                continue
+            if condition.verifier != "fields_equal":
+                raise ValidationError(
+                    "parameter-dependent postcondition cannot be safely rebound."
+                )
             represented = changed.intersection(expected)
             if not represented:
                 rebound.append(condition)
                 continue
-            if condition.verifier != "fields_equal" or any(
+            if any(
                 expected[key] != original_fields[key] for key in represented
             ):
                 raise ValidationError(

@@ -1,12 +1,14 @@
 """Regression tests for recurrent verification and swarm execution attribution."""
 
 from dataclasses import replace
+import json
 
 import pytest
 
 from radial_membrane_ai.agentic import (
     AgenticEngine,
     AgenticSwarmEngine,
+    AgentBid,
     ExpectedPostcondition,
     GovernedSwarmTask,
     IntentContract,
@@ -16,6 +18,9 @@ from radial_membrane_ai.agentic import (
     VerificationStatus,
 )
 from radial_membrane_ai.agentic.contracts import stable_digest
+from radial_membrane_ai.agentic.memory import semantic_memory_digest
+from radial_membrane_ai.agentic.swarm import SwarmAuctioneer, SwarmContract
+from radial_membrane_ai.agentic.tools import MemoryRetrievalTool, ToolRegistry
 from radial_membrane_ai.exceptions import ValidationError
 from radial_membrane_ai.multi_agent.agent import UFOAgent
 
@@ -96,6 +101,41 @@ def test_ambiguous_parameter_postcondition_rebinding_fails_closed():
         AgenticEngine().run_governed_intent(recurrent_intent(), max_cycles=2, plan=plan)
 
 
+def test_output_equals_hidden_selector_dependency_fails_before_adapted_execution(monkeypatch):
+    original_output = json.dumps({
+        "type": "original",
+        "tag": "old",
+        "entries": [
+            "Memory record [original] with tag 'old' retrieved.",
+            "Prior governed reflection confirmed stable Lyapunov energy balance.",
+        ],
+    })
+    plan = Plan("rebind recurrence", [
+        PlanStep(1, "first", "MemoryRetrievalTool", {"type": "original", "tag": "old"}),
+        PlanStep(
+            2,
+            "opaque",
+            "MemoryRetrievalTool",
+            {"type": "original", "tag": "old"},
+            expected_postconditions=(
+                ExpectedPostcondition("output_equals", {"value": original_output}),
+            ),
+        ),
+    ])
+    executions = 0
+    original_execute = MemoryRetrievalTool.execute
+
+    def counted_execute(self, params):
+        nonlocal executions
+        executions += 1
+        return original_execute(self, params)
+
+    monkeypatch.setattr(MemoryRetrievalTool, "execute", counted_execute)
+    with pytest.raises(ValidationError, match="cannot be safely rebound"):
+        AgenticEngine().run_governed_intent(recurrent_intent(), max_cycles=2, plan=plan)
+    assert executions == 1
+
+
 def swarm_intent(intent_id: str = "swarm-binding") -> IntentContract:
     return IntentContract(
         intent_id,
@@ -122,6 +162,7 @@ def execution_digest(result, run=None, pre_state=None):
     return stable_digest({
         "selection_digest": result.selection_digest,
         "selected_agent_id": result.selected_agent_id,
+        "execution_principal_id": run.execution_principal_id,
         "pre_execution_state_fingerprint": pre_state,
         "initial_receipt_digest": stable_digest(run.receipts[0]),
         "intent_digest": result.task.intent.intent_digest,
@@ -151,7 +192,7 @@ def test_swarm_rejects_prestate_cross_agent_substitution_and_late_mutation():
     other_agent.membrane.strings[0].activation = 0.61
     substitute = swarm_result([other_agent])
 
-    with pytest.raises(ValidationError, match="pre-execution state"):
+    with pytest.raises(ValidationError, match="execution principal"):
         replace(selected, governed_run=substitute.governed_run)
     with pytest.raises(ValidationError, match="pre-execution state"):
         replace(selected, pre_execution_state_fingerprint="f" * 64)
@@ -159,12 +200,104 @@ def test_swarm_rejects_prestate_cross_agent_substitution_and_late_mutation():
     # Even a recomputed caller digest cannot hide execution initialized from a
     # state different from the one captured at selection.
     forged_digest = execution_digest(selected, run=substitute.governed_run)
-    with pytest.raises(ValidationError, match="pre-execution state"):
+    with pytest.raises(ValidationError, match="execution principal"):
         replace(
             selected,
             governed_run=substitute.governed_run,
             execution_binding_digest=forged_digest,
         )
+
+
+def test_swarm_rejects_identical_state_cross_agent_execution_principal_substitution():
+    agent_a = UFOAgent("a", capabilities=["general"])
+    agent_b = UFOAgent("b", capabilities=["general"])
+    selected = swarm_result([agent_b, agent_a])
+    substitute = swarm_result([agent_b])
+
+    assert selected.selected_agent_id == "a"
+    assert selected.pre_execution_state_fingerprint == substitute.pre_execution_state_fingerprint
+    assert selected.governed_run.execution_principal_id == "a"
+    assert substitute.governed_run.execution_principal_id == "b"
+    with pytest.raises(ValidationError, match="execution principal"):
+        replace(selected, governed_run=substitute.governed_run)
+
+    forged_digest = execution_digest(selected, run=substitute.governed_run)
+    with pytest.raises(ValidationError, match="execution principal"):
+        replace(
+            selected,
+            governed_run=substitute.governed_run,
+            execution_binding_digest=forged_digest,
+        )
+
+
+class MalformedAuctioneer(SwarmAuctioneer):
+    def __init__(self, defect):
+        super().__init__()
+        self.defect = defect
+
+    def run_auction(self, contract_id, bids):
+        awarded = super().run_auction(contract_id, bids)
+        if self.defect == "loser":
+            awarded.winning_bid = sorted(bids, key=lambda bid: (-bid.bid_score, bid.agent_id))[1]
+            awarded.assigned_agent_id = awarded.winning_bid.agent_id
+        elif self.defect == "inadmissible":
+            awarded.winning_bid = AgentBid(
+                "a", contract_id, 100.0, awarded.max_budget + 1.0, 0.0,
+                tuple(awarded.required_capabilities), 1.0,
+            )
+            awarded.assigned_agent_id = "a"
+        elif self.defect == "wrong-agent":
+            awarded.assigned_agent_id = "b"
+        elif self.defect == "wrong-contract":
+            return SwarmContract(
+                "other-contract", awarded.goal, list(awarded.required_capabilities),
+                awarded.max_budget, awarded.assigned_agent_id, "AWARDED", awarded.winning_bid,
+            )
+        return awarded
+
+
+@pytest.mark.parametrize("defect", ("loser", "inadmissible", "wrong-agent", "wrong-contract"))
+def test_malformed_auction_award_fails_before_execution_or_state_change(monkeypatch, defect):
+    agents = [
+        UFOAgent("b", capabilities=["general"]),
+        UFOAgent("a", capabilities=["general"]),
+    ]
+    swarm = AgenticSwarmEngine(agents=agents, auctioneer=MalformedAuctioneer(defect))
+    before = tuple((
+        tuple(string.activation for string in agent.membrane.strings),
+        agent.membrane.temporal_state.accumulated_tension,
+        tuple(agent.boundary.get_radius(string.theta) for string in agent.membrane.strings),
+        semantic_memory_digest(agent.semantic_memory),
+    ) for agent in agents)
+    governed_runs = 0
+    tool_executions = 0
+
+    def forbidden_run(*args, **kwargs):
+        nonlocal governed_runs
+        governed_runs += 1
+        raise AssertionError("governed execution occurred before award validation")
+
+    def forbidden_tool(*args, **kwargs):
+        nonlocal tool_executions
+        tool_executions += 1
+        raise AssertionError("tool execution occurred before award validation")
+
+    monkeypatch.setattr(AgenticEngine, "run_governed_intent", forbidden_run)
+    monkeypatch.setattr(ToolRegistry, "execute_tool", forbidden_tool)
+    task = GovernedSwarmTask(
+        "bound-contract", "bound swarm", ("general",), 10.0, swarm_intent()
+    )
+    with pytest.raises(ValidationError):
+        swarm.run_governed_swarm_tasks((task,), max_cycles=1)
+
+    after = tuple((
+        tuple(string.activation for string in agent.membrane.strings),
+        agent.membrane.temporal_state.accumulated_tension,
+        tuple(agent.boundary.get_radius(string.theta) for string in agent.membrane.strings),
+        semantic_memory_digest(agent.semantic_memory),
+    ) for agent in agents)
+    assert governed_runs == tool_executions == 0
+    assert after == before
 
 
 def test_swarm_selection_and_execution_bindings_replay_deterministically():
@@ -175,4 +308,3 @@ def test_swarm_selection_and_execution_bindings_replay_deterministically():
     assert first.selection_digest == replay.selection_digest
     assert first.pre_execution_state_fingerprint == replay.pre_execution_state_fingerprint
     assert first.execution_binding_digest == replay.execution_binding_digest
-
