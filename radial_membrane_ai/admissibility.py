@@ -5,7 +5,9 @@
 Angular Decomposition, Dynamic Capacity, Stability Pipeline, and Kernel-Based Leg Evolution module.
 
 This module implements the angular decomposition of the membrane field, local closure test,
-stability pipeline, kernel leg evolution, and boundary loop trace as described in Feeney (2026).
+stability pipeline, kernel leg evolution, and a geometric boundary-loop
+diagnostic.  The latter is arc length and is not the paper's independently
+indexed, decaying short-horizon boundary-memory trace.
 """
 
 from __future__ import annotations
@@ -83,7 +85,9 @@ def local_closure_test(a: float, b: float, c: float) -> bool:
 
 class KernelEvolution:
     """
-    Tracks time-evolving kernels K(t), K_HLV(t), and K_eff(t, theta) as leg lengths.
+    Tracks an operational Pythagorean-leg kernel family.  Its effective-kernel
+    expression is a cost-pressure surrogate and is distinct from the
+    activation/modulation expression exposed by ``kernels.KernelRegimeManager``.
 
     Equations:
     - K(t+1) = (1 - alpha_K) * K(t) + gamma_K * input_excitation
@@ -205,7 +209,13 @@ def phase_smoothing(membrane: RadialMembrane, window_size: int = 3) -> None:
 
 def boundary_loop_trace(boundary: BoundaryGeometry, samples: int = 256) -> float:
     """
-    Computes the polar coordinate line integral (arc length) of the deformable boundary:
+    Computes the polar coordinate line integral (arc length) of the deformable boundary.
+
+    Despite the historical public function name, this is a same-snapshot
+    geometric diagnostic, not the decaying temporal trace B(theta, t+1) from
+    the research corpus.  No temporal trace state is read or updated here.
+
+    The implemented line integral is:
     L = Integral_0^{2*pi} sqrt( R(theta)^2 + (dR/dtheta)^2 ) dtheta
 
     Args:

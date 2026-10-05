@@ -5,8 +5,13 @@
 V-Channel Activation & Kernel Regimes module.
 
 Implements baseline kernel K(t), structured persistence kernel K_HLV(t),
-compute-aware kernel K_eff(t, theta) = A(0) * u(t, theta) * K_HLV(t),
+and the V-Channel-paper form of the compute-aware kernel
+K_eff(t, theta) = A(0) * u(t, theta) * K_HLV(t),
 regime selectors, angular phase alignment, and coherence ratio.
+
+``A(0)`` is an explicitly supplied reference activation.  This surface does
+not silently implement the later Unified Math notation ``A(theta)``; callers
+that possess angle-local activation must supply that value deliberately.
 """
 
 from __future__ import annotations
@@ -56,8 +61,11 @@ class KernelRegimeManager:
         u_t_theta: float = 1.0
     ) -> float:
         """
-        Computes the compute-aware effective kernel:
+        Computes the V-Channel-paper compute-aware effective kernel:
         K_eff(t, theta) = A(0) * u(t, theta) * K_HLV(t)
+
+        ``theta`` identifies the sampled location for the modulation supplied
+        by the caller; it is not itself used to synthesize ``A(theta)``.
         """
         return A_0 * u_t_theta * self.K_HLV_val
 
