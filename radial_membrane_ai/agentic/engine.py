@@ -8,6 +8,7 @@ Integrates goal planning, tool execution, dual-trigger reflection, and swarm bid
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field, replace
 from typing import Any, Dict, List, Optional, Sequence
 import math
@@ -580,16 +581,33 @@ class AgenticSwarmEngine:
         """Select deterministically, then govern the winner under explicit authority."""
         if isinstance(max_cycles, bool) or not isinstance(max_cycles, int) or max_cycles <= 0:
             raise ValueError("max_cycles must be a positive integer.")
+        agent_ids = [agent.agent_id for agent in self.agents]
+        if len(set(agent_ids)) != len(agent_ids):
+            raise ValidationError("governed swarm execution requires unique runtime agent identities.")
         results: list[GovernedSwarmResult] = []
         for task in tasks:
             if not isinstance(task, GovernedSwarmTask):
                 raise ValidationError("governed swarm execution requires typed tasks.")
-            contract = self.auctioneer.create_contract(
-                task.contract_id,
-                task.goal,
-                task.required_capabilities,
-                task.max_selection_budget,
-            )
+            registered = self.auctioneer.contracts.get(task.contract_id)
+            if (
+                registered is not None
+                and registered.status == "OPEN"
+                and registered.goal == task.goal
+                and tuple(registered.required_capabilities) == task.required_capabilities
+                and registered.max_budget == task.max_selection_budget
+                and registered.assigned_agent_id is None
+                and registered.winning_bid is None
+            ):
+                # A rejected transactional attempt deliberately leaves its
+                # registered contract OPEN so the same governed task can retry.
+                contract = registered
+            else:
+                contract = self.auctioneer.create_contract(
+                    task.contract_id,
+                    task.goal,
+                    task.required_capabilities,
+                    task.max_selection_budget,
+                )
             bids = []
             for agent in self.agents:
                 tension = float(agent.membrane.temporal_state.accumulated_tension)
@@ -612,32 +630,63 @@ class AgenticSwarmEngine:
                 ),
                 key=lambda bid: (-bid.bid_score, bid.agent_id),
             ))
-            awarded = self.auctioneer.run_auction(task.contract_id, bids)
-            if awarded.winning_bid is None or awarded.assigned_agent_id is None:
-                continue
-            if not admissible_bids:
-                raise ValidationError("auction awarded a task without an admissible bid.")
-            expected_winner = admissible_bids[0]
-            if (
-                awarded.contract_id != task.contract_id
-                or awarded.goal != task.goal
-                or tuple(awarded.required_capabilities) != task.required_capabilities
-                or awarded.max_budget != task.max_selection_budget
-                or awarded.status != "AWARDED"
-            ):
-                raise ValidationError("auction award does not match the governed task contract.")
-            if awarded.winning_bid not in admissible_bids:
-                raise ValidationError("auction winning bid is not in the authoritative admissible set.")
-            if awarded.winning_bid != expected_winner:
-                raise ValidationError("auction winning bid is not the deterministic winner.")
-            if awarded.assigned_agent_id != expected_winner.agent_id:
-                raise ValidationError("auction assigned agent is not the deterministic winner.")
-            matching_agents = [agent for agent in self.agents if agent.agent_id == expected_winner.agent_id]
-            if len(matching_agents) != 1:
-                raise ValidationError("auction winner does not identify exactly one swarm agent.")
-            winner = matching_agents[0]
-            if not set(task.required_capabilities).issubset(winner.capabilities):
-                raise ValidationError("auction winner no longer satisfies required capabilities.")
+            if len({bid.agent_id for bid in admissible_bids}) != len(admissible_bids):
+                raise ValidationError("selection requires unique admissible agent bids.")
+            expected_winner = admissible_bids[0] if admissible_bids else None
+
+            # ``run_auction`` is a legacy mutating API and may be overridden by
+            # callers.  Isolate all of its durable surfaces until the returned
+            # candidate has passed governed validation.  Restoring the original
+            # objects (rather than replacing only the mapping) also protects
+            # references held by the bidding path.
+            contract_refs = dict(self.auctioneer.contracts)
+            contracts_before = deepcopy(self.auctioneer.contracts)
+            history_before = deepcopy(self.auctioneer.auction_history)
+            try:
+                awarded = self.auctioneer.run_auction(task.contract_id, bids)
+                if awarded.winning_bid is None or awarded.assigned_agent_id is None:
+                    if (
+                        expected_winner is None
+                        and awarded.contract_id == task.contract_id
+                        and awarded.status == "FAILED"
+                        and awarded.winning_bid is None
+                        and awarded.assigned_agent_id is None
+                    ):
+                        continue
+                    raise ValidationError("auction omitted an admissible deterministic winner.")
+                if expected_winner is None:
+                    raise ValidationError("auction awarded a task without an admissible bid.")
+                if (
+                    awarded.contract_id != task.contract_id
+                    or awarded.goal != task.goal
+                    or tuple(awarded.required_capabilities) != task.required_capabilities
+                    or awarded.max_budget != task.max_selection_budget
+                    or awarded.status != "AWARDED"
+                ):
+                    raise ValidationError("auction award does not match the governed task contract.")
+                if awarded.winning_bid not in admissible_bids:
+                    raise ValidationError("auction winning bid is not in the authoritative admissible set.")
+                if awarded.winning_bid != expected_winner:
+                    raise ValidationError("auction winning bid is not the deterministic winner.")
+                if awarded.assigned_agent_id != expected_winner.agent_id:
+                    raise ValidationError("auction assigned agent is not the deterministic winner.")
+                matching_agents = [
+                    agent for agent in self.agents
+                    if agent.agent_id == expected_winner.agent_id
+                ]
+                if len(matching_agents) != 1:
+                    raise ValidationError("auction winner does not identify exactly one swarm agent.")
+                winner = matching_agents[0]
+                if not set(task.required_capabilities).issubset(winner.capabilities):
+                    raise ValidationError("auction winner no longer satisfies required capabilities.")
+            except Exception:
+                for contract_id, original in contract_refs.items():
+                    original.__dict__.clear()
+                    original.__dict__.update(deepcopy(contracts_before[contract_id].__dict__))
+                self.auctioneer.contracts.clear()
+                self.auctioneer.contracts.update(contract_refs)
+                self.auctioneer.auction_history[:] = history_before
+                raise
             # Preserve every authoritative component shared by UFOAgent and the
             # v5 engine. Selection labels and scalar budget are deliberately not
             # copied into execution authority or GovernedBudget.
