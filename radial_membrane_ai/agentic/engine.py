@@ -588,61 +588,47 @@ class AgenticSwarmEngine:
         for task in tasks:
             if not isinstance(task, GovernedSwarmTask):
                 raise ValidationError("governed swarm execution requires typed tasks.")
-            registered = self.auctioneer.contracts.get(task.contract_id)
-            if (
-                registered is not None
-                and registered.status == "OPEN"
-                and registered.goal == task.goal
-                and tuple(registered.required_capabilities) == task.required_capabilities
-                and registered.max_budget == task.max_selection_budget
-                and registered.assigned_agent_id is None
-                and registered.winning_bid is None
-            ):
-                # A rejected transactional attempt deliberately leaves its
-                # registered contract OPEN so the same governed task can retry.
-                contract = registered
-            else:
+
+            # Isolate all mutable auctioneer surfaces before creating the contract.
+            # Restoring the original objects (rather than replacing only the mapping)
+            # protects references held by external callers or the bidding path.
+            contract_refs = dict(self.auctioneer.contracts)
+            contracts_before = deepcopy(self.auctioneer.contracts)
+            history_before = deepcopy(self.auctioneer.auction_history)
+
+            try:
                 contract = self.auctioneer.create_contract(
                     task.contract_id,
                     task.goal,
                     task.required_capabilities,
                     task.max_selection_budget,
                 )
-            bids = []
-            for agent in self.agents:
-                tension = float(agent.membrane.temporal_state.accumulated_tension)
-                bid = self.auctioneer.calculate_agent_bid(
-                    agent.agent_id,
-                    contract,
-                    agent.capabilities,
-                    tension,
-                    2.0 - min(1.9, tension),
-                )
-                if bid is not None:
-                    bids.append(bid)
-            admissible_bids = tuple(sorted(
-                (
-                    bid for bid in bids
-                    if bid.contract_id == task.contract_id
-                    and set(task.required_capabilities).issubset(bid.agent_capabilities)
-                    and bid.estimated_cost <= task.max_selection_budget
-                    and bid.membrane_stability_margin > 0.0
-                ),
-                key=lambda bid: (-bid.bid_score, bid.agent_id),
-            ))
-            if len({bid.agent_id for bid in admissible_bids}) != len(admissible_bids):
-                raise ValidationError("selection requires unique admissible agent bids.")
-            expected_winner = admissible_bids[0] if admissible_bids else None
+                bids = []
+                for agent in self.agents:
+                    tension = float(agent.membrane.temporal_state.accumulated_tension)
+                    bid = self.auctioneer.calculate_agent_bid(
+                        agent.agent_id,
+                        contract,
+                        agent.capabilities,
+                        tension,
+                        2.0 - min(1.9, tension),
+                    )
+                    if bid is not None:
+                        bids.append(bid)
+                admissible_bids = tuple(sorted(
+                    (
+                        bid for bid in bids
+                        if bid.contract_id == task.contract_id
+                        and set(task.required_capabilities).issubset(bid.agent_capabilities)
+                        and bid.estimated_cost <= task.max_selection_budget
+                        and bid.membrane_stability_margin > 0.0
+                    ),
+                    key=lambda bid: (-bid.bid_score, bid.agent_id),
+                ))
+                if len({bid.agent_id for bid in admissible_bids}) != len(admissible_bids):
+                    raise ValidationError("selection requires unique admissible agent bids.")
+                expected_winner = admissible_bids[0] if admissible_bids else None
 
-            # ``run_auction`` is a legacy mutating API and may be overridden by
-            # callers.  Isolate all of its durable surfaces until the returned
-            # candidate has passed governed validation.  Restoring the original
-            # objects (rather than replacing only the mapping) also protects
-            # references held by the bidding path.
-            contract_refs = dict(self.auctioneer.contracts)
-            contracts_before = deepcopy(self.auctioneer.contracts)
-            history_before = deepcopy(self.auctioneer.auction_history)
-            try:
                 awarded = self.auctioneer.run_auction(task.contract_id, bids)
                 if awarded.winning_bid is None or awarded.assigned_agent_id is None:
                     if (

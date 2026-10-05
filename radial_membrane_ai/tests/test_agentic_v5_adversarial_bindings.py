@@ -315,9 +315,7 @@ def test_duplicate_admissible_bidder_identity_fails_before_auction_or_execution(
 
     assert auctioneer.auction_calls == governed_runs == tool_executions == 0
     assert auctioneer.auction_history == []
-    assert auctioneer.contracts[task.contract_id].status == "OPEN"
-    assert auctioneer.contracts[task.contract_id].winning_bid is None
-    assert auctioneer.contracts[task.contract_id].assigned_agent_id is None
+    assert task.contract_id not in auctioneer.contracts
     assert authoritative_agent_state(agents) == before
 
 
@@ -382,10 +380,7 @@ def test_malformed_auction_award_fails_before_execution_or_state_change(monkeypa
     ) for agent in agents)
     assert governed_runs == tool_executions == 0
     assert after == before
-    restored = swarm.auctioneer.contracts[task.contract_id]
-    assert restored.status == "OPEN"
-    assert restored.winning_bid is None
-    assert restored.assigned_agent_id is None
+    assert task.contract_id not in swarm.auctioneer.contracts
     assert swarm.auctioneer.auction_history == []
 
 
@@ -405,10 +400,7 @@ def test_rejected_mutating_auction_restores_state_and_allows_retry(defect):
     with pytest.raises(ValidationError):
         swarm.run_governed_swarm_tasks((task,), max_cycles=1)
 
-    restored = auctioneer.contracts[task.contract_id]
-    assert restored.status == "OPEN"
-    assert restored.assigned_agent_id is None
-    assert restored.winning_bid is None
+    assert task.contract_id not in auctioneer.contracts
     assert auctioneer.auction_history == []
     assert authoritative_agent_state(agents) == agents_before
 
@@ -418,6 +410,65 @@ def test_rejected_mutating_auction_restores_state_and_allows_retry(defect):
     assert auctioneer.contracts[task.contract_id].status == "AWARDED"
     assert auctioneer.contracts[task.contract_id].winning_bid == result.winning_bid
     assert len(auctioneer.auction_history) == 1
+
+
+def test_foreign_open_contract_collision_prevents_execution_and_mutation(monkeypatch):
+    agents = [
+        UFOAgent("b", capabilities=["general"]),
+        UFOAgent("a", capabilities=["general"]),
+    ]
+    auctioneer = SwarmAuctioneer()
+    swarm = AgenticSwarmEngine(agents=agents, auctioneer=auctioneer)
+    agents_before = authoritative_agent_state(agents)
+    task = GovernedSwarmTask(
+        "collision-contract", "bound swarm", ("general",), 10.0, swarm_intent()
+    )
+
+    # Pre-populate a foreign OPEN contract with the same ID and parameters
+    foreign_contract = SwarmContract(
+        contract_id=task.contract_id,
+        goal=task.goal,
+        required_capabilities=list(task.required_capabilities),
+        max_budget=task.max_selection_budget,
+    )
+    auctioneer.contracts[task.contract_id] = foreign_contract
+
+    governed_runs = 0
+    tool_executions = 0
+    auction_runs = 0
+
+    def forbidden_run(*args, **kwargs):
+        nonlocal governed_runs
+        governed_runs += 1
+        raise AssertionError("governed execution occurred despite collision")
+
+    def forbidden_tool(*args, **kwargs):
+        nonlocal tool_executions
+        tool_executions += 1
+        raise AssertionError("tool execution occurred despite collision")
+
+    def forbidden_auction(*args, **kwargs):
+        nonlocal auction_runs
+        auction_runs += 1
+        raise AssertionError("auction occurred despite collision")
+
+    monkeypatch.setattr(AgenticEngine, "run_governed_intent", forbidden_run)
+    monkeypatch.setattr(ToolRegistry, "execute_tool", forbidden_tool)
+    monkeypatch.setattr(auctioneer, "run_auction", forbidden_auction)
+
+    with pytest.raises(ValidationError, match="already exists"):
+        swarm.run_governed_swarm_tasks((task,), max_cycles=1)
+
+    assert governed_runs == tool_executions == auction_runs == 0
+    assert auctioneer.auction_history == []
+    assert authoritative_agent_state(agents) == agents_before
+
+    # Original contract should remain untouched
+    retained = auctioneer.contracts[task.contract_id]
+    assert retained is foreign_contract
+    assert retained.status == "OPEN"
+    assert retained.assigned_agent_id is None
+    assert retained.winning_bid is None
 
 
 def test_swarm_selection_and_execution_bindings_replay_deterministically():
