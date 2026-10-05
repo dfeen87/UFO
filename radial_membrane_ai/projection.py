@@ -59,7 +59,10 @@ def project_to_admissible(
         a: Orthogonal leg a.
         b: Orthogonal leg b.
         c: Dynamic capacity limit c.
-        metric: One of 'euclidean', 'weighted', 'angular', or 'radial'.
+        metric: One of 'euclidean', 'weighted', 'angular', or 'radial'.  In
+            this simulation ``angular`` and ``radial`` are labels for the same
+            norm-preserving radial rescaling used by ``euclidean``; they do
+            not claim distinct metric-family equations.
         weights: Optional dictionary for 'weighted' metric containing 'w_a' and 'w_b'.
 
     Returns:
@@ -76,7 +79,9 @@ def project_to_admissible(
     metric_lower = metric.lower()
 
     if metric_lower == "euclidean" or metric_lower == "radial" or metric_lower == "angular":
-        # Euclidean, Radial, and Angular projection scale (a, b) to lie on the boundary circle of radius c
+        # Intentional simulation aliases: all three labels use radial
+        # rescaling to the Euclidean boundary circle.  No separate angular or
+        # radial metric is defined by this implementation.
         scale = c / norm
         return a * scale, b * scale
 
