@@ -13,6 +13,7 @@ import json
 import math
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 from radial_membrane_ai.exceptions import ValidationError
@@ -22,8 +23,12 @@ from radial_membrane_ai.agentic.contracts import (
     ExecutionRecord,
     ExecutionState,
     SideEffectClass,
+    _freeze,
+    _plain,
+    _vector,
     admission_binding_digest,
 )
+from radial_membrane_ai.numeric import finite_real
 
 
 @dataclass
@@ -44,8 +49,15 @@ class ToolCallResult:
 
     def validate(self) -> None:
         """Enforces membrane-bounded execution invariants on ToolCallResult."""
+        if not isinstance(self.tool_name, str) or not self.tool_name:
+            raise ValidationError("tool result identity must be a non-empty string.")
+        if not isinstance(self.success, bool) or not isinstance(self.output, str):
+            raise ValidationError("tool result success must be Boolean and output must be a string.")
+        if not isinstance(self.data, Mapping):
+            raise ValidationError("tool result data must be a mapping.")
+        _vector(self.cost_vector, "tool observed cost")
         numeric_values = [self.side_effect_rating, self.tension_delta, self.execution_time_ms, *self.cost_vector]
-        if not all(isinstance(value, (int, float)) and math.isfinite(value) for value in numeric_values):
+        if not all(finite_real(value) is not None for value in numeric_values):
             raise ValidationError("Tool result metrics must be finite numeric values.")
         if not (0.0 <= self.side_effect_rating <= 1.0):
             raise ValidationError(
@@ -159,7 +171,11 @@ class SearchTool(BaseTool):
 
 
 class PythonCodeExecutorTool(BaseTool):
-    """Safe Python code AST analysis and restricted execution tool."""
+    """AST-filtered in-process evaluator for trusted, bounded simulation code.
+
+    This is not a security sandbox: it imposes no CPU, memory, output, timeout,
+    or cancellation limit. Untrusted code requires a separate isolated executor.
+    """
 
     name = "PythonCodeExecutorTool"
     description = "Executes Python expressions and algorithms in a governed, restricted environment."
@@ -452,8 +468,10 @@ class ToolRegistry:
             for name in sorted(self._tools)
         ]
 
-    def execute_tool(self, name: str, params: Dict[str, Any]) -> ToolCallResult:
-        """Executes a named tool with provided parameters."""
+    def execute_tool(
+        self, name: str, params: Dict[str, Any], *, outcome_unknown_on_error: bool = False,
+    ) -> ToolCallResult:
+        """Invoke and snapshot a result; legacy instrumentation carries no v5 authority."""
         if not isinstance(params, dict):
             raise ValidationError("Tool parameters must be a dictionary.")
         start = time.perf_counter()
@@ -464,12 +482,27 @@ class ToolRegistry:
                 raise TypeError("tool returned an invalid result type")
             if result.tool_name != name:
                 raise ValueError(f"tool result identity mismatch: {result.tool_name!r}")
-            return result
+            result.validate()
+            # A constructor-time check is insufficient for mutable/custom results.
+            # Detach nested evidence and revalidate a standard result snapshot.
+            snapshot = ToolCallResult(
+                result.tool_name, result.success, result.output,
+                data=_plain(_freeze(result.data)), cost_vector=list(result.cost_vector),
+                side_effect_rating=result.side_effect_rating, tension_delta=result.tension_delta,
+                execution_time_ms=result.execution_time_ms,
+            )
+            if snapshot.tool_name != name:
+                raise ValidationError("tool result identity changed during capture.")
+            return snapshot
         except (KeyboardInterrupt, SystemExit):
             raise
         except ToolOutcomeUnknown:
             raise
         except Exception as exc:
+            if outcome_unknown_on_error:
+                # Invocation may already have committed effects. An exception or
+                # malformed result proves neither rollback nor an observed cost.
+                raise ToolOutcomeUnknown("invocation did not provide a valid outcome") from exc
             return ToolCallResult(
                 tool_name=name,
                 success=False,
@@ -491,12 +524,16 @@ class ToolRegistry:
         from radial_membrane_ai.agentic.admission import ProspectiveAgenticAdmission
 
         self.validate_governed_proposal(proposal)
-        ProspectiveAgenticAdmission.validate_execution_binding(
+        budget = ProspectiveAgenticAdmission.claim_execution(
             intent, proposal, admission, current_state_fingerprint
         )
         try:
-            result = self.execute_tool(proposal.tool_name, dict(proposal.parameters))
+            result = self.execute_tool(
+                proposal.tool_name, dict(proposal.parameters), outcome_unknown_on_error=True,
+            )
         except ToolOutcomeUnknown as exc:
+            assert admission.reservation is not None
+            budget.consume_unknown(admission.reservation)
             return ExecutionRecord(
                 execution_id=f"execution-{proposal.proposal_digest[:16]}",
                 proposal_digest=proposal.proposal_digest,

@@ -214,7 +214,7 @@ class AgenticEngine:
                 observation = Observation(
                     observation_id=f"observation-{exact_proposal.proposal_digest[:16]}",
                     execution_id=execution.execution_id,
-                    evidence={"output": tool_result.output, "data": tool_result.data},
+                    evidence={"output": execution.output, "data": execution.data},
                     complete=True,
                 )
                 assert execution.observed_cost is not None
