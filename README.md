@@ -8,6 +8,13 @@ The historical Version 4 BEDROCK baseline preserves
 the governed membrane architecture while making finite numerical state,
 atomic activation updates, and fail-closed shard admission explicit contracts.
 
+The [BEDROCK 1.1 hardening review](docs/BEDROCK_1_1_REVIEW.md) records three
+confirmed defect groups and their regression-backed repairs. New-release status
+is **NO-GO** while executor isolation and unsafe known-failure retries remain
+unresolved; v6.0.0 is not authorized and the technical version remains 5.0.0.
+Use the Python evaluator only with trusted, bounded simulation code; it provides no CPU,
+memory, output, timeout, or process-isolation guarantee.
+
 **A compute-aware AI personalization architecture that treats behavior as a living, saucer-shaped control surface — not a static personality preset.**
 
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21401979-blue)](https://doi.org/10.5281/zenodo.21401979)

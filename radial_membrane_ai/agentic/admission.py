@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import math
 from typing import Callable
+from weakref import ReferenceType, ref
 
 from radial_membrane_ai.agentic.contracts import (
     ActionProposal,
@@ -18,45 +20,108 @@ from radial_membrane_ai.exceptions import ValidationError
 
 
 @dataclass
+class _ReservationEntry:
+    reservation: ResourceReservation
+    state: str = "RESERVED"
+    released_receipt: ResourceReservation | None = None
+
+
+@dataclass
 class GovernedBudget:
-    """The sole mutable owner of remaining budget and active reservations."""
+    """Single-owner in-process ledger; serialized reservations are only evidence."""
 
     remaining: ResourceBudget
+    _initial: ResourceBudget = field(init=False, repr=False, compare=False)
+    _spent: tuple[float, ...] = field(default=(0.0,) * 8, init=False, repr=False, compare=False)
+    _entries: dict[int, _ReservationEntry] = field(default_factory=dict, init=False, repr=False, compare=False)
+    _released: dict[int, _ReservationEntry] = field(default_factory=dict, init=False, repr=False, compare=False)
+    _sequence: int = field(default=0, init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.remaining, ResourceBudget):
+            raise ValidationError("governed budget requires a typed resource budget.")
+        self._initial = self.remaining
+
+    def _entry(self, reservation: ResourceReservation) -> _ReservationEntry:
+        entry = self._entries.get(id(reservation))
+        if entry is None or entry.reservation is not reservation:
+            raise ValidationError("reservation is foreign, copied, or forged.")
+        return entry
+
+    def _require_reserved(self, reservation: ResourceReservation) -> None:
+        if self._entry(reservation).state != "RESERVED":
+            raise ValidationError("reservation is no longer available for execution or release.")
+
+    def _begin_execution(self, reservation: ResourceReservation) -> None:
+        self._require_reserved(reservation)
+        self._entry(reservation).state = "EXECUTING"
+
+    def _available(self, *, excluding: ResourceReservation | None = None) -> ResourceBudget:
+        held = [entry.reservation.reserved_cost for entry in self._entries.values()
+                if entry.state in {"RESERVED", "EXECUTING"} and entry.reservation is not excluding]
+        limits = []
+        for index, initial in enumerate(self._initial.limits):
+            try:
+                used = math.fsum([self._spent[index], *(cost[index] for cost in held)])
+            except OverflowError:
+                used = math.inf
+            limits.append(max(0.0, initial - used))
+        return ResourceBudget(tuple(limits))
+
+    def _settle(self, entry: _ReservationEntry, cost: tuple[float, ...]) -> None:
+        # Saturate modeled expenditure on overrun; never refund from caller evidence.
+        self._spent = tuple(min(initial, spent + observed)
+                            for initial, spent, observed in zip(self._initial.limits, self._spent, cost))
+        entry.state = "CONSUMED"
+        self.remaining = self._available()
 
     def reserve(self, proposal: ActionProposal) -> ResourceReservation | None:
         if not self.remaining.can_cover(proposal.predicted_cost):
             return None
+        self._sequence += 1
         reservation = ResourceReservation(
-            reservation_id=f"reservation-{proposal.proposal_digest[:16]}",
+            reservation_id=f"reservation-{proposal.proposal_digest}-{self._sequence}",
             proposal_digest=proposal.proposal_digest,
             reserved_cost=proposal.predicted_cost,
         )
-        self.remaining = self.remaining.subtract(proposal.predicted_cost)
+        self._entries[id(reservation)] = _ReservationEntry(reservation)
+        self.remaining = self._available()
         return reservation
 
     def release(self, reservation: ResourceReservation) -> ResourceReservation:
-        if reservation.released:
+        prior = self._released.get(id(reservation))
+        if prior is not None and prior.released_receipt is reservation:
             return reservation
-        self.remaining = ResourceBudget(tuple(
-            current + reserved for current, reserved in zip(self.remaining.limits, reservation.reserved_cost)
-        ))
-        return ResourceReservation(
+        entry = self._entry(reservation)
+        if entry.state == "RELEASED":
+            assert entry.released_receipt is not None
+            return entry.released_receipt
+        self._require_reserved(reservation)
+        released = ResourceReservation(
             reservation.reservation_id, reservation.proposal_digest, reservation.reserved_cost, released=True
         )
+        entry.state = "RELEASED"
+        entry.released_receipt = released
+        self._released[id(released)] = entry
+        self.remaining = self._available()
+        return released
+
+    def consume_unknown(self, reservation: ResourceReservation) -> None:
+        """Finalize an invoked action without inventing observed cost or a refund."""
+        entry = self._entry(reservation)
+        if entry.state != "EXECUTING":
+            raise ValidationError("unknown consumption requires an executing reservation.")
+        self._settle(entry, reservation.reserved_cost)
 
     def reconcile(self, reservation: ResourceReservation, observed_cost: tuple[float, ...]) -> bool:
-        # Reservation is already debited. Refund unused dimensions; overruns debit
-        # what remains without creating fictitious negative availability.
-        available = tuple(
-            current + reserved
-            for current, reserved in zip(self.remaining.limits, reservation.reserved_cost)
-        )
-        hard_breach = any(observed > limit for observed, limit in zip(observed_cost, available))
-        adjusted = tuple(
-            max(0.0, limit - observed)
-            for limit, observed in zip(available, observed_cost)
-        )
-        self.remaining = ResourceBudget(adjusted)
+        entry = self._entry(reservation)
+        if entry.state not in {"RESERVED", "EXECUTING"}:
+            raise ValidationError("reservation has already been settled.")
+        # Validate every dimension before changing either lifecycle or accounting.
+        observed = ResourceBudget(observed_cost).limits
+        available = self._available(excluding=reservation).limits
+        hard_breach = any(cost > limit for cost, limit in zip(observed, available))
+        self._settle(entry, observed)
         return hard_breach
 
 
@@ -64,6 +129,9 @@ class ProspectiveAgenticAdmission:
     """Conjunctive admission coordinator; diagnostics never grant authority."""
 
     SUPPORTED_CONSTRAINTS = frozenset({"do-not-expand-authority"})
+    # Live, process-local authority is separate from digestable/serializable evidence.
+    # Weak verdict references retire unused permits when their receipts are discarded.
+    _issued: dict[int, tuple[ReferenceType[AdmissionVerdict], GovernedBudget]] = {}
 
     def evaluate(
         self,
@@ -120,7 +188,7 @@ class ProspectiveAgenticAdmission:
         elif set(reasons).issubset({"POLICY_GATE_FAILED", "SIDE_EFFECT_CLASS_NOT_PERMITTED"}):
             decision = AdmissionDecision.CONSTRAIN
 
-        return AdmissionVerdict(
+        verdict = AdmissionVerdict(
             decision=decision,
             intent_id=intent.intent_id,
             intent_digest=intent.intent_digest,
@@ -131,6 +199,10 @@ class ProspectiveAgenticAdmission:
             reservation=reservation,
             reason_codes=tuple(reasons),
         )
+        if decision is AdmissionDecision.ADMIT:
+            key = id(verdict)
+            self._issued[key] = (ref(verdict, lambda unused: self._issued.pop(key, None)), budget)
+        return verdict
 
     @staticmethod
     def validate_execution_binding(
@@ -154,3 +226,20 @@ class ProspectiveAgenticAdmission:
         )
         if mismatched:
             raise ValidationError("execution rejected: admission binding is missing, stale, or mismatched.")
+        issued = ProspectiveAgenticAdmission._issued.get(id(verdict))
+        if issued is None or issued[0]() is not verdict:
+            raise ValidationError("execution rejected: admission was not issued here or was already claimed.")
+        assert verdict.reservation is not None
+        issued[1]._require_reserved(verdict.reservation)
+
+    @classmethod
+    def claim_execution(
+        cls, intent: IntentContract, proposal: ActionProposal, verdict: AdmissionVerdict,
+        current_state_fingerprint: str,
+    ) -> GovernedBudget:
+        """Consume exactly one runtime-issued permit before invoking a tool."""
+        cls.validate_execution_binding(intent, proposal, verdict, current_state_fingerprint)
+        _, budget = cls._issued.pop(id(verdict))
+        assert verdict.reservation is not None
+        budget._begin_execution(verdict.reservation)
+        return budget

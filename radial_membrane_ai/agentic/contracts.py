@@ -34,14 +34,20 @@ def _digest(value: Any, name: str) -> str:
 
 
 def _vector(values: Sequence[Any], name: str, size: int = 8) -> tuple[float, ...]:
-    if isinstance(values, (str, bytes)) or len(values) != size:
+    try:
+        valid_size = not isinstance(values, (str, bytes)) and len(values) == size
+    except TypeError:
+        valid_size = False
+    if not valid_size:
         raise ValidationError(f"{name} must contain exactly {size} dimensions.")
     return tuple(_number(value, f"{name}[{index}]") for index, value in enumerate(values))
 
 
 def _freeze(value: Any) -> Any:
     if isinstance(value, Mapping):
-        return MappingProxyType({str(k): _freeze(v) for k, v in sorted(value.items(), key=lambda item: str(item[0]))})
+        if not all(isinstance(key, str) for key in value):
+            raise ValidationError("contract mapping keys must be strings; key coercion is forbidden.")
+        return MappingProxyType({key: _freeze(item) for key, item in sorted(value.items())})
     if isinstance(value, (list, tuple)):
         return tuple(_freeze(v) for v in value)
     if isinstance(value, (str, int, float, bool)) or value is None:
@@ -55,19 +61,25 @@ def _plain(value: Any) -> Any:
     if is_dataclass(value):
         return {item.name: _plain(getattr(value, item.name)) for item in fields(value)}
     if isinstance(value, Mapping):
+        if not all(isinstance(key, str) for key in value):
+            raise ValidationError("contract mapping keys must be strings; key coercion is forbidden.")
         return {key: _plain(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [_plain(item) for item in value]
     if isinstance(value, (set, frozenset)):
         return sorted((_plain(item) for item in value), key=str)
     if isinstance(value, Enum):
-        return value.value
-    return value
+        return _plain(value.value)
+    return _freeze(value)
 
 
 def stable_digest(value: Any) -> str:
     """Return a canonical SHA-256 identity for governed semantic data."""
-    encoded = json.dumps(_plain(value), sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    try:
+        encoded = json.dumps(_plain(value), sort_keys=True, separators=(",", ":"),
+                             ensure_ascii=True, allow_nan=False)
+    except (TypeError, ValueError, OverflowError, RecursionError) as exc:
+        raise ValidationError("contract value cannot be canonically serialized.") from exc
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
@@ -228,8 +240,10 @@ class ActionProposal:
             _text(value, name)
         if not isinstance(self.parameters, Mapping):
             raise ValidationError("proposal parameters must be a mapping.")
-        if not self.expected_postconditions:
-            raise ValidationError("proposal requires expected postconditions.")
+        if not self.expected_postconditions or not all(
+            isinstance(value, ExpectedPostcondition) for value in self.expected_postconditions
+        ):
+            raise ValidationError("proposal requires typed expected postconditions.")
         object.__setattr__(self, "parameters", _freeze(self.parameters))
         object.__setattr__(self, "expected_postconditions", tuple(self.expected_postconditions))
         object.__setattr__(self, "predicted_cost", _vector(self.predicted_cost, "predicted cost"))
