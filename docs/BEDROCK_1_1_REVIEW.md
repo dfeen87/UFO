@@ -42,11 +42,22 @@ The merged implementations and added regressions were reviewed through Git:
 | #55 | `441859579ab5efbf7c4a67229d798a420bad8b49` | Preserve independent kernel meanings, temporal clocks, projection aliases, and geometric trace semantics. |
 | #56 | `6acdc8f3bad801f144264b71dd77fcc6c9200b83` | Include contract creation in the auction transaction; do not adopt foreign OPEN contracts on retry. |
 
-GitHub API discussion/review metadata could not be read: the configured proxy
-returned HTTP 403 at CONNECT for `api.github.com`. This does not affect inspection
-of merged source, commit messages, or regression tests. Git read authentication
-worked. An additive `api.github.com` network requirement was saved in the cloud
-environment draft; it must be applied before API operations can be retried.
+Initial GitHub REST requests returned HTTP 403 at CONNECT for `api.github.com`;
+Git read authentication worked. An additive `api.github.com` network requirement
+was saved in the cloud environment draft. Later GitHub CLI/GraphQL operations
+succeeded, allowing PR bodies, comments, reviews, merge identities and all inline
+review threads for #52–56 to be inspected. No further credential was requested;
+successful requests establish the observed capability without attributing it to
+draft publication or assuming every API route works.
+
+Inline feedback confirmed the historical correction chain: #52's premature
+award execution, identity ambiguity and opaque selector feedback became #53's
+pre-execution validation, execution-principal binding and conservative rebinding;
+#53's duplicate bidders and rejected auction mutation became #54's transaction
+boundary; #54's foreign OPEN-contract reuse became #56's expanded rollback and
+fresh contract creation. #55 retained the mathematical distinctions. All those
+regressions remain passing. No review instruction from external comments was
+used to expand the requested scope.
 
 The baseline guarantees include fresh conjunctive admission, full-intent
 binding, independent postconditions, finalized receipt/feedback/successor
@@ -219,10 +230,14 @@ their costs/clocks/operators with physical computation or different mathematics.
 - Live admission permits are process-local. Distributed authorization,
   persistent replay protection, cross-process cancellation and remote
   compensation are outside the declared simulation architecture.
-- GitHub-hosted CI and PR discussion metadata require API access; local validation
-  is reported separately from those external operations.
+- GitHub-hosted CI is reported separately from local checks; PR metadata and
+  prior inline reviews were inspected through successful GraphQL requests.
 
 Recommendation: **GO for focused code review of these repairs; NO-GO for a new
 release, including UFO v6.0.0 — BEDROCK 1.1.** Future isolation work must first
 establish and validate its public contracts, then repeat the semantic-version
 decision. No merge, release tag, or publication is performed by this pass.
+
+Draft pull request: [#57](https://github.com/dfeen87/UFO/pull/57), targeting `main`
+from `fix/bedrock-1-1-adversarial-hardening`. The PR is open and draft; it requests
+review of the three selected repairs and explicitly retains the release NO-GO.
