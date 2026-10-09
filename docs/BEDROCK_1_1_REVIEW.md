@@ -183,8 +183,10 @@ verified runtime artifacts and the unchanged Poetry lockfile:
 - Flake8 and mypy: passed; mypy checked **124 source files**.
 - The built wheel's package and CLI imports, version/help, and five-step
   single/multi simulations passed from the separate installation target.
-- A full Python 3.11 suite and GitHub-hosted CI were **not run**. Full-suite
-  results above belong to Python 3.12.14.
+- A full Python 3.11 suite was **not run locally**. Full-suite results above
+  belong to Python 3.12.14. GitHub-hosted CI had not run at the local validation
+  cutoff; creation/update of draft PR #57 subsequently triggered its Ubuntu
+  Build & Test workflow. Its live result is reported separately in the handoff.
 
 The separately executed retry-unsafe known-failure assertion **still fails**:
 **1 failed**, exit 1, `tool.calls == 2` instead of 1. It is a confirmed unresolved
